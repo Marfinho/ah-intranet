@@ -1,0 +1,13 @@
+{
+  "name": "ah-intranet",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.18.3",
+  "scripts": {
+    "dev": "pnpm --filter @ah-intranet/shared build && pnpm -r --parallel --filter @ah-intranet/shared --filter api --filter web dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "format": "pnpm -r format",
+    "seed": "pnpm --filter api prisma:seed"
+  }
+}

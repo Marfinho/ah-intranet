@@ -1,0 +1,415 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  active
+  inactive
+}
+
+enum RoleScopeType {
+  global
+  location
+  department
+  specialty_area
+}
+
+enum NewsStatus {
+  draft
+  published
+  archived
+}
+
+enum NewsPriority {
+  niedrig
+  normal
+  hoch
+  kritisch
+}
+
+enum AudienceType {
+  global
+  location
+  department
+  specialty_area
+}
+
+enum OrderType {
+  business_card
+  workwear
+}
+
+enum OrderStatus {
+  draft
+  submitted
+  approved
+  rejected
+  queued_for_bulk_order
+  ordered
+  completed
+  cancelled
+}
+
+enum ApprovalDecisionType {
+  approved
+  rejected
+}
+
+enum CycleType {
+  business_cards
+  workwear
+}
+
+enum AttachmentType {
+  image
+  pdf
+  file
+}
+
+model User {
+  id               String      @id @default(cuid())
+  username         String      @unique
+  email            String?     @unique
+  passwordHash     String
+  firstName        String
+  lastName         String
+  status           UserStatus  @default(active)
+  locationId       String?
+  departmentId     String?
+  specialtyAreaId  String?
+  managerId        String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  location         Location?   @relation(fields: [locationId], references: [id])
+  department       Department? @relation(fields: [departmentId], references: [id])
+  specialtyArea    SpecialtyArea? @relation(fields: [specialtyAreaId], references: [id])
+  manager          User?       @relation("ManagerRelation", fields: [managerId], references: [id])
+  reports          User[]      @relation("ManagerRelation")
+  roles            UserRole[]
+  newsPosts        NewsPost[]  @relation("NewsAuthor")
+  orders           Order[]     @relation("OrderRequester")
+  approvalDecisions ApprovalDecision[] @relation("ApprovalActor")
+  auditLogs        AuditLog[]  @relation("AuditActor")
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  name        String
+  description String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  permissions RolePermission[]
+  users       UserRole[]
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  name        String
+  description String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  roles       RolePermission[]
+}
+
+model UserRole {
+  id              String        @id @default(cuid())
+  userId          String
+  roleId          String
+  scopeType       RoleScopeType @default(global)
+  scopeLocationId String?
+  scopeDepartmentId String?
+  scopeSpecialtyAreaId String?
+  createdAt       DateTime      @default(now())
+
+  user            User          @relation(fields: [userId], references: [id])
+  role            Role          @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId, scopeType, scopeLocationId, scopeDepartmentId, scopeSpecialtyAreaId])
+}
+
+model RolePermission {
+  id           String      @id @default(cuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime    @default(now())
+
+  role         Role        @relation(fields: [roleId], references: [id])
+  permission   Permission  @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId])
+}
+
+model Location {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  code      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+  newsAudiences NewsAudience[]
+  orderCycles OrderCycle[]
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  code      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+  locationDepartments LocationDepartment[]
+  newsAudiences NewsAudience[]
+}
+
+model SpecialtyArea {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  code      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+  newsAudiences NewsAudience[]
+}
+
+model LocationDepartment {
+  id           String   @id @default(cuid())
+  locationId   String
+  departmentId String
+  createdAt    DateTime @default(now())
+
+  location     Location   @relation(fields: [locationId], references: [id])
+  department   Department @relation(fields: [departmentId], references: [id])
+
+  @@unique([locationId, departmentId])
+}
+
+model NewsPost {
+  id            String         @id @default(cuid())
+  slug          String         @unique
+  title         String
+  teaser        String
+  content       String
+  priority      NewsPriority   @default(normal)
+  status        NewsStatus     @default(draft)
+  publishedAt   DateTime?
+  expiresAt     DateTime?
+  authorId      String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  author        User           @relation("NewsAuthor", fields: [authorId], references: [id])
+  attachments   NewsAttachment[]
+  audiences     NewsAudience[]
+}
+
+model NewsAttachment {
+  id         String         @id @default(cuid())
+  newsPostId String
+  fileName   String
+  mimeType   String
+  storageKey String
+  type       AttachmentType
+  createdAt  DateTime       @default(now())
+
+  newsPost   NewsPost       @relation(fields: [newsPostId], references: [id])
+}
+
+model NewsAudience {
+  id              String       @id @default(cuid())
+  newsPostId      String
+  audienceType    AudienceType
+  locationId      String?
+  departmentId    String?
+  specialtyAreaId String?
+  createdAt       DateTime     @default(now())
+
+  newsPost        NewsPost      @relation(fields: [newsPostId], references: [id])
+  location        Location?     @relation(fields: [locationId], references: [id])
+  department      Department?   @relation(fields: [departmentId], references: [id])
+  specialtyArea   SpecialtyArea? @relation(fields: [specialtyAreaId], references: [id])
+}
+
+model Order {
+  id              String        @id @default(cuid())
+  orderNumber     String        @unique
+  type            OrderType
+  requesterId     String
+  status          OrderStatus   @default(draft)
+  orderCycleId    String?
+  submittedAt     DateTime?
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  orderedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  requester       User          @relation("OrderRequester", fields: [requesterId], references: [id])
+  orderCycle      OrderCycle?   @relation(fields: [orderCycleId], references: [id])
+  statusHistory   OrderStatusHistory[]
+  comments        OrderComment[]
+  businessCardOrder BusinessCardOrder?
+  workwearOrder   WorkwearOrder?
+  approvalDecisions ApprovalDecision[]
+}
+
+model OrderStatusHistory {
+  id          String      @id @default(cuid())
+  orderId     String
+  status      OrderStatus
+  note        String?
+  changedAt   DateTime    @default(now())
+
+  order       Order       @relation(fields: [orderId], references: [id])
+}
+
+model OrderComment {
+  id          String      @id @default(cuid())
+  orderId     String
+  authorName  String
+  comment     String
+  createdAt   DateTime    @default(now())
+
+  order       Order       @relation(fields: [orderId], references: [id])
+}
+
+model BusinessCardFieldDefinition {
+  id          String      @id @default(cuid())
+  key         String      @unique
+  label       String
+  fieldType   String
+  sortOrder   Int
+  isRequired  Boolean     @default(false)
+  isActive    Boolean     @default(true)
+  optionsJson Json?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  values      BusinessCardOrderField[]
+}
+
+model BusinessCardOrder {
+  id          String      @id @default(cuid())
+  orderId     String      @unique
+  reorderFromId String?
+  createdAt   DateTime    @default(now())
+
+  order       Order       @relation(fields: [orderId], references: [id])
+  reorderFrom BusinessCardOrder? @relation("BusinessCardReorder", fields: [reorderFromId], references: [id])
+  reorders    BusinessCardOrder[] @relation("BusinessCardReorder")
+  fields      BusinessCardOrderField[]
+}
+
+model BusinessCardOrderField {
+  id                    String                        @id @default(cuid())
+  businessCardOrderId   String
+  fieldDefinitionId     String
+  value                 String
+  createdAt             DateTime                      @default(now())
+
+  businessCardOrder     BusinessCardOrder             @relation(fields: [businessCardOrderId], references: [id])
+  fieldDefinition       BusinessCardFieldDefinition   @relation(fields: [fieldDefinitionId], references: [id])
+}
+
+model WorkwearCatalogItem {
+  id          String      @id @default(cuid())
+  name        String
+  category    String
+  description String?
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  sizes       WorkwearItemSize[]
+  orderItems  WorkwearOrderItem[]
+}
+
+model WorkwearItemSize {
+  id          String      @id @default(cuid())
+  catalogItemId String
+  sizeLabel   String
+  sortOrder   Int
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+
+  catalogItem WorkwearCatalogItem @relation(fields: [catalogItemId], references: [id])
+}
+
+model WorkwearOrder {
+  id          String      @id @default(cuid())
+  orderId     String      @unique
+  createdAt   DateTime    @default(now())
+
+  order       Order       @relation(fields: [orderId], references: [id])
+  items       WorkwearOrderItem[]
+}
+
+model WorkwearOrderItem {
+  id              String      @id @default(cuid())
+  workwearOrderId String
+  catalogItemId   String
+  sizeLabel       String
+  quantity        Int
+  createdAt       DateTime    @default(now())
+
+  workwearOrder   WorkwearOrder @relation(fields: [workwearOrderId], references: [id])
+  catalogItem     WorkwearCatalogItem @relation(fields: [catalogItemId], references: [id])
+}
+
+model ApprovalRule {
+  id              String      @id @default(cuid())
+  orderType       OrderType
+  scopeType       RoleScopeType @default(global)
+  locationId      String?
+  departmentId    String?
+  specialtyAreaId String?
+  roleKey         String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model ApprovalDecision {
+  id          String                @id @default(cuid())
+  orderId     String
+  actorId     String
+  decision    ApprovalDecisionType
+  note        String?
+  decidedAt   DateTime              @default(now())
+
+  order       Order                 @relation(fields: [orderId], references: [id])
+  actor       User                  @relation("ApprovalActor", fields: [actorId], references: [id])
+}
+
+model OrderCycle {
+  id          String      @id @default(cuid())
+  cycleType    CycleType
+  title       String
+  nextOrderDate DateTime
+  locationId   String?
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  location    Location?   @relation(fields: [locationId], references: [id])
+  orders      Order[]
+}
+
+model AuditLog {
+  id            String      @id @default(cuid())
+  actorId        String?
+  actorUsername  String
+  action         String
+  entityType     String
+  entityId       String
+  detail         String
+  metadataJson   Json?
+  createdAt      DateTime    @default(now())
+
+  actor          User?       @relation("AuditActor", fields: [actorId], references: [id])
+}
