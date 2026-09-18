@@ -168,7 +168,7 @@ export class DocumentsService {
   }
 
   async wikiDetail(slug: string): Promise<WikiArticle> {
-    const article = await this.prisma.wikiArticle.findUnique({
+    const article = await this.prisma.wikiArticle.findFirst({
       where: { slug },
       include: { author: { select: { firstName: true, lastName: true } } },
     });

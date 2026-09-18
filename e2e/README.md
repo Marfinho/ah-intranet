@@ -22,9 +22,9 @@ Ist Chromium bereits vorhanden (z. B. `PLAYWRIGHT_BROWSERS_PATH`), kann der Pfad
 ## Ausführen
 
 ```bash
-node e2e/smoke.js         # lädt alle 35 Seiten und meldet Render-Fehler
-node e2e/flows.js         # 27 Prüfungen über die wichtigsten Fachprozesse
-node e2e/integrations.js  # 20 Prüfungen der Schnittstellen und des Fahrzeugbestands
+node e2e/smoke.js         # lädt alle 36 Seiten und meldet Render-Fehler
+node e2e/flows.js         # 33 Prüfungen über die wichtigsten Fachprozesse
+node e2e/integrations.js  # Prüfungen der Schnittstellen und des Fahrzeugbestands
 ```
 
 Alle Skripte beenden sich mit Exit-Code 1, sobald eine Prüfung fehlschlägt.
@@ -43,6 +43,8 @@ Alle Skripte beenden sich mit Exit-Code 1, sobald eine Prüfung fehlschlägt.
 - News veröffentlichen und in der Übersicht sehen
 - Globale Suche über mehrere Module
 - Audit-Log auf protokollierte Aktionen
+- Mandantentrennung: Anmeldung im zweiten Haus, getrennte Inhalte, Schutz der
+  Mandantenverwaltung
 
 ## Was `integrations.js` abdeckt
 
@@ -52,8 +54,11 @@ Alle Skripte beenden sich mit Exit-Code 1, sobald eine Prüfung fehlschlägt.
 - Abgleich über mobile.de und Anzeige im Fahrzeugbestand
 - Modulabhängigkeit Fahrzeugbestand → Schnittstellen
 
-Für `integrations.js` müssen mobile.de (gegen Mock oder Sandbox) und der
-DMS-Dateiaustausch konfiguriert sein, sonst bleibt der Bestand leer.
+Beide Module werden abgeschaltet ausgeliefert; das Skript schaltet sie zu Beginn
+ein und am Ende wieder ab. Abgleich und Bestand brauchen konfigurierte
+Zugangsdaten für mobile.de (Mock oder Sandbox) und den DMS-Dateiaustausch –
+fehlen sie, überspringt das Skript diesen Teil mit einer `SKIP`-Zeile, statt
+einen Fehler zu melden.
 
 ## Hinweis zum Zustand
 
@@ -63,8 +68,18 @@ vorher `pnpm --filter api prisma:seed`.
 
 ## Konfiguration
 
-| Variable        | Standard                |
-| --------------- | ----------------------- |
-| `E2E_BASE_URL`  | `http://localhost:3000` |
-| `E2E_PASSWORD`  | `Intranet2026!`         |
-| `CHROMIUM_PATH` | Playwright-Standardpfad |
+| Variable        | Standard                    |
+| --------------- | --------------------------- |
+| `E2E_BASE_URL`  | `http://localhost:3000`     |
+| `E2E_API_URL`   | `http://localhost:3001/api` |
+| `E2E_PASSWORD`  | `Intranet2026!`             |
+| `E2E_TENANT`    | `autohaus-mueller`          |
+| `E2E_TENANT_B`  | `autohaus-nord`             |
+| `CHROMIUM_PATH` | Playwright-Standardpfad     |
+
+## Mandanten
+
+Der Seed legt zwei Autohäuser mit identischen Benutzernamen an. Deshalb geben
+alle Skripte die Kennung bei der Anmeldung mit; ohne sie weist die API die
+Anmeldung zu Recht ab. `flows.js` prüft die Trennung zusätzlich im Browser:
+Kopfzeile, getrennte Beiträge und der Schutz der Mandantenverwaltung.

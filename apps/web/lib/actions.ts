@@ -39,6 +39,11 @@ export async function loginAction(_previous: ActionState, formData: FormData): P
   const username = String(formData.get("username") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const next = String(formData.get("next") ?? "/");
+  // Nur nötig, wenn mehrere Häuser auf derselben Adresse laufen. Steht das Haus
+  // über eine eigene Domain fest, bleibt das Feld leer.
+  const tenant = String(formData.get("tenant") ?? "")
+    .trim()
+    .toLowerCase();
 
   if (!username || !password) {
     return { ok: false, message: "Bitte Benutzername und Passwort eingeben." };
@@ -47,7 +52,7 @@ export async function loginAction(_previous: ActionState, formData: FormData): P
   const response = await fetch(`${apiBaseUrl()}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ username, password, ...(tenant ? { tenant } : {}) }),
     cache: "no-store",
   });
 
@@ -109,6 +114,28 @@ export async function setModuleEnabledAction(key: string, enabled: boolean): Pro
 
 export async function resetModulesAction(): Promise<ActionState> {
   return run(() => apiSend("POST", "/modules/reset"), ["/", "/admin", "/admin/module"]);
+}
+
+/* --------------------------------------------------------- Mandanten */
+
+export async function createTenantAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const payload = {
+    slug: String(formData.get("slug") ?? ""),
+    name: String(formData.get("name") ?? ""),
+    domain: String(formData.get("domain") ?? "") || undefined,
+    notes: String(formData.get("notes") ?? "") || undefined,
+    adminUsername: String(formData.get("adminUsername") ?? ""),
+    adminPassword: String(formData.get("adminPassword") ?? ""),
+    adminFirstName: String(formData.get("adminFirstName") ?? "") || undefined,
+    adminLastName: String(formData.get("adminLastName") ?? "") || undefined,
+    adminEmail: String(formData.get("adminEmail") ?? "") || undefined,
+  };
+
+  return run(() => apiSend("POST", "/tenants", payload), ["/admin/mandanten"], `Haus "${payload.name}" eingerichtet.`);
+}
+
+export async function setTenantActiveAction(id: string, isActive: boolean): Promise<ActionState> {
+  return run(() => apiSend("PATCH", `/tenants/${id}/aktiv`, { isActive }), ["/admin/mandanten"]);
 }
 
 /* -------------------------------------------------------------- News */

@@ -3,12 +3,14 @@ import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcryptjs";
 import type { AppRole, SessionUser } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
+import { currentTenant } from "../../core/tenant-context";
 import { AuditService } from "../../core/audit.service";
 import { buildScopes, displayName, primaryRole, scopeLabel } from "../../core/mappers";
 import type { JwtPayload } from "../../core/guards";
 import type { RequestUser } from "../../core/request-user";
 
 const userWithContext = {
+  tenant: { select: { slug: true, name: true } },
   location: { select: { name: true, code: true } },
   department: { select: { name: true, code: true } },
   specialtyArea: { select: { name: true, code: true } },
@@ -39,7 +41,15 @@ export class AuthService {
    * die IP-Drosselung über viele Adressen umgeht.
    */
   async validate(username: string, password: string) {
-    const user = await this.prisma.user.findUnique({
+    // Ohne Mandanten ist nicht entscheidbar, welches Konto gemeint ist -
+    // derselbe Benutzername kann in mehreren Häusern existieren.
+    if (!currentTenant()) {
+      throw new UnauthorizedException(
+        "Kein Autohaus zugeordnet. Bitte die Kennung angeben oder die Adresse des Hauses verwenden.",
+      );
+    }
+
+    const user = await this.prisma.user.findFirst({
       where: { username: username.trim().toLowerCase() },
       include: userWithContext,
     });
@@ -75,6 +85,7 @@ export class AuthService {
     const session = this.toSessionUser(user);
     const payload: JwtPayload = {
       sub: session.id,
+      tenantId: user.tenantId,
       username: session.username,
       displayName: session.displayName,
       role: session.role,
@@ -84,6 +95,7 @@ export class AuthService {
       locationId: user.locationId,
       departmentId: user.departmentId,
       tokenVersion: user.tokenVersion,
+      isPlatformAdmin: user.isPlatformAdmin,
     };
 
     await this.audit.log({
@@ -167,6 +179,8 @@ export class AuthService {
     lastName: string;
     jobTitle: string;
     mustChangePassword: boolean;
+    isPlatformAdmin: boolean;
+    tenant: { slug: string; name: string };
     location: { name: string; code: string } | null;
     department: { name: string; code: string } | null;
     specialtyArea: { name: string; code: string } | null;
@@ -197,6 +211,8 @@ export class AuthService {
       }),
       permissions,
       mustChangePassword: user.mustChangePassword,
+      tenant: { slug: user.tenant.slug, name: user.tenant.name },
+      isPlatformAdmin: user.isPlatformAdmin,
     };
   }
 }

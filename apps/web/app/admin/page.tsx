@@ -28,6 +28,11 @@ const ADMIN_LINKS = [
   { href: "/admin/audit", label: "Audit-Log", detail: "Protokoll aller Aktionen", adminOnly: true },
 ];
 
+/** Nur für die Plattformverwaltung des Betreibers, nicht für Admins im Haus. */
+const PLATFORM_LINKS = [
+  { href: "/admin/mandanten", label: "Autohäuser", detail: "Mandanten anlegen und freischalten" },
+];
+
 export default async function AdminPage() {
   const session = await requireRole("admin", "fachbereichsadmin");
 
@@ -75,6 +80,23 @@ export default async function AdminPage() {
               </div>
             </div>
           )}
+        </Section>
+      ) : null}
+
+      {session.isPlatformAdmin ? (
+        <Section title="Plattformverwaltung" subtitle={`Angemeldet im Haus ${session.tenant.name}`}>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {PLATFORM_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="rounded-2xl border border-brand-100 bg-brand-50/40 p-5 transition hover:bg-brand-50"
+              >
+                <p className="font-semibold text-slate-900">{link.label}</p>
+                <p className="mt-1 text-sm text-slate-600">{link.detail}</p>
+              </Link>
+            ))}
+          </div>
         </Section>
       ) : null}
 

@@ -16,6 +16,7 @@ import { PrismaService } from "../../core/prisma.service";
 import { AuditService } from "../../core/audit.service";
 import { NotificationsService } from "../../core/notifications.service";
 import { toIso } from "../../core/mappers";
+import { requireTenantId } from "../../core/tenant-context";
 import type { RequestUser } from "../../core/request-user";
 import { IntegrationCryptoService } from "./crypto.service";
 import { ConnectorError, type ConnectorAdapter, type ConnectorContext } from "./adapter";
@@ -75,7 +76,7 @@ export class IntegrationsService {
 
   async detail(key: string): Promise<ConnectorState> {
     const definition = this.requireDefinition(key);
-    const row = await this.prisma.connector.findUnique({ where: { key } });
+    const row = await this.prisma.connector.findFirst({ where: { key } });
     const run = await this.prisma.syncRun.findFirst({
       where: { connectorKey: key },
       orderBy: { startedAt: "desc" },
@@ -155,7 +156,7 @@ export class IntegrationsService {
     actor: RequestUser,
   ): Promise<ConnectorState> {
     const definition = this.requireDefinition(key);
-    const existing = await this.prisma.connector.findUnique({ where: { key } });
+    const existing = await this.prisma.connector.findFirst({ where: { key } });
 
     // Beide Seiten werden auf den Bestand aufgesetzt: wer nur das Passwort
     // ändert, darf damit nicht den Endpunkt verlieren. Ein leerer String löscht
@@ -188,7 +189,7 @@ export class IntegrationsService {
     const status = missing.length === 0 ? "configured" : "not_configured";
 
     const row = await this.prisma.connector.upsert({
-      where: { key },
+      where: { tenantId_key: { tenantId: actor.tenantId, key } },
       update: { settings, secrets: secrets as Prisma.InputJsonValue, status, updatedBy: actor.username },
       create: {
         key,
@@ -212,7 +213,7 @@ export class IntegrationsService {
 
   async setEnabled(key: string, enabled: boolean, actor: RequestUser): Promise<ConnectorState> {
     const definition = this.requireDefinition(key);
-    const existing = await this.prisma.connector.findUnique({ where: { key } });
+    const existing = await this.prisma.connector.findFirst({ where: { key } });
     if (!existing) {
       throw new BadRequestException("Diese Schnittstelle ist noch nicht konfiguriert.");
     }
@@ -226,7 +227,7 @@ export class IntegrationsService {
       );
 
     const row = await this.prisma.connector.update({
-      where: { key },
+      where: { tenantId_key: { tenantId: actor.tenantId, key } },
       data: { status: enabled ? (complete ? "configured" : "not_configured") : "disabled", updatedBy: actor.username },
     });
 
@@ -256,7 +257,7 @@ export class IntegrationsService {
     }
 
     await this.prisma.connector.upsert({
-      where: { key },
+      where: { tenantId_key: { tenantId: requireTenantId(), key } },
       update: { lastCheckAt: new Date(), lastCheckOk: result.ok, lastCheckMessage: result.message },
       create: {
         key,
@@ -392,7 +393,7 @@ export class IntegrationsService {
   }
 
   private async buildContext(definition: ConnectorDefinition): Promise<ConnectorContext> {
-    const row = await this.prisma.connector.findUnique({ where: { key: definition.key } });
+    const row = await this.prisma.connector.findFirst({ where: { key: definition.key } });
     if (row?.status === "disabled") {
       throw new BadRequestException(`Die Schnittstelle "${definition.name}" ist deaktiviert.`);
     }

@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/commo
 import { Prisma } from "@prisma/client";
 import type { OnboardingAssignment, OnboardingTemplate } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
+import { requireTenantId } from "../../core/tenant-context";
 import { AuditService } from "../../core/audit.service";
 import { NotificationsService } from "../../core/notifications.service";
 import { displayName, toIso } from "../../core/mappers";
@@ -118,7 +119,7 @@ export class OnboardingService {
     }
 
     const assignment = await this.prisma.onboardingAssignment.upsert({
-      where: { templateId_userId: { templateId, userId } },
+      where: { tenantId_templateId_userId: { tenantId: requireTenantId(), templateId, userId } },
       update: { startDate: new Date(startDate) },
       create: {
         templateId,

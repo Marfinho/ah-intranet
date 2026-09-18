@@ -25,11 +25,34 @@ Maßstab, an dem **Architekturentscheidungen** gemessen werden. Konkret heißt d
 Wenn eine Aufgabe eine dieser Weichen berührt, gehört die Abwägung in die
 Antwort – auch wenn die Aufgabe selbst klein ist.
 
+## Mandantenfähigkeit
+
+Das Intranet trägt mehrere Autohäuser auf einer Installation. Die Trennung
+liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
+
+- Der Mandant der Anfrage steht in einem `AsyncLocalStorage`
+  (`core/tenant-context.ts`), gesetzt von `TenantMiddleware` **vor** allen Guards.
+- Eine Prisma-Middleware (`core/prisma.service.ts`, Logik in
+  `core/tenant-isolation.ts`) hängt den Mandanten an jede Bedingung und jede
+  Neuanlage. Fachcode führt `tenantId` nirgends mit.
+- **Fail-closed:** ohne Mandantenkontext scheitert der Datenzugriff hart, statt
+  über alle Häuser zu laufen. Abläufe, die das fachlich brauchen (Anmeldung,
+  Mandantenverwaltung), markieren sich mit `runUnscoped`.
+- Grenze der Methode: `$queryRaw` läuft ohne Modell durch die Middleware und ist
+  ungefiltert. Rohabfragen müssen den Mandanten selbst filtern.
+- **Plattformverwaltung ≠ Adminrolle.** `admin` verwaltet das eigene Haus;
+  Häuser anlegen und sperren darf nur `isPlatformAdmin` (`@PlatformAdmin()`).
+- Auflösung des Hauses: eigene Domain oder Subdomain, sonst die Kennung im
+  Anmeldeformular. Nur bei genau einem Haus entfällt die Angabe.
+- Ein neues Haus entsteht samt Rollen, Rechten und erstem Administrationskonto
+  in einer Transaktion – ein halb eingerichteter Mandant wäre nicht benutzbar.
+
 ## Architekturprinzipien
 
 - **Registries als einzige Quelle der Wahrheit.** Module stehen in
-  `packages/shared/src/modules.ts`, Konnektoren in `connectors.ts`. Neue
-  Einträge dort wirken ohne Migration in API und Oberfläche.
+  `packages/shared/src/modules.ts`, Konnektoren in `connectors.ts`, Rollen und
+  Rechte in `rbac.ts`. Neue Einträge dort wirken ohne Migration in API und
+  Oberfläche – und gelten für jedes Haus gleich.
 - **Serverseitige Durchsetzung.** Rollen kommen aus dem JWT, nie aus
   Anfragedaten. Prüfungen im Browser sind Komfort, nicht Sicherheit.
 - **Guards in fester Reihenfolge:** Authentifizierung → Rollen →
@@ -74,7 +97,12 @@ installiertes Playwright (siehe `e2e/README.md`).
 
 ## Bekannte Lücken
 
-Bevor das Intranet produktiv geht, fehlen noch: CI-Pipeline, automatisierte
-Tests unterhalb der Browserebene, Linting, Rate-Limiting am Login,
-Session-Invalidierung bei Kontosperre, aussagekräftiger Healthcheck,
-Fehler- und Protokollauswertung, Backup- und Löschkonzept.
+Erledigt sind inzwischen: CI-Pipeline, Unit-Tests, Linting, Rate-Limiting und
+Kontosperre am Login, Session-Invalidierung, Healthcheck, Mandantenfähigkeit.
+
+Offen vor dem Produktivbetrieb:
+
+- **Datenschutz:** Auskunft und Löschung je Person, Aufbewahrungsfristen für
+  Audit-Log und Benachrichtigungen, Verarbeitungsverzeichnis, Mitbestimmung.
+- **Betrieb:** Sicherung und geprobte Wiederherstellung, Betriebsdokumentation.
+- **Rohabfragen:** `$queryRaw` umgeht die Mandantentrennung (siehe oben).

@@ -5,12 +5,22 @@ import type { RequestUser } from "./request-user";
 export const PUBLIC_KEY = "auth:public";
 export const ROLES_KEY = "auth:roles";
 export const FEATURE_KEY = "feature:module";
+export const PLATFORM_ADMIN_KEY = "auth:platform-admin";
 
 /** Hebt die global aktive JWT-Prüfung für einzelne Routen auf (Login, Health). */
 export const Public = () => SetMetadata(PUBLIC_KEY, true);
 
 /** Beschränkt eine Route auf die angegebenen Rollen. */
 export const Roles = (...roles: AppRole[]) => SetMetadata(ROLES_KEY, roles);
+
+/**
+ * Beschränkt eine Route auf die Plattformverwaltung.
+ *
+ * Bewusst getrennt von der Rolle `admin`: die verwaltet das eigene Haus. Wer
+ * Mandanten anlegen oder abschalten darf, ist eine Entscheidung des Betreibers
+ * und darf nicht aus dem Haus heraus vergeben werden können.
+ */
+export const PlatformAdmin = () => SetMetadata(PLATFORM_ADMIN_KEY, true);
 
 /**
  * Bindet Controller oder Route an ein Modul der Registry. Ist das Modul

@@ -1,8 +1,26 @@
 import { PrismaClient, type Prisma } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
-import { MODULE_DEFINITIONS } from "@ah-intranet/shared";
+import { MODULE_DEFINITIONS, PERMISSION_DEFINITIONS, ROLE_DEFINITIONS } from "@ah-intranet/shared";
+import { applyTenantScope, isGlobalModel } from "../src/core/tenant-isolation";
 
-const prisma = new PrismaClient();
+/** Ungefilterter Client für Aufräumen und Mandantenanlage. */
+const root = new PrismaClient();
+
+/**
+ * Client, der alle Schreib- und Lesevorgänge auf einen Mandanten festlegt -
+ * mit derselben Logik wie zur Laufzeit. So entstehen im Seed garantiert
+ * dieselben Daten, die die Anwendung später auch findet.
+ */
+function tenantClient(tenantId: string): PrismaClient {
+  const client = new PrismaClient();
+  client.$use(async (params, next) => {
+    if (!isGlobalModel(params.model)) {
+      params.args = applyTenantScope(params, tenantId);
+    }
+    return next(params);
+  });
+  return client;
+}
 
 const DEMO_PASSWORD = process.env.SEED_PASSWORD ?? "Intranet2026!";
 
@@ -26,57 +44,6 @@ const SPECIALTIES = [
   { name: "Elektromobilität", code: "EMOB" },
   { name: "Nutzfahrzeuge", code: "NFZ" },
   { name: "Karosserie & Lack", code: "KUL" },
-];
-
-const PERMISSIONS = [
-  { key: "news.publish", name: "News veröffentlichen", description: "Beiträge erstellen und freigeben" },
-  { key: "orders.approve", name: "Bestellungen freigeben", description: "Freigabeentscheidungen treffen" },
-  { key: "orders.bulk", name: "Sammelbestellung auslösen", description: "Externe Sammelbestellung übergeben" },
-  { key: "users.manage", name: "Benutzer verwalten", description: "Konten anlegen, ändern, deaktivieren" },
-  { key: "roles.manage", name: "Rollen verwalten", description: "Rollen und Rechte pflegen" },
-  { key: "modules.manage", name: "Module steuern", description: "Fachmodule aktivieren und deaktivieren" },
-  { key: "catalog.manage", name: "Kataloge pflegen", description: "Artikel, Formularfelder, Bestelltermine" },
-  { key: "tickets.manage", name: "Tickets bearbeiten", description: "Serviceanfragen zuweisen und lösen" },
-  { key: "absences.approve", name: "Abwesenheiten freigeben", description: "Urlaubsanträge entscheiden" },
-  { key: "audit.read", name: "Audit-Log lesen", description: "Protokoll aller Aktionen einsehen" },
-];
-
-const ROLES = [
-  {
-    key: "mitarbeiter",
-    name: "Mitarbeitende",
-    description: "Standardzugang: News lesen, bestellen, Tickets und Anträge stellen.",
-    rank: 0,
-    permissions: [] as string[],
-  },
-  {
-    key: "fuehrungskraft",
-    name: "Führungskraft",
-    description: "Zusätzlich: Abwesenheiten des Teams freigeben und Termine anlegen.",
-    rank: 10,
-    permissions: ["absences.approve"],
-  },
-  {
-    key: "fachbereichsadmin",
-    name: "Fachbereichsadmin",
-    description: "Redaktion und Freigaben: News, Bestellungen, Tickets, Kataloge.",
-    rank: 20,
-    permissions: [
-      "news.publish",
-      "orders.approve",
-      "orders.bulk",
-      "catalog.manage",
-      "tickets.manage",
-      "absences.approve",
-    ],
-  },
-  {
-    key: "admin",
-    name: "Administration",
-    description: "Vollzugriff inklusive Benutzer, Rollen, Modulsteuerung und Audit.",
-    rank: 30,
-    permissions: PERMISSIONS.map((permission) => permission.key),
-  },
 ];
 
 interface SeedUser {
@@ -234,8 +201,9 @@ const USERS: SeedUser[] = [
   },
 ];
 
-async function main() {
-  console.log("Seed startet …");
+/** Räumt alle Fachdaten ab - mandantenübergreifend, vor dem Neuaufbau. */
+async function clearAll() {
+  const prisma = root;
 
   // Reihenfolge beachtet die Fremdschlüssel: abhängige Tabellen zuerst.
   await prisma.$transaction([
@@ -289,6 +257,13 @@ async function main() {
     prisma.location.deleteMany(),
   ]);
 
+  await prisma.tenant.deleteMany();
+}
+
+/** Baut einen vollständigen Datenbestand für ein Autohaus auf. */
+async function seedTenant(tenantId: string, platformAdmin: boolean) {
+  const prisma = tenantClient(tenantId);
+
   /* ------------------------------------------------------- Organisation */
 
   await prisma.location.createMany({ data: LOCATIONS });
@@ -312,11 +287,11 @@ async function main() {
 
   /* ------------------------------------------------------ Rollen/Rechte */
 
-  await prisma.permission.createMany({ data: PERMISSIONS });
+  await prisma.permission.createMany({ data: [...PERMISSION_DEFINITIONS] });
   const permissions = await prisma.permission.findMany();
   const permissionByKey = new Map(permissions.map((entry) => [entry.key, entry]));
 
-  for (const role of ROLES) {
+  for (const role of ROLE_DEFINITIONS) {
     await prisma.role.create({
       data: {
         key: role.key,
@@ -469,7 +444,7 @@ async function main() {
     await prisma.newsPost.create({ data: entry });
   }
 
-  const hvNews = await prisma.newsPost.findUniqueOrThrow({ where: { slug: "neue-hochvolt-schulung" } });
+  const hvNews = await prisma.newsPost.findFirstOrThrow({ where: { slug: "neue-hochvolt-schulung" } });
   await prisma.newsComment.createMany({
     data: [
       {
@@ -1267,22 +1242,52 @@ async function main() {
     ],
   });
 
+  // Modulauswahl je Mandant vorbelegen, damit jedes Haus seinen eigenen
+  // Auslieferungszustand hat.
+  await prisma.moduleSetting.createMany({
+    data: MODULE_DEFINITIONS.map((module) => ({ key: module.key, enabled: module.defaultEnabled })),
+    skipDuplicates: true,
+  });
+
+  if (platformAdmin) {
+    // Genau ein Konto darf Mandanten anlegen und sperren.
+    await prisma.user.update({ where: { id: admin.id }, data: { isPlatformAdmin: true } });
+  }
+
   const counts = {
     Benutzer: await prisma.user.count(),
-    Rollen: await prisma.role.count(),
-    Module: await prisma.moduleSetting.count(),
     News: await prisma.newsPost.count(),
     Bestellungen: await prisma.order.count(),
-    Dokumente: await prisma.document.count(),
-    "Wiki-Artikel": await prisma.wikiArticle.count(),
-    Termine: await prisma.calendarEvent.count(),
     Tickets: await prisma.ticket.count(),
     Fahrzeuge: await prisma.vehicle.count(),
   };
 
-  console.log("Seed abgeschlossen:", counts);
+  await prisma.$disconnect();
+  return counts;
+}
+
+const TENANTS = [
+  { slug: "autohaus-mueller", name: "Autohaus Müller GmbH", platformAdmin: true },
+  { slug: "autohaus-nord", name: "Autohaus Nord KG", platformAdmin: false },
+];
+
+async function main() {
+  console.log("Seed startet …");
+  await clearAll();
+
+  for (const entry of TENANTS) {
+    const tenant = await root.tenant.create({ data: { slug: entry.slug, name: entry.name } });
+    const counts = await seedTenant(tenant.id, entry.platformAdmin);
+    console.log(`  ${entry.name} (${entry.slug}):`, counts);
+  }
+
+  console.log("");
   console.log(`Alle Demokonten nutzen das Passwort: ${DEMO_PASSWORD}`);
-  console.log("Anmeldung z. B. als admin / s.meier / p.hansen / d.wagner");
+  console.log("Beide Häuser haben dieselben Benutzernamen - die Kennung entscheidet:");
+  for (const entry of TENANTS) {
+    console.log(`  ${entry.slug}: admin / s.meier / p.hansen / d.wagner`);
+  }
+  console.log("Die Plattformverwaltung liegt bei admin im Haus autohaus-mueller.");
 }
 
 main()
@@ -1291,5 +1296,5 @@ main()
     process.exit(1);
   })
   .finally(async () => {
-    await prisma.$disconnect();
+    await root.$disconnect();
   });

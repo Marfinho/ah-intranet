@@ -1,8 +1,9 @@
 # AH Intranet
 
-Responsives Intranet für ein Autohaus mit mehreren Standorten. Vollständig
+Responsives Intranet für Autohäuser mit mehreren Standorten. Vollständig
 lauffähig: echte Anmeldung, Datenhaltung in PostgreSQL, 22 Fachmodule, die
-sich vom Adminbereich einzeln ein- und ausschalten lassen.
+sich vom Adminbereich einzeln ein- und ausschalten lassen. Eine Installation
+trägt mehrere Autohäuser mit vollständig getrennten Daten.
 
 ## Architektur
 
@@ -41,6 +42,11 @@ pnpm dev
 Frontend: `http://localhost:3000` · Backend: `http://localhost:3001/api`
 
 ### Demokonten
+
+Der Seed legt **zwei Autohäuser** an: `autohaus-mueller` und `autohaus-nord`.
+Beide haben dieselben Benutzernamen – die Kennung im Anmeldeformular entscheidet,
+in welches Haus die Anmeldung führt. Die Plattformverwaltung liegt bei `admin`
+im Haus `autohaus-mueller`.
 
 Alle Konten des Seeds nutzen dasselbe Passwort: **`Intranet2026!`**
 (über `SEED_PASSWORD` überschreibbar).
@@ -120,6 +126,25 @@ jeder Request einen zusätzlichen Datenbankzugriff auslöst.
   Rollen und Rechte, News, Dokumente, Kataloge, Formularfelder, Bestelltermine,
   Modulsteuerung und Audit-Log.
 
+## Mandanten
+
+Mehrere Autohäuser teilen sich eine Installation, ohne einander zu sehen.
+
+- **Wo die Trennung liegt:** in einer Prisma-Middleware, nicht im Fachcode. Sie
+  hängt den Mandanten an jede Bedingung und jede Neuanlage. Ein vergessener
+  Filter in einem Service kann keine fremden Daten preisgeben.
+- **Fail-closed:** ohne Mandantenkontext scheitert der Datenzugriff hart, statt
+  über alle Häuser zu laufen.
+- **Zuordnung:** eigene Domain (`intranet.autohaus-x.de`) oder Subdomain, sonst
+  die Kennung im Anmeldeformular. Läuft nur ein Haus, entfällt die Angabe.
+- **Plattformverwaltung:** unter **Administration → Autohäuser** legt der
+  Betreiber Häuser an und sperrt sie. Das Recht dazu hängt an
+  `isPlatformAdmin`, nicht an der Rolle `admin` – die gilt im eigenen Haus.
+- Ein neues Haus entsteht samt Rollen, Rechten, Standort und erstem
+  Administrationskonto in einem Schritt und ist sofort benutzbar.
+- Gesperrt wird, nicht gelöscht: Anmeldungen scheitern sofort, die Daten bleiben
+  für Aufbewahrungsfristen erhalten.
+
 ## Rollen und Rechte
 
 Vier Rollen mit aufsteigendem Rang: `mitarbeiter`, `fuehrungskraft`,
@@ -142,13 +167,15 @@ einem GIN-Index ersetzt mehrere Joins; Benutzer tragen ihre Tokens am Datensatz.
 - Eingaben werden serverseitig validiert (`class-validator`,
   `forbidNonWhitelisted`); die Prüfung im Browser ist reiner Komfort.
 - Audit-Log über alle relevanten Aktionen.
+- Mandantentrennung auf Ebene des Datenzugriffs (siehe oben), nicht im Fachcode.
 
 ## Prüfungen
 
 ```bash
-node e2e/smoke.js         # alle 35 Seiten laden fehlerfrei
-node e2e/flows.js         # 27 Prüfungen der Fachprozesse
-node e2e/integrations.js  # 20 Prüfungen der Schnittstellen
+pnpm test                 # Unit-Tests (API und Shared)
+node e2e/smoke.js         # alle 36 Seiten laden fehlerfrei
+node e2e/flows.js         # 33 Prüfungen der Fachprozesse, inkl. Mandantentrennung
+node e2e/integrations.js  # Prüfungen der Schnittstellen
 ```
 
 Details in [`e2e/README.md`](e2e/README.md).

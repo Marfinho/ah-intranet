@@ -1,5 +1,8 @@
 const { chromium } = require("playwright");
 
+const { MODULE_DEFINITIONS } = require("../packages/shared/dist");
+const TENANT = process.env.E2E_TENANT || "autohaus-mueller";
+const ZWEITES_HAUS = process.env.E2E_TENANT_B || "autohaus-nord";
 const BASE = process.env.E2E_BASE_URL || "http://localhost:3000";
 const PASS = process.env.E2E_PASSWORD || "Intranet2026!";
 const results = [];
@@ -12,6 +15,7 @@ function check(name, ok, detail = "") {
 async function login(page, username) {
   await page.goto(`${BASE}/login`, { waitUntil: "networkidle" });
   await page.fill('input[name="username"]', username);
+  await page.fill('input[name="tenant"]', TENANT);
   await page.fill('input[name="password"]', PASS);
   await Promise.all([
     page.waitForURL((url) => !url.pathname.includes("/login"), { timeout: 20000 }),
@@ -33,6 +37,7 @@ async function login(page, username) {
     // 1. Falsche Zugangsdaten
     await page.goto(`${BASE}/login`, { waitUntil: "networkidle" });
     await page.fill('input[name="username"]', "admin");
+    await page.fill('input[name="tenant"]', TENANT);
     await page.fill('input[name="password"]', "falsch");
     await page.click('form button[type="submit"]');
     await page.waitForSelector('[role="status"]', { timeout: 10000 });
@@ -137,9 +142,14 @@ async function login(page, username) {
     // Dialoge werden global bestätigt
     await page.click('main button:has-text("Auf Standard zurücksetzen")');
     await page.waitForTimeout(3000);
+    // Nicht "alle an": Schnittstellen und Fahrzeugbestand werden bewusst
+    // abgeschaltet ausgeliefert. Maßstab ist die Registry, keine feste Zahl.
+    const standardmaessigAus = MODULE_DEFINITIONS.filter((m) => !m.core && !m.defaultEnabled);
+    const aus = await page.locator(String.raw`button[role="switch"][aria-checked="false"]`).count();
     check(
-      "Zurücksetzen aktiviert alle Module",
-      (await page.locator(String.raw`button[role="switch"][aria-checked="false"]`).count()) === 0,
+      `Zurücksetzen stellt den Auslieferungszustand her (${standardmaessigAus.length} Module aus)`,
+      aus === standardmaessigAus.length,
+      `${aus} aus, erwartet ${standardmaessigAus.length}`,
     );
 
     // 15. Freigabe erteilen als Admin
@@ -179,6 +189,44 @@ async function login(page, username) {
       auditBody.includes("module.disable") || auditBody.includes("module.reset"),
     );
     check("Audit-Log enthält Bestellfreigabe", auditBody.includes("order."));
+
+    // 19. Mandantentrennung im Browser
+    await page.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+    check("Kopfzeile nennt das angemeldete Haus", (await page.textContent("header")).includes("Müller"));
+    check(
+      "Plattformverwaltung für den Betreiber sichtbar",
+      (await page.locator('a[href="/admin/mandanten"]').count()) > 0,
+    );
+
+    const newsA = await page
+      .goto(`${BASE}/aktuelles`, { waitUntil: "networkidle" })
+      .then(() => page.textContent("main"));
+
+    await page.goto(`${BASE}/profil`, { waitUntil: "networkidle" });
+    await page.click('form button[aria-label="Abmelden"]');
+    await page.waitForURL(`${BASE}/login`, { timeout: 15000 });
+
+    // Gleicher Benutzername, anderes Haus - das muss ein anderes Konto sein.
+    await page.goto(`${BASE}/login`, { waitUntil: "networkidle" });
+    await page.fill('input[name="username"]', "admin");
+    await page.fill('input[name="tenant"]', ZWEITES_HAUS);
+    await page.fill('input[name="password"]', PASS);
+    await Promise.all([
+      page.waitForURL((url) => !url.pathname.includes("/login"), { timeout: 20000 }),
+      page.click('button[type="submit"]'),
+    ]);
+    check("Anmeldung im zweiten Haus", !page.url().includes("/login"), page.url());
+    check("Kopfzeile wechselt mit dem Haus", (await page.textContent("header")).includes("Nord"));
+
+    await page.goto(`${BASE}/aktuelles`, { waitUntil: "networkidle" });
+    const newsB = await page.textContent("main");
+    check(
+      "Beiträge des ersten Hauses sind im zweiten nicht sichtbar",
+      !newsB.includes("Testbeitrag aus der Abnahme") && newsA !== newsB,
+    );
+
+    await page.goto(`${BASE}/admin/mandanten`, { waitUntil: "networkidle" });
+    check("Admin ohne Plattformrecht wird abgewiesen", !page.url().includes("/mandanten"), page.url());
 
     check("Keine JavaScript-Fehler im Browser", errors.length === 0, errors.slice(0, 3).join(" | "));
   } catch (error) {

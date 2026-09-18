@@ -1,4 +1,5 @@
 const { chromium } = require("playwright");
+const TENANT = process.env.E2E_TENANT || "autohaus-mueller";
 const BASE = process.env.E2E_BASE_URL || "http://localhost:3000";
 const ROUTES = [
   "/",
@@ -32,6 +33,7 @@ const ROUTES = [
   "/admin/formulare",
   "/admin/bestelltermine",
   "/admin/audit",
+  "/admin/mandanten",
   "/admin/schnittstellen",
   "/admin/schnittstellen/mobile_de",
   "/admin/schnittstellen/vw_rwil",
@@ -42,6 +44,7 @@ const ROUTES = [
   const p = await (await b.newContext({ locale: "de-DE" })).newPage();
   await p.goto(`${BASE}/login`, { waitUntil: "networkidle" });
   await p.fill('input[name="username"]', "admin");
+  await p.fill('input[name="tenant"]', TENANT);
   await p.fill('input[name="password"]', "Intranet2026!");
   await Promise.all([p.waitForURL((u) => !u.pathname.includes("/login")), p.click('form button[type="submit"]')]);
   let bad = 0;

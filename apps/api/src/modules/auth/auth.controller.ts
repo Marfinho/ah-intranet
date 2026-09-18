@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Post, Res } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
-import { IsNotEmpty, IsString, MinLength } from "class-validator";
+import { IsNotEmpty, IsOptional, IsString, MinLength } from "class-validator";
 import type { Response } from "express";
 import { AuthService } from "./auth.service";
 import { CurrentUser, Public } from "../../core/decorators";
@@ -15,6 +15,15 @@ class LoginDto {
   @IsString()
   @IsNotEmpty({ message: "Passwort ist erforderlich" })
   password!: string;
+
+  /**
+   * Kennung des Autohauses. Ausgewertet wird sie bereits in der
+   * Mandanten-Middleware; hier steht sie, damit die Validierung sie durchlässt
+   * und die Schnittstelle vollständig beschrieben ist.
+   */
+  @IsOptional()
+  @IsString()
+  tenant?: string;
 }
 
 class ChangePasswordDto {

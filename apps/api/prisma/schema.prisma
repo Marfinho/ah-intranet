@@ -143,12 +143,87 @@ enum NotificationChannel {
   email
 }
 
+// ------------------------------------------------------------ Mandanten
+
+/// Ein Autohaus als Mandant. Sämtliche Fachdaten hängen daran; das Löschen
+/// eines Mandanten entfernt über die Kaskade auch seine Daten.
+model Tenant {
+  id        String   @id @default(cuid())
+  /// Kurzkennung, auch als Subdomain verwendbar.
+  slug      String   @unique
+  name      String
+  /// Eigene Domain, falls der Mandant nicht über die Subdomain kommt.
+  domain    String?  @unique
+  isActive  Boolean  @default(true)
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  locations                    Location[]
+  departments                  Department[]
+  specialtyAreas               SpecialtyArea[]
+  locationDepartments          LocationDepartment[]
+  users                        User[]
+  roles                        Role[]
+  permissions                  Permission[]
+  userRoles                    UserRole[]
+  rolePermissions              RolePermission[]
+  moduleSettings               ModuleSetting[]
+  newsPosts                    NewsPost[]
+  newsAttachments              NewsAttachment[]
+  newsComments                 NewsComment[]
+  newsReads                    NewsRead[]
+  orders                       Order[]
+  orderStatusHistorys          OrderStatusHistory[]
+  orderComments                OrderComment[]
+  businessCardFieldDefinitions BusinessCardFieldDefinition[]
+  businessCardOrders           BusinessCardOrder[]
+  businessCardOrderFields      BusinessCardOrderField[]
+  workwearCatalogItems         WorkwearCatalogItem[]
+  workwearItemSizes            WorkwearItemSize[]
+  workwearOrders               WorkwearOrder[]
+  workwearOrderItems           WorkwearOrderItem[]
+  approvalRules                ApprovalRule[]
+  approvalDecisions            ApprovalDecision[]
+  orderCycles                  OrderCycle[]
+  documents                    Document[]
+  wikiArticles                 WikiArticle[]
+  calendarEvents               CalendarEvent[]
+  rooms                        Room[]
+  roomBookings                 RoomBooking[]
+  vehicles                     Vehicle[]
+  vehicleBookings              VehicleBooking[]
+  tickets                      Ticket[]
+  ticketComments               TicketComment[]
+  onboardingTemplates          OnboardingTemplate[]
+  onboardingSteps              OnboardingStep[]
+  onboardingAssignments        OnboardingAssignment[]
+  onboardingItems              OnboardingItem[]
+  absences                     Absence[]
+  ideas                        Idea[]
+  ideaVotes                    IdeaVote[]
+  polls                        Poll[]
+  pollOptions                  PollOption[]
+  pollVotes                    PollVote[]
+  quickLinks                   QuickLink[]
+  notifications                Notification[]
+  auditLogs                    AuditLog[]
+  connectors                   Connector[]
+  syncRuns                     SyncRun[]
+  externalRefs                 ExternalRef[]
+  vehicleListings              VehicleListing[]
+
+  @@index([isActive])
+}
+
 // ------------------------------------------------------- Organisation
 
 model Location {
   id        String   @id @default(cuid())
-  name      String   @unique
-  code      String   @unique
+  tenantId  String   @default("")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  code      String
   address   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -158,31 +233,49 @@ model Location {
   locationDepartments LocationDepartment[]
   rooms               Room[]
   vehicles            Vehicle[]
+
+  @@unique([tenantId, name])
+  @@unique([tenantId, code])
+  @@index([tenantId])
 }
 
 model Department {
   id        String   @id @default(cuid())
-  name      String   @unique
-  code      String   @unique
+  tenantId  String   @default("")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  code      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   users               User[]
   locationDepartments LocationDepartment[]
+
+  @@unique([tenantId, name])
+  @@unique([tenantId, code])
+  @@index([tenantId])
 }
 
 model SpecialtyArea {
   id        String   @id @default(cuid())
-  name      String   @unique
-  code      String   @unique
+  tenantId  String   @default("")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  code      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   users User[]
+
+  @@unique([tenantId, name])
+  @@unique([tenantId, code])
+  @@index([tenantId])
 }
 
 model LocationDepartment {
   id           String   @id @default(cuid())
+  tenantId     String   @default("")
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   locationId   String
   departmentId String
   createdAt    DateTime @default(now())
@@ -190,15 +283,18 @@ model LocationDepartment {
   location   Location   @relation(fields: [locationId], references: [id], onDelete: Cascade)
   department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
 
-  @@unique([locationId, departmentId])
+  @@unique([tenantId, locationId, departmentId])
+  @@index([tenantId])
 }
 
 // -------------------------------------------------- Benutzer & Rechte
 
 model User {
   id                 String     @id @default(cuid())
-  username           String     @unique
-  email              String?    @unique
+  tenantId           String     @default("")
+  tenant             Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  username           String
+  email              String?
   passwordHash       String
   firstName          String
   lastName           String
@@ -213,6 +309,8 @@ model User {
   annualLeaveDays    Int        @default(30)
   mustChangePassword Boolean    @default(false)
   lastLoginAt        DateTime?
+  /// Darf Mandanten anlegen und sperren - betrifft alle Häuser, nicht nur das eigene.
+  isPlatformAdmin    Boolean    @default(false)
   /// Wird bei Sperre und Passwortwechsel erhöht und macht alle bis dahin
   /// ausgegebenen Tokens sofort ungültig.
   tokenVersion       Int        @default(0)
@@ -257,13 +355,18 @@ model User {
   polls             Poll[]                 @relation("PollAuthor")
   pollVotes         PollVote[]
 
+  @@unique([tenantId, username])
+  @@unique([tenantId, email])
   @@index([status])
   @@index([locationId, departmentId])
+  @@index([tenantId])
 }
 
 model Role {
   id          String   @id @default(cuid())
-  key         String   @unique
+  tenantId    String   @default("")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  key         String
   name        String
   description String
   /// Rangfolge: höher schlägt niedriger bei der Bestimmung der Hauptrolle.
@@ -273,21 +376,31 @@ model Role {
 
   permissions RolePermission[]
   users       UserRole[]
+
+  @@unique([tenantId, key])
+  @@index([tenantId])
 }
 
 model Permission {
   id          String   @id @default(cuid())
-  key         String   @unique
+  tenantId    String   @default("")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  key         String
   name        String
   description String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   roles RolePermission[]
+
+  @@unique([tenantId, key])
+  @@index([tenantId])
 }
 
 model UserRole {
   id                   String        @id @default(cuid())
+  tenantId             String        @default("")
+  tenant               Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   userId               String
   roleId               String
   scopeType            RoleScopeType @default(global)
@@ -299,12 +412,15 @@ model UserRole {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, roleId, scopeType, scopeLocationId, scopeDepartmentId, scopeSpecialtyAreaId])
+  @@unique([tenantId, userId, roleId, scopeType, scopeLocationId, scopeDepartmentId, scopeSpecialtyAreaId])
   @@index([userId])
+  @@index([tenantId])
 }
 
 model RolePermission {
   id           String   @id @default(cuid())
+  tenantId     String   @default("")
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   roleId       String
   permissionId String
   createdAt    DateTime @default(now())
@@ -312,24 +428,32 @@ model RolePermission {
   role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
   permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
-  @@unique([roleId, permissionId])
+  @@unique([tenantId, roleId, permissionId])
+  @@index([tenantId])
 }
 
 // ------------------------------------------------------ Modulsteuerung
 
 /// Feature-Toggle je Modul. Schlüssel stammen aus der Registry in @ah-intranet/shared.
 model ModuleSetting {
-  key       String   @id
+  key       String
+  tenantId  String   @default("")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   enabled   Boolean  @default(true)
   updatedAt DateTime @updatedAt
   updatedBy String?
+
+  @@id([tenantId, key])
+  @@index([tenantId])
 }
 
 // -------------------------------------------------------------- News
 
 model NewsPost {
   id             String     @id @default(cuid())
-  slug           String     @unique
+  tenantId       String     @default("")
+  tenant         Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  slug           String
   title          String
   teaser         String
   content        String
@@ -348,12 +472,16 @@ model NewsPost {
   comments    NewsComment[]
   reads       NewsRead[]
 
+  @@unique([tenantId, slug])
   @@index([status, publishedAt])
   @@index([audienceScopes], type: Gin)
+  @@index([tenantId])
 }
 
 model NewsAttachment {
   id         String         @id @default(cuid())
+  tenantId   String         @default("")
+  tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   newsPostId String
   fileName   String
   mimeType   String
@@ -362,10 +490,14 @@ model NewsAttachment {
   createdAt  DateTime       @default(now())
 
   newsPost NewsPost @relation(fields: [newsPostId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
 }
 
 model NewsComment {
   id         String   @id @default(cuid())
+  tenantId   String   @default("")
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   newsPostId String
   authorId   String
   message    String
@@ -375,10 +507,13 @@ model NewsComment {
   author   User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([newsPostId])
+  @@index([tenantId])
 }
 
 model NewsRead {
   id         String   @id @default(cuid())
+  tenantId   String   @default("")
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   newsPostId String
   userId     String
   readAt     DateTime @default(now())
@@ -386,15 +521,18 @@ model NewsRead {
   newsPost NewsPost @relation(fields: [newsPostId], references: [id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([newsPostId, userId])
+  @@unique([tenantId, newsPostId, userId])
   @@index([userId])
+  @@index([tenantId])
 }
 
 // ------------------------------------------------------- Bestellungen
 
 model Order {
   id              String      @id @default(cuid())
-  orderNumber     String      @unique
+  tenantId        String      @default("")
+  tenant          Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orderNumber     String
   type            OrderType
   requesterId     String
   status          OrderStatus @default(draft)
@@ -418,12 +556,16 @@ model Order {
   workwearOrder     WorkwearOrder?
   approvalDecisions ApprovalDecision[]
 
+  @@unique([tenantId, orderNumber])
   @@index([status, createdAt])
   @@index([requesterId])
+  @@index([tenantId])
 }
 
 model OrderStatusHistory {
   id        String      @id @default(cuid())
+  tenantId  String      @default("")
+  tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   orderId   String
   status    OrderStatus
   note      String?
@@ -433,10 +575,13 @@ model OrderStatusHistory {
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
+  @@index([tenantId])
 }
 
 model OrderComment {
   id        String   @id @default(cuid())
+  tenantId  String   @default("")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   orderId   String
   authorId  String
   message   String
@@ -446,11 +591,14 @@ model OrderComment {
   author User  @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
+  @@index([tenantId])
 }
 
 model BusinessCardFieldDefinition {
   id         String   @id @default(cuid())
-  key        String   @unique
+  tenantId   String   @default("")
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  key        String
   label      String
   fieldType  String
   sortOrder  Int
@@ -462,10 +610,15 @@ model BusinessCardFieldDefinition {
   updatedAt  DateTime @updatedAt
 
   values BusinessCardOrderField[]
+
+  @@unique([tenantId, key])
+  @@index([tenantId])
 }
 
 model BusinessCardOrder {
   id            String   @id @default(cuid())
+  tenantId      String   @default("")
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   orderId       String   @unique
   quantity      Int      @default(100)
   reorderFromId String?
@@ -475,10 +628,14 @@ model BusinessCardOrder {
   reorderFrom BusinessCardOrder?       @relation("BusinessCardReorder", fields: [reorderFromId], references: [id])
   reorders    BusinessCardOrder[]      @relation("BusinessCardReorder")
   fields      BusinessCardOrderField[]
+
+  @@index([tenantId])
 }
 
 model BusinessCardOrderField {
   id                  String   @id @default(cuid())
+  tenantId            String   @default("")
+  tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   businessCardOrderId String
   fieldDefinitionId   String
   value               String
@@ -488,10 +645,13 @@ model BusinessCardOrderField {
   fieldDefinition   BusinessCardFieldDefinition @relation(fields: [fieldDefinitionId], references: [id])
 
   @@index([businessCardOrderId])
+  @@index([tenantId])
 }
 
 model WorkwearCatalogItem {
   id          String   @id @default(cuid())
+  tenantId    String   @default("")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name        String
   category    String
   description String?
@@ -501,10 +661,14 @@ model WorkwearCatalogItem {
 
   sizes      WorkwearItemSize[]
   orderItems WorkwearOrderItem[]
+
+  @@index([tenantId])
 }
 
 model WorkwearItemSize {
   id            String   @id @default(cuid())
+  tenantId      String   @default("")
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   catalogItemId String
   sizeLabel     String
   sortOrder     Int
@@ -513,20 +677,27 @@ model WorkwearItemSize {
 
   catalogItem WorkwearCatalogItem @relation(fields: [catalogItemId], references: [id], onDelete: Cascade)
 
-  @@unique([catalogItemId, sizeLabel])
+  @@unique([tenantId, catalogItemId, sizeLabel])
+  @@index([tenantId])
 }
 
 model WorkwearOrder {
   id        String   @id @default(cuid())
+  tenantId  String   @default("")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   orderId   String   @unique
   createdAt DateTime @default(now())
 
   order Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
   items WorkwearOrderItem[]
+
+  @@index([tenantId])
 }
 
 model WorkwearOrderItem {
   id              String   @id @default(cuid())
+  tenantId        String   @default("")
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   workwearOrderId String
   catalogItemId   String
   sizeLabel       String
@@ -537,10 +708,13 @@ model WorkwearOrderItem {
   catalogItem   WorkwearCatalogItem @relation(fields: [catalogItemId], references: [id])
 
   @@index([workwearOrderId])
+  @@index([tenantId])
 }
 
 model ApprovalRule {
   id              String        @id @default(cuid())
+  tenantId        String        @default("")
+  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   orderType       OrderType
   scopeType       RoleScopeType @default(global)
   locationId      String?
@@ -549,10 +723,14 @@ model ApprovalRule {
   roleKey         String
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+
+  @@index([tenantId])
 }
 
 model ApprovalDecision {
   id        String               @id @default(cuid())
+  tenantId  String               @default("")
+  tenant    Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   orderId   String
   actorId   String
   decision  ApprovalDecisionType
@@ -563,10 +741,13 @@ model ApprovalDecision {
   actor User  @relation("ApprovalActor", fields: [actorId], references: [id])
 
   @@index([orderId])
+  @@index([tenantId])
 }
 
 model OrderCycle {
   id            String    @id @default(cuid())
+  tenantId      String    @default("")
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   cycleType     CycleType
   title         String
   nextOrderDate DateTime
@@ -577,12 +758,16 @@ model OrderCycle {
 
   location Location? @relation(fields: [locationId], references: [id])
   orders   Order[]
+
+  @@index([tenantId])
 }
 
 // -------------------------------------------------- Dokumente & Wissen
 
 model Document {
   id             String           @id @default(cuid())
+  tenantId       String           @default("")
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   title          String
   category       String
   description    String?
@@ -598,11 +783,14 @@ model Document {
 
   @@index([category])
   @@index([audienceScopes], type: Gin)
+  @@index([tenantId])
 }
 
 model WikiArticle {
   id          String   @id @default(cuid())
-  slug        String   @unique
+  tenantId    String   @default("")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  slug        String
   title       String
   category    String
   content     String
@@ -614,14 +802,18 @@ model WikiArticle {
 
   author User @relation("WikiAuthor", fields: [authorId], references: [id])
 
+  @@unique([tenantId, slug])
   @@index([category])
   @@index([tags], type: Gin)
+  @@index([tenantId])
 }
 
 // -------------------------------------------------- Kalender & Räume
 
 model CalendarEvent {
   id             String           @id @default(cuid())
+  tenantId       String           @default("")
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   title          String
   category       CalendarCategory @default(meeting)
   startsAt       DateTime
@@ -637,10 +829,13 @@ model CalendarEvent {
 
   @@index([startsAt])
   @@index([audienceScopes], type: Gin)
+  @@index([tenantId])
 }
 
 model Room {
   id         String   @id @default(cuid())
+  tenantId   String   @default("")
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name       String
   locationId String?
   capacity   Int      @default(8)
@@ -651,10 +846,14 @@ model Room {
 
   location Location?     @relation(fields: [locationId], references: [id])
   bookings RoomBooking[]
+
+  @@index([tenantId])
 }
 
 model RoomBooking {
   id        String   @id @default(cuid())
+  tenantId  String   @default("")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   roomId    String
   userId    String
   title     String
@@ -666,12 +865,15 @@ model RoomBooking {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([roomId, startsAt])
+  @@index([tenantId])
 }
 
 model Vehicle {
   id         String          @id @default(cuid())
+  tenantId   String          @default("")
+  tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   label      String
-  plate      String          @unique
+  plate      String
   category   VehicleCategory @default(poolfahrzeug)
   locationId String?
   notes      String?
@@ -681,10 +883,15 @@ model Vehicle {
 
   location Location?        @relation(fields: [locationId], references: [id])
   bookings VehicleBooking[]
+
+  @@unique([tenantId, plate])
+  @@index([tenantId])
 }
 
 model VehicleBooking {
   id        String        @id @default(cuid())
+  tenantId  String        @default("")
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   vehicleId String
   userId    String
   purpose   String
@@ -697,13 +904,16 @@ model VehicleBooking {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([vehicleId, startsAt])
+  @@index([tenantId])
 }
 
 // ------------------------------------------------------------ Tickets
 
 model Ticket {
   id          String         @id @default(cuid())
-  number      String         @unique
+  tenantId    String         @default("")
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  number      String
   title       String
   description String
   category    TicketCategory @default(it)
@@ -719,12 +929,16 @@ model Ticket {
   assignee  User?           @relation("TicketAssignee", fields: [assigneeId], references: [id])
   comments  TicketComment[]
 
+  @@unique([tenantId, number])
   @@index([status, createdAt])
   @@index([requesterId])
+  @@index([tenantId])
 }
 
 model TicketComment {
   id        String   @id @default(cuid())
+  tenantId  String   @default("")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   ticketId  String
   authorId  String
   message   String
@@ -734,12 +948,15 @@ model TicketComment {
   author User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([ticketId])
+  @@index([tenantId])
 }
 
 // --------------------------------------------------------- Onboarding
 
 model OnboardingTemplate {
   id            String   @id @default(cuid())
+  tenantId      String   @default("")
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name          String
   targetRole    String
   durationLabel String
@@ -749,10 +966,14 @@ model OnboardingTemplate {
 
   steps       OnboardingStep[]
   assignments OnboardingAssignment[]
+
+  @@index([tenantId])
 }
 
 model OnboardingStep {
   id         String   @id @default(cuid())
+  tenantId   String   @default("")
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   templateId String
   title      String
   ownerRole  String
@@ -764,10 +985,13 @@ model OnboardingStep {
   items    OnboardingItem[]
 
   @@index([templateId])
+  @@index([tenantId])
 }
 
 model OnboardingAssignment {
   id         String   @id @default(cuid())
+  tenantId   String   @default("")
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   templateId String
   userId     String
   startDate  DateTime
@@ -777,11 +1001,14 @@ model OnboardingAssignment {
   user     User               @relation("OnboardingEmployee", fields: [userId], references: [id], onDelete: Cascade)
   items    OnboardingItem[]
 
-  @@unique([templateId, userId])
+  @@unique([tenantId, templateId, userId])
+  @@index([tenantId])
 }
 
 model OnboardingItem {
   id           String    @id @default(cuid())
+  tenantId     String    @default("")
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   assignmentId String
   stepId       String
   done         Boolean   @default(false)
@@ -791,13 +1018,16 @@ model OnboardingItem {
   assignment OnboardingAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   step       OnboardingStep       @relation(fields: [stepId], references: [id], onDelete: Cascade)
 
-  @@unique([assignmentId, stepId])
+  @@unique([tenantId, assignmentId, stepId])
+  @@index([tenantId])
 }
 
 // ------------------------------------------------------ Abwesenheiten
 
 model Absence {
   id          String        @id @default(cuid())
+  tenantId    String        @default("")
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   userId      String
   type        AbsenceType   @default(urlaub)
   startDate   DateTime
@@ -815,12 +1045,15 @@ model Absence {
 
   @@index([userId, status])
   @@index([startDate])
+  @@index([tenantId])
 }
 
 // -------------------------------------------------------- Beteiligung
 
 model Idea {
   id           String     @id @default(cuid())
+  tenantId     String     @default("")
+  tenant       Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   title        String
   description  String
   category     String     @default("Allgemein")
@@ -834,10 +1067,13 @@ model Idea {
   votes  IdeaVote[]
 
   @@index([status])
+  @@index([tenantId])
 }
 
 model IdeaVote {
   id        String   @id @default(cuid())
+  tenantId  String   @default("")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   ideaId    String
   userId    String
   createdAt DateTime @default(now())
@@ -845,11 +1081,14 @@ model IdeaVote {
   idea Idea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([ideaId, userId])
+  @@unique([tenantId, ideaId, userId])
+  @@index([tenantId])
 }
 
 model Poll {
   id          String    @id @default(cuid())
+  tenantId    String    @default("")
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   question    String
   description String?
   closesAt    DateTime?
@@ -861,10 +1100,14 @@ model Poll {
   author  User         @relation("PollAuthor", fields: [authorId], references: [id])
   options PollOption[]
   votes   PollVote[]
+
+  @@index([tenantId])
 }
 
 model PollOption {
   id        String @id @default(cuid())
+  tenantId  String @default("")
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   pollId    String
   label     String
   sortOrder Int
@@ -873,10 +1116,13 @@ model PollOption {
   votes PollVote[]
 
   @@index([pollId])
+  @@index([tenantId])
 }
 
 model PollVote {
   id        String   @id @default(cuid())
+  tenantId  String   @default("")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   pollId    String
   optionId  String
   userId    String
@@ -886,14 +1132,17 @@ model PollVote {
   option PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
   user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([pollId, userId])
+  @@unique([tenantId, pollId, userId])
   @@index([optionId])
+  @@index([tenantId])
 }
 
 // ----------------------------------------------- Schnellzugriffe & Co.
 
 model QuickLink {
   id             String   @id @default(cuid())
+  tenantId       String   @default("")
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   label          String
   url            String
   description    String?
@@ -905,10 +1154,13 @@ model QuickLink {
   updatedAt      DateTime @updatedAt
 
   @@index([audienceScopes], type: Gin)
+  @@index([tenantId])
 }
 
 model Notification {
   id        String              @id @default(cuid())
+  tenantId  String              @default("")
+  tenant    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   userId    String
   title     String
   detail    String
@@ -920,10 +1172,13 @@ model Notification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, readAt])
+  @@index([tenantId])
 }
 
 model AuditLog {
   id            String   @id @default(cuid())
+  tenantId      String   @default("")
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   actorId       String?
   actorUsername String
   action        String
@@ -937,6 +1192,7 @@ model AuditLog {
 
   @@index([createdAt])
   @@index([entityType, entityId])
+  @@index([tenantId])
 }
 
 // ------------------------------------------------------ Schnittstellen
@@ -961,7 +1217,9 @@ enum SyncDirection {
 /// Laufzeitzustand eines Konnektors. Die fachliche Definition steht in der
 /// Registry in @ah-intranet/shared; hier liegen nur Konfiguration und Status.
 model Connector {
-  key              String          @id
+  key              String
+  tenantId         String          @default("")
+  tenant           Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   status           ConnectorStatus @default(not_configured)
   /// Nicht-geheime Konfiguration (Endpunkt, Mandant, Verzeichnis ...).
   settings         Json            @default("{}")
@@ -977,11 +1235,16 @@ model Connector {
   runs     SyncRun[]
   listings VehicleListing[]
   refs     ExternalRef[]
+
+  @@id([tenantId, key])
+  @@index([tenantId])
 }
 
 /// Protokoll jedes Synchronisationslaufs - auch der fehlgeschlagenen.
 model SyncRun {
   id             String        @id @default(cuid())
+  tenantId       String        @default("")
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   connectorKey   String
   capability     String
   direction      SyncDirection
@@ -994,15 +1257,18 @@ model SyncRun {
   detailJson     Json?
   triggeredBy    String?
 
-  connector Connector @relation(fields: [connectorKey], references: [key], onDelete: Cascade)
+  connector Connector @relation(fields: [tenantId, connectorKey], references: [tenantId, key], onDelete: Cascade)
 
   @@index([connectorKey, startedAt])
   @@index([status])
+  @@index([tenantId])
 }
 
 /// Zuordnung interner Datensätze zu ihren Gegenstücken im Fremdsystem.
 model ExternalRef {
   id           String   @id @default(cuid())
+  tenantId     String   @default("")
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   connectorKey String
   entityType   String
   localId      String
@@ -1010,16 +1276,19 @@ model ExternalRef {
   payloadHash  String?
   syncedAt     DateTime @default(now())
 
-  connector Connector @relation(fields: [connectorKey], references: [key], onDelete: Cascade)
+  connector Connector @relation(fields: [tenantId, connectorKey], references: [tenantId, key], onDelete: Cascade)
 
-  @@unique([connectorKey, entityType, localId])
+  @@unique([tenantId, connectorKey, entityType, localId])
   @@index([connectorKey, entityType, externalId])
+  @@index([tenantId])
 }
 
 /// Aus Fremdsystemen übernommener Fahrzeugbestand. Lesend gepflegt: die
 /// führenden Daten bleiben im DMS bzw. in der Börse.
 model VehicleListing {
   id                String    @id @default(cuid())
+  tenantId          String    @default("")
+  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   connectorKey      String
   externalId        String
   vin               String?
@@ -1038,9 +1307,10 @@ model VehicleListing {
   raw               Json?
   syncedAt          DateTime  @default(now())
 
-  connector Connector @relation(fields: [connectorKey], references: [key], onDelete: Cascade)
+  connector Connector @relation(fields: [tenantId, connectorKey], references: [tenantId, key], onDelete: Cascade)
 
-  @@unique([connectorKey, externalId])
+  @@unique([tenantId, connectorKey, externalId])
   @@index([make, model])
   @@index([syncedAt])
+  @@index([tenantId])
 }

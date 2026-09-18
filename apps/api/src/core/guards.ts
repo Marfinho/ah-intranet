@@ -11,7 +11,7 @@ import { JwtService } from "@nestjs/jwt";
 import type { Request } from "express";
 import type { AppRole } from "@ah-intranet/shared";
 import { getModule } from "@ah-intranet/shared";
-import { FEATURE_KEY, PUBLIC_KEY, ROLES_KEY } from "./decorators";
+import { FEATURE_KEY, PLATFORM_ADMIN_KEY, PUBLIC_KEY, ROLES_KEY } from "./decorators";
 import { ModuleRegistryService } from "./module-registry.service";
 import { PrismaService } from "./prisma.service";
 import type { RequestUser } from "./request-user";
@@ -20,6 +20,8 @@ export const SESSION_COOKIE = "ah_session";
 
 export interface JwtPayload {
   sub: string;
+  /** Mandant, zu dem diese Sitzung gehört. */
+  tenantId: string;
   username: string;
   displayName: string;
   role: AppRole;
@@ -30,11 +32,13 @@ export interface JwtPayload {
   departmentId: string | null;
   /** Muss mit dem Wert am Benutzer übereinstimmen, sonst ist die Sitzung ungültig. */
   tokenVersion: number;
+  isPlatformAdmin?: boolean;
 }
 
 export function payloadToUser(payload: JwtPayload): RequestUser {
   return {
     id: payload.sub,
+    tenantId: payload.tenantId,
     username: payload.username,
     displayName: payload.displayName,
     role: payload.role,
@@ -44,6 +48,7 @@ export function payloadToUser(payload: JwtPayload): RequestUser {
     locationId: payload.locationId,
     departmentId: payload.departmentId,
     tokenVersion: payload.tokenVersion,
+    isPlatformAdmin: payload.isPlatformAdmin ?? false,
   };
 }
 
@@ -112,8 +117,11 @@ export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const required = this.reflector.getAllAndOverride<AppRole[]>(ROLES_KEY, [context.getHandler(), context.getClass()]);
-    if (!required?.length) {
+    const targets = [context.getHandler(), context.getClass()];
+    const required = this.reflector.getAllAndOverride<AppRole[]>(ROLES_KEY, targets);
+    const platformOnly = this.reflector.getAllAndOverride<boolean>(PLATFORM_ADMIN_KEY, targets);
+
+    if (!required?.length && !platformOnly) {
       return true;
     }
 
@@ -121,7 +129,10 @@ export class RolesGuard implements CanActivate {
     if (!user) {
       throw new UnauthorizedException("Nicht angemeldet");
     }
-    if (!required.some((role) => user.roles.includes(role))) {
+    if (platformOnly && !user.isPlatformAdmin) {
+      throw new ForbiddenException("Diese Aktion ist der Plattformverwaltung vorbehalten");
+    }
+    if (required?.length && !required.some((role) => user.roles.includes(role))) {
       throw new ForbiddenException("Für diese Aktion fehlen die erforderlichen Rechte");
     }
     return true;

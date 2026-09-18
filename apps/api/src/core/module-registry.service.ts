@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException, OnModuleInit } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import {
   CORE_MODULE_KEYS,
   MODULE_DEFINITIONS,
@@ -11,6 +11,7 @@ import {
 import { PrismaService } from "./prisma.service";
 import { AuditService } from "./audit.service";
 import type { RequestUser } from "./request-user";
+import { requireTenantId } from "./tenant-context";
 
 /**
  * Verwaltet die Feature-Toggles der Fachmodule.
@@ -21,47 +22,51 @@ import type { RequestUser } from "./request-user";
  * läuft er nach `CACHE_TTL_MS` ab, damit mehrere API-Instanzen konvergieren.
  */
 @Injectable()
-export class ModuleRegistryService implements OnModuleInit {
+export class ModuleRegistryService {
   private static readonly CACHE_TTL_MS = 15_000;
 
-  private cache: Set<string> | null = null;
-  private cacheExpiresAt = 0;
+  /**
+   * Cache je Mandant. Ein gemeinsamer Cache würde die Modulauswahl eines
+   * Autohauses auf ein anderes übertragen - genau die Art Fehler, die bei
+   * Mehrmandantenfähigkeit teuer wird.
+   */
+  private readonly cache = new Map<string, { keys: Set<string>; expiresAt: number }>();
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
   ) {}
 
-  /** Legt fehlende Registry-Einträge an, damit neue Module ohne Migration auftauchen. */
-  async onModuleInit(): Promise<void> {
-    await this.prisma.moduleSetting.createMany({
-      data: MODULE_DEFINITIONS.map((module) => ({ key: module.key, enabled: module.defaultEnabled })),
-      skipDuplicates: true,
-    });
-    this.invalidate();
-  }
-
   invalidate(): void {
-    this.cache = null;
-    this.cacheExpiresAt = 0;
+    this.cache.delete(requireTenantId());
   }
 
+  /**
+   * Aktive Module des laufenden Mandanten.
+   *
+   * Fehlt zu einem Modul eine Zeile - etwa weil es nach dem Anlegen des
+   * Mandanten hinzugekommen ist - gilt die Vorgabe aus der Registry. So taucht
+   * ein neues Modul ohne Migration auf.
+   */
   async enabledKeys(): Promise<Set<string>> {
-    const now = Date.now();
-    if (this.cache && now < this.cacheExpiresAt) {
-      return this.cache;
+    const tenantId = requireTenantId();
+    const hit = this.cache.get(tenantId);
+    if (hit && Date.now() < hit.expiresAt) {
+      return hit.keys;
     }
 
-    const rows = await this.prisma.moduleSetting.findMany({
-      where: { enabled: true },
-      select: { key: true },
-    });
+    const rows = await this.prisma.moduleSetting.findMany({ select: { key: true, enabled: true } });
+    const gesetzt = new Map(rows.map((row) => [row.key, row.enabled]));
 
-    // Kernmodule sind immer aktiv, auch wenn jemand die Zeile manuell ändert.
-    const enabled = new Set<string>([...CORE_MODULE_KEYS, ...rows.map((row) => row.key)]);
-    this.cache = enabled;
-    this.cacheExpiresAt = now + ModuleRegistryService.CACHE_TTL_MS;
-    return enabled;
+    const keys = new Set<string>(CORE_MODULE_KEYS);
+    for (const module of MODULE_DEFINITIONS) {
+      if (gesetzt.get(module.key) ?? module.defaultEnabled) {
+        keys.add(module.key);
+      }
+    }
+
+    this.cache.set(tenantId, { keys, expiresAt: Date.now() + ModuleRegistryService.CACHE_TTL_MS });
+    return keys;
   }
 
   async isEnabled(key: string): Promise<boolean> {
@@ -129,7 +134,7 @@ export class ModuleRegistryService implements OnModuleInit {
     await this.prisma.$transaction(
       [...affected].map(([moduleKey, moduleEnabled]) =>
         this.prisma.moduleSetting.upsert({
-          where: { key: moduleKey },
+          where: { tenantId_key: { tenantId: actor.tenantId, key: moduleKey } },
           update: { enabled: moduleEnabled, updatedBy: actor.username },
           create: { key: moduleKey, enabled: moduleEnabled, updatedBy: actor.username },
         }),
@@ -155,7 +160,7 @@ export class ModuleRegistryService implements OnModuleInit {
     await this.prisma.$transaction(
       MODULE_DEFINITIONS.map((module) =>
         this.prisma.moduleSetting.upsert({
-          where: { key: module.key },
+          where: { tenantId_key: { tenantId: actor.tenantId, key: module.key } },
           update: { enabled: module.defaultEnabled, updatedBy: actor.username },
           create: { key: module.key, enabled: module.defaultEnabled, updatedBy: actor.username },
         }),

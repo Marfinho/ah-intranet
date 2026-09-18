@@ -1,10 +1,11 @@
-import { Module } from "@nestjs/common";
+import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
 import { ConfigModule } from "@nestjs/config";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { CoreModule } from "./core/core.module";
+import { TenantMiddleware } from "./core/tenant.middleware";
 import { JwtAuthGuard, ModuleEnabledGuard, RolesGuard } from "./core/guards";
 import { AuthModule } from "./modules/auth/auth.module";
 import { PlatformModule } from "./modules/platform/platform.module";
@@ -43,4 +44,12 @@ import { IntegrationsModule } from "./modules/integrations/integrations.module";
     { provide: APP_GUARD, useClass: ModuleEnabledGuard },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  /**
+   * Der Mandantenkontext muss vor allem anderen stehen: auch die Guards greifen
+   * auf die Datenbank zu und müssen bereits gefiltert arbeiten.
+   */
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(TenantMiddleware).forRoutes("*");
+  }
+}

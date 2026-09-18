@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../../core/prisma.service";
+import { requireTenantId } from "../../../core/tenant-context";
 import {
   ConnectorError,
   fetchWithTimeout,
@@ -84,7 +85,13 @@ export class MobileDeAdapter implements ConnectorAdapter {
         }
 
         await this.prisma.vehicleListing.upsert({
-          where: { connectorKey_externalId: { connectorKey: this.key, externalId: listing.externalId } },
+          where: {
+            tenantId_connectorKey_externalId: {
+              tenantId: requireTenantId(),
+              connectorKey: this.key,
+              externalId: listing.externalId,
+            },
+          },
           update: { ...listing, connectorKey: this.key, syncedAt: new Date() },
           create: { ...listing, connectorKey: this.key },
         });

@@ -11,6 +11,7 @@ import type {
   WorkwearOrderDetail,
 } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
+import { requireTenantId } from "../../core/tenant-context";
 import { AuditService } from "../../core/audit.service";
 import { NotificationsService } from "../../core/notifications.service";
 import { buildNumber, displayName, scopeLabel, toIso } from "../../core/mappers";
@@ -621,7 +622,9 @@ export class OrdersService {
     await this.prisma.$transaction([
       ...input.sizes.map((sizeLabel, index) =>
         this.prisma.workwearItemSize.upsert({
-          where: { catalogItemId_sizeLabel: { catalogItemId: item.id, sizeLabel } },
+          where: {
+            tenantId_catalogItemId_sizeLabel: { tenantId: requireTenantId(), catalogItemId: item.id, sizeLabel },
+          },
           update: { sortOrder: index, isActive: true },
           create: { catalogItemId: item.id, sizeLabel, sortOrder: index, isActive: true },
         }),
@@ -673,7 +676,7 @@ export class OrdersService {
 
     for (let attempt = 0; attempt < 25; attempt += 1) {
       const candidate = buildNumber(prefix, sequence);
-      const taken = await this.prisma.order.findUnique({ where: { orderNumber: candidate }, select: { id: true } });
+      const taken = await this.prisma.order.findFirst({ where: { orderNumber: candidate }, select: { id: true } });
       if (!taken) {
         return candidate;
       }

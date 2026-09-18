@@ -151,7 +151,7 @@ export class PeopleService {
     input: UserInput,
   ): Promise<{ user: EmployeeDirectoryEntry; initialPassword: string }> {
     const username = input.username.trim().toLowerCase();
-    if (await this.prisma.user.findUnique({ where: { username }, select: { id: true } })) {
+    if (await this.prisma.user.findFirst({ where: { username }, select: { id: true } })) {
       throw new BadRequestException(`Der Benutzername "${username}" ist bereits vergeben.`);
     }
 

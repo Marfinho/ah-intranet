@@ -53,7 +53,7 @@ export async function AppShell({
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 lg:px-8 xl:flex-row xl:items-center xl:justify-between">
           <div className="min-w-0">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">Autohaus Intranet</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">{session.tenant.name}</p>
             <h1 className="truncate text-xl font-bold text-slate-900">{title}</h1>
             <p className="text-sm text-slate-600">{subtitle}</p>
           </div>

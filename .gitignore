@@ -8,3 +8,6 @@ coverage
 !.env.example
 prisma/dev.db
 *.log
+
+# Inkrementelle Build-Zwischenstände - reiner Maschinenzustand
+*.tsbuildinfo

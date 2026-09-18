@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/commo
 import { Prisma } from "@prisma/client";
 import type { NewsItem, NewsPriority, NewsStatus } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
+import { requireTenantId } from "../../core/tenant-context";
 import { AuditService } from "../../core/audit.service";
 import { NotificationsService } from "../../core/notifications.service";
 import { audienceFilter, displayName, toIso } from "../../core/mappers";
@@ -78,7 +79,7 @@ export class NewsService {
   }
 
   async detail(user: RequestUser, slug: string): Promise<NewsItem> {
-    const post = await this.prisma.newsPost.findUnique({
+    const post = await this.prisma.newsPost.findFirst({
       where: { slug },
       include: {
         ...newsInclude,
@@ -109,19 +110,19 @@ export class NewsService {
   }
 
   async markRead(user: RequestUser, slug: string): Promise<void> {
-    const post = await this.prisma.newsPost.findUnique({ where: { slug }, select: { id: true } });
+    const post = await this.prisma.newsPost.findFirst({ where: { slug }, select: { id: true } });
     if (!post) {
       throw new NotFoundException("Beitrag nicht gefunden");
     }
     await this.prisma.newsRead.upsert({
-      where: { newsPostId_userId: { newsPostId: post.id, userId: user.id } },
+      where: { tenantId_newsPostId_userId: { tenantId: requireTenantId(), newsPostId: post.id, userId: user.id } },
       update: {},
       create: { newsPostId: post.id, userId: user.id },
     });
   }
 
   async comment(user: RequestUser, slug: string, message: string): Promise<void> {
-    const post = await this.prisma.newsPost.findUnique({
+    const post = await this.prisma.newsPost.findFirst({
       where: { slug },
       select: { id: true, authorId: true, title: true },
     });

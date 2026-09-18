@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { Prisma, type IdeaStatus, type Priority, type TicketCategory, type TicketStatus } from "@prisma/client";
 import type { Idea, Poll, TicketSummary } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
+import { requireTenantId } from "../../core/tenant-context";
 import { AuditService } from "../../core/audit.service";
 import { NotificationsService } from "../../core/notifications.service";
 import { buildNumber, displayName } from "../../core/mappers";
@@ -231,7 +232,7 @@ export class ServiceDeskService {
   /** Stimme abgeben oder zurückziehen. */
   async toggleVote(user: RequestUser, ideaId: string): Promise<Idea> {
     const existing = await this.prisma.ideaVote.findUnique({
-      where: { ideaId_userId: { ideaId, userId: user.id } },
+      where: { tenantId_ideaId_userId: { tenantId: requireTenantId(), ideaId, userId: user.id } },
       select: { id: true },
     });
 
@@ -337,7 +338,7 @@ export class ServiceDeskService {
     }
 
     await this.prisma.pollVote.upsert({
-      where: { pollId_userId: { pollId, userId: user.id } },
+      where: { tenantId_pollId_userId: { tenantId: requireTenantId(), pollId, userId: user.id } },
       update: { optionId },
       create: { pollId, optionId, userId: user.id },
     });

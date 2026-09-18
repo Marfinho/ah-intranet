@@ -68,6 +68,26 @@ export interface SessionUser {
   scopes: AudienceScope[];
   permissions: string[];
   mustChangePassword: boolean;
+  /** Autohaus, zu dem diese Sitzung gehört. */
+  tenant: TenantRef;
+  /** Darf Mandanten anlegen und abschalten - nicht identisch mit der Adminrolle im Haus. */
+  isPlatformAdmin: boolean;
+}
+
+/** Kurzform eines Mandanten, wie sie in Sitzung und Kopfzeile erscheint. */
+export interface TenantRef {
+  slug: string;
+  name: string;
+}
+
+/** Vollbild eines Mandanten für die Plattformverwaltung. */
+export interface TenantSummary extends TenantRef {
+  id: string;
+  domain: string | null;
+  isActive: boolean;
+  notes: string | null;
+  userCount: number;
+  createdAt: string;
 }
 
 export interface LoginResponse {
