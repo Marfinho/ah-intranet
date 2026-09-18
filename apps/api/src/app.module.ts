@@ -12,6 +12,7 @@ import { PeopleModule } from "./modules/people/people.module";
 import { OrdersModule } from "./modules/orders/orders.module";
 import { ResourcesModule } from "./modules/resources/resources.module";
 import { ServiceDeskModule } from "./modules/servicedesk/servicedesk.module";
+import { IntegrationsModule } from "./modules/integrations/integrations.module";
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ServiceDeskModule } from "./modules/servicedesk/servicedesk.module";
     OrdersModule,
     ResourcesModule,
     ServiceDeskModule,
+    IntegrationsModule,
     PlatformModule,
   ],
   controllers: [AppController],

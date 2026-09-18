@@ -5,7 +5,8 @@ const ROUTES = ["/", "/aktuelles", "/mitarbeiter", "/dokumente", "/wissen", "/ka
   "/bestellungen/visitenkarten", "/bestellungen/arbeitskleidung", "/freigaben", "/benachrichtigungen",
   "/schnellzugriffe", "/suche?q=service", "/profil", "/admin", "/admin/module", "/admin/benutzer",
   "/admin/rollen", "/admin/news", "/admin/dokumente", "/admin/katalog", "/admin/formulare",
-  "/admin/bestelltermine", "/admin/audit"];
+  "/admin/bestelltermine", "/admin/audit", "/admin/schnittstellen",
+  "/admin/schnittstellen/mobile_de", "/admin/schnittstellen/vw_rwil", "/fahrzeugbestand"];
 (async () => {
   const b = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
   const p = await (await b.newContext({ locale: "de-DE" })).newPage();

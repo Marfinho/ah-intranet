@@ -545,3 +545,67 @@ export async function createQuickLinkAction(_previous: ActionState, formData: Fo
 export async function deleteQuickLinkAction(id: string): Promise<ActionState> {
   return run(() => apiSend("DELETE", `/quicklinks/${id}`), ["/schnellzugriffe", "/"]);
 }
+
+/* ------------------------------------------------------- Schnittstellen */
+
+export async function saveConnectorAction(key: string, _previous: ActionState, formData: FormData): Promise<ActionState> {
+  const settings: Record<string, string> = {};
+  const secrets: Record<string, string> = {};
+
+  for (const [field, value] of formData.entries()) {
+    if (field.startsWith("setting:")) {
+      settings[field.slice(8)] = String(value);
+    } else if (field.startsWith("secret:")) {
+      // Leer gelassene Geheimfelder bleiben unangetastet; nur ausdrückliches
+      // Leeren über das Löschkästchen entfernt einen hinterlegten Wert.
+      const raw = String(value);
+      if (raw.length > 0) {
+        secrets[field.slice(7)] = raw;
+      }
+    } else if (field.startsWith("clear:")) {
+      secrets[field.slice(6)] = "";
+    }
+  }
+
+  return run(
+    () => apiSend("PUT", `/integrations/connectors/${key}`, { settings, secrets }),
+    ["/admin/schnittstellen", `/admin/schnittstellen/${key}`],
+    "Konfiguration gespeichert.",
+  );
+}
+
+export async function checkConnectorAction(key: string): Promise<ActionState> {
+  try {
+    const result = await apiSend<{ ok: boolean; message: string }>("POST", `/integrations/connectors/${key}/check`);
+    revalidatePath("/admin/schnittstellen");
+    revalidatePath(`/admin/schnittstellen/${key}`);
+    return result.ok ? { ok: true, detail: result.message } : { ok: false, message: result.message };
+  } catch (error) {
+    return { ok: false, message: error instanceof ApiError ? error.message : "Verbindungstest fehlgeschlagen." };
+  }
+}
+
+export async function runConnectorAction(key: string, capability: string): Promise<ActionState> {
+  try {
+    const result = await apiSend<{ status: string; message?: string }>(
+      "POST",
+      `/integrations/connectors/${key}/run/${capability}`,
+    );
+    revalidatePath("/admin/schnittstellen");
+    revalidatePath(`/admin/schnittstellen/${key}`);
+    revalidatePath("/fahrzeugbestand");
+
+    return result.status === "succeeded"
+      ? { ok: true, detail: result.message ?? "Abgleich abgeschlossen." }
+      : { ok: false, message: result.message ?? "Abgleich fehlgeschlagen." };
+  } catch (error) {
+    return { ok: false, message: error instanceof ApiError ? error.message : "Abgleich fehlgeschlagen." };
+  }
+}
+
+export async function setConnectorEnabledAction(key: string, enabled: boolean): Promise<ActionState> {
+  return run(
+    () => apiSend("PUT", `/integrations/connectors/${key}/enabled`, { enabled }),
+    ["/admin/schnittstellen", `/admin/schnittstellen/${key}`],
+  );
+}

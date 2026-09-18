@@ -14,6 +14,7 @@ const ADMIN_LINKS = [
   { href: "/admin/katalog", label: "Arbeitskleidung", detail: "Artikel und Größen", adminOnly: false },
   { href: "/admin/formulare", label: "Visitenkartenformular", detail: "Felder konfigurieren", adminOnly: false },
   { href: "/admin/bestelltermine", label: "Bestelltermine", detail: "Stichtage der Sammelbestellungen", adminOnly: false },
+  { href: "/admin/schnittstellen", label: "Schnittstellen", detail: "DMS, Börsen, Buchhaltung, Konzernsysteme", adminOnly: true },
   { href: "/admin/audit", label: "Audit-Log", detail: "Protokoll aller Aktionen", adminOnly: true },
 ];
 

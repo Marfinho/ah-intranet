@@ -6,6 +6,7 @@ import {
   IsBoolean,
   IsIn,
   IsInt,
+  IsNumber,
   IsObject,
   IsOptional,
   IsString,
@@ -45,6 +46,11 @@ class TransitionDto {
   status!: OrderStatus;
 
   @IsOptional() @IsString() note?: string;
+
+  /** Rechnungsbetrag des Dienstleisters; Grundlage für den DATEV-Export. */
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) netAmount?: number;
+
+  @IsOptional() @IsString() supplierInvoice?: string;
 }
 
 class CycleDto {
@@ -164,7 +170,10 @@ export class OrdersController {
 
   @Post(":id/status")
   transition(@CurrentUser() user: RequestUser, @Param("id") id: string, @Body() dto: TransitionDto) {
-    return this.orders.transition(user, id, dto.status, dto.note);
+    return this.orders.transition(user, id, dto.status, dto.note, {
+      netAmount: dto.netAmount,
+      supplierInvoice: dto.supplierInvoice,
+    });
   }
 }
 

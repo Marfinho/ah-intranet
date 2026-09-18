@@ -367,6 +367,8 @@ export class OrdersService {
     orderId: string,
     target: OrderStatus,
     note?: string,
+    /** Rechnungsdaten des Dienstleisters, erfassbar beim Abschließen. */
+    invoice?: { netAmount?: number; supplierInvoice?: string },
   ): Promise<OrderSummary> {
     const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: orderInclude });
     if (!order) {
@@ -392,6 +394,8 @@ export class OrdersService {
         ...(target === "rejected" ? { rejectedAt: now } : {}),
         ...(target === "ordered" ? { orderedAt: now } : {}),
         ...(target === "completed" ? { completedAt: now } : {}),
+        ...(invoice?.netAmount !== undefined ? { netAmount: invoice.netAmount } : {}),
+        ...(invoice?.supplierInvoice !== undefined ? { supplierInvoice: invoice.supplierInvoice } : {}),
         statusHistory: {
           create: { status: target, note: note ?? STATUS_LABELS[target], actorName: user.displayName },
         },

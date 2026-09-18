@@ -1,7 +1,7 @@
 # AH Intranet
 
 Responsives Intranet für ein Autohaus mit mehreren Standorten. Vollständig
-lauffähig: echte Anmeldung, Datenhaltung in PostgreSQL, zwanzig Fachmodule, die
+lauffähig: echte Anmeldung, Datenhaltung in PostgreSQL, 22 Fachmodule, die
 sich vom Adminbereich einzeln ein- und ausschalten lassen.
 
 ## Architektur
@@ -18,8 +18,9 @@ apps/
   api/   -> NestJS API (Prisma, Guards, Fachlogik)
   web/   -> Next.js Intranet-Frontend
 packages/
-  shared/ -> gemeinsame Typen und die Modul-Registry
+  shared/ -> gemeinsame Typen, Modul- und Konnektor-Registry
 e2e/      -> browserbasierte Abnahmeprüfungen
+docs/     -> Schnittstellendokumentation
 ```
 
 ## Start lokal
@@ -81,8 +82,8 @@ jeder Request einen zusätzlichen Datenbankzugriff auslöst.
 | Arbeitsplatz  | Dashboard\*, Globale Suche, Benachrichtigungen\*, Schnellzugriffe       |
 | Kommunikation | Aktuelles (News), Mitarbeiterverzeichnis, Umfragen, Ideenmanagement     |
 | Prozesse      | Dokumente, Wissensdatenbank, Bestellungen, Freigaben, Serviceanfragen, Onboarding, Abwesenheiten |
-| Ressourcen    | Kalender, Raumbuchung, Fuhrpark                                        |
-| Verwaltung    | Administration\*, Audit-Log                                            |
+| Ressourcen    | Kalender, Raumbuchung, Fuhrpark, Fahrzeugbestand                       |
+| Verwaltung    | Administration\*, Schnittstellen, Audit-Log                             |
 
 \* Kernmodul, nicht abschaltbar.
 
@@ -112,6 +113,9 @@ jeder Request einen zusätzlichen Datenbankzugriff auslöst.
   Unterlagen, beide mit Kategorien und Zielgruppen.
 - **Globale Suche** – eine Abfrage über News, Dokumente, Wiki, Personen und
   Tickets; deaktivierte Module werden übersprungen.
+- **Schnittstellen** – Konnektoren zu Konzernsystemen, DMS, Fahrzeugbörsen,
+  Bewertung und Buchhaltung; siehe [`docs/schnittstellen.md`](docs/schnittstellen.md).
+- **Fahrzeugbestand** – aus DMS-Export und mobile.de zusammengeführter Bestand.
 - **Administration** – Benutzer (inkl. generiertem Startpasswort und Sperre),
   Rollen und Rechte, News, Dokumente, Kataloge, Formularfelder, Bestelltermine,
   Modulsteuerung und Audit-Log.
@@ -142,8 +146,9 @@ einem GIN-Index ersetzt mehrere Joins; Benutzer tragen ihre Tokens am Datensatz.
 ## Prüfungen
 
 ```bash
-node e2e/smoke.js   # alle 31 Seiten laden fehlerfrei
-node e2e/flows.js   # 27 Prüfungen der Fachprozesse
+node e2e/smoke.js         # alle 35 Seiten laden fehlerfrei
+node e2e/flows.js         # 27 Prüfungen der Fachprozesse
+node e2e/integrations.js  # 20 Prüfungen der Schnittstellen
 ```
 
 Details in [`e2e/README.md`](e2e/README.md).
@@ -172,6 +177,7 @@ docker compose exec api npx tsx prisma/seed.ts
 | `FRONTEND_URL`   | erlaubte CORS-Herkunft, kommagetrennt möglich        |
 | `JWT_SECRET`     | Sitzungsschlüssel – **in Produktion zwingend setzen** |
 | `JWT_EXPIRES_IN` | Gültigkeit des Tokens (Standard `12h`)               |
+| `INTEGRATION_SECRET_KEY` | Verschlüsselt Zugangsdaten zu Fremdsystemen  |
 
 **`apps/web/.env.local`**
 
@@ -180,4 +186,12 @@ docker compose exec api npx tsx prisma/seed.ts
 | `API_URL`             | serverseitig genutzte API-Adresse                |
 | `NEXT_PUBLIC_API_URL` | Fallback, auch im Browser sichtbar               |
 
-Ohne `JWT_SECRET` startet die API bewusst nicht.
+Ohne `JWT_SECRET` startet die API bewusst nicht. Ohne `INTEGRATION_SECRET_KEY`
+lassen sich keine Zugangsdaten zu Fremdsystemen speichern – ebenfalls Absicht.
+
+## Schnittstellen
+
+Anbindung an Konzernsysteme (RW.IL, DMS-Backbone, ElsaPro, ETKA, ODIS, Group
+Retail Portal), DMS, Fahrzeugbörsen, Bewertung und Buchhaltung. Welche
+Schnittstelle offen zugänglich ist und welche einen Partnervertrag braucht,
+steht in [`docs/schnittstellen.md`](docs/schnittstellen.md).

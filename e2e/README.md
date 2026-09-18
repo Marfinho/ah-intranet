@@ -22,11 +22,12 @@ Ist Chromium bereits vorhanden (z. B. `PLAYWRIGHT_BROWSERS_PATH`), kann der Pfad
 ## Ausführen
 
 ```bash
-node e2e/smoke.js    # lädt alle 31 Seiten und meldet Render-Fehler
-node e2e/flows.js    # 27 Prüfungen über die wichtigsten Fachprozesse
+node e2e/smoke.js         # lädt alle 35 Seiten und meldet Render-Fehler
+node e2e/flows.js         # 27 Prüfungen über die wichtigsten Fachprozesse
+node e2e/integrations.js  # 20 Prüfungen der Schnittstellen und des Fahrzeugbestands
 ```
 
-Beide Skripte beenden sich mit Exit-Code 1, sobald eine Prüfung fehlschlägt.
+Alle Skripte beenden sich mit Exit-Code 1, sobald eine Prüfung fehlschlägt.
 
 ## Was `flows.js` abdeckt
 
@@ -42,6 +43,17 @@ Beide Skripte beenden sich mit Exit-Code 1, sobald eine Prüfung fehlschlägt.
 - News veröffentlichen und in der Übersicht sehen
 - Globale Suche über mehrere Module
 - Audit-Log auf protokollierte Aktionen
+
+## Was `integrations.js` abdeckt
+
+- Konnektorübersicht mit Verfügbarkeitsklassen
+- Detailseite eines vertraglich gesperrten Systems (RW.IL)
+- Zugangsdaten werden nie in die Oberfläche zurückgelesen
+- Abgleich über mobile.de und Anzeige im Fahrzeugbestand
+- Modulabhängigkeit Fahrzeugbestand → Schnittstellen
+
+Für `integrations.js` müssen mobile.de (gegen Mock oder Sandbox) und der
+DMS-Dateiaustausch konfiguriert sein, sonst bleibt der Bestand leer.
 
 ## Hinweis zum Zustand
 
