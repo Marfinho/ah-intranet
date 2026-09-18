@@ -284,8 +284,14 @@ export interface EmployeeDirectoryEntry {
   email?: string | null;
   responsibilities: string[];
   presence: Presence;
-  status: "active" | "inactive";
+  status: UserAccountStatus;
 }
+
+/**
+ * `deleted` steht für ein anonymisiertes Konto: es trägt keine Identität mehr,
+ * bleibt aber als Anker aufbewahrungspflichtiger Vorgänge bestehen.
+ */
+export type UserAccountStatus = "active" | "inactive" | "deleted";
 
 export interface RoleSummary {
   id: string;

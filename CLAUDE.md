@@ -51,8 +51,8 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
 
 - **Registries als einzige Quelle der Wahrheit.** Module stehen in
   `packages/shared/src/modules.ts`, Konnektoren in `connectors.ts`, Rollen und
-  Rechte in `rbac.ts`. Neue Einträge dort wirken ohne Migration in API und
-  Oberfläche – und gelten für jedes Haus gleich.
+  Rechte in `rbac.ts`, Aufbewahrungsfristen in `retention.ts`. Neue Einträge dort
+  wirken ohne Migration in API und Oberfläche – und gelten für jedes Haus gleich.
 - **Serverseitige Durchsetzung.** Rollen kommen aus dem JWT, nie aus
   Anfragedaten. Prüfungen im Browser sind Komfort, nicht Sicherheit.
 - **Guards in fester Reihenfolge:** Authentifizierung → Rollen →
@@ -95,14 +95,30 @@ installiertes Playwright (siehe `e2e/README.md`).
 - Geheimnisse gehören nie in die Antwort der API und nie unverschlüsselt in die
   Datenbank.
 
+## Datenschutz
+
+- **Auskunft** (Art. 15) als Datei über **Administration → Datenschutz**.
+- **Löschung** (Art. 17) als **Anonymisierung**: das Konto verliert seine
+  Identität, bleibt aber Anker aufbewahrungspflichtiger Vorgänge. Hartes Löschen
+  würde freigegebene Bestellungen mitreißen, die zehn Jahre bleiben müssen.
+- **Fristen** in `packages/shared/src/retention.ts`, durchgesetzt von
+  `src/scripts/aufbewahrung.ts` (Cron, nicht als Hintergrundaufgabe – bei
+  mehreren API-Instanzen liefe die sonst mehrfach).
+- **Grenze ehrlich benannt:** Freitexte können eine Person nennen, ohne dass ein
+  Feld darauf zeigt. Die Auskunft führt diese Stellen auf, statt so zu tun, als
+  sei das maschinell gelöst.
+- Datenschutzfunktionen sind bewusst **kein abschaltbares Modul** – ein Schalter,
+  der gesetzliche Pflichten entfernt, wäre ein Fehler im Entwurf.
+- Einzelheiten und die Mitbestimmung nach § 87 BetrVG: [`docs/datenschutz.md`](docs/datenschutz.md).
+
 ## Bekannte Lücken
 
 Erledigt sind inzwischen: CI-Pipeline, Unit-Tests, Linting, Rate-Limiting und
-Kontosperre am Login, Session-Invalidierung, Healthcheck, Mandantenfähigkeit.
+Kontosperre am Login, Session-Invalidierung, Healthcheck, Mandantenfähigkeit,
+Datenschutzfunktionen.
 
 Offen vor dem Produktivbetrieb:
 
-- **Datenschutz:** Auskunft und Löschung je Person, Aufbewahrungsfristen für
-  Audit-Log und Benachrichtigungen, Verarbeitungsverzeichnis, Mitbestimmung.
 - **Betrieb:** Sicherung und geprobte Wiederherstellung, Betriebsdokumentation.
 - **Rohabfragen:** `$queryRaw` umgeht die Mandantentrennung (siehe oben).
+- **Auftragsverarbeitungsvertrag** zwischen Betreiber und Haus (Vorlage fehlt).

@@ -116,6 +116,24 @@ export async function resetModulesAction(): Promise<ActionState> {
   return run(() => apiSend("POST", "/modules/reset"), ["/", "/admin", "/admin/module"]);
 }
 
+/* ------------------------------------------------------- Datenschutz */
+
+export async function aufbewahrungAusfuehrenAction(): Promise<ActionState> {
+  return run(() => apiSend("POST", "/datenschutz/aufbewahrung/ausfuehren"), ["/admin/datenschutz"]);
+}
+
+/**
+ * Anonymisierung nach Art. 17 DSGVO. Unumkehrbar, deshalb verlangt die API eine
+ * ausdrückliche Bestätigung - die Oberfläche fragt zusätzlich nach.
+ */
+export async function personLoeschenAction(userId: string, anlass: string): Promise<ActionState> {
+  return run(
+    () => apiSend("DELETE", `/datenschutz/person/${userId}`, { bestaetigt: true, anlass }),
+    ["/admin/datenschutz", "/admin/benutzer", "/mitarbeiter"],
+    "Die Person wurde anonymisiert. Freitexte müssen von Hand durchgesehen werden.",
+  );
+}
+
 /* --------------------------------------------------------- Mandanten */
 
 export async function createTenantAction(_previous: ActionState, formData: FormData): Promise<ActionState> {

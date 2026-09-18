@@ -22,7 +22,7 @@ Ist Chromium bereits vorhanden (z. B. `PLAYWRIGHT_BROWSERS_PATH`), kann der Pfad
 ## Ausführen
 
 ```bash
-node e2e/smoke.js         # lädt alle 36 Seiten und meldet Render-Fehler
+node e2e/smoke.js         # lädt alle 37 Seiten und meldet Render-Fehler
 node e2e/flows.js         # 33 Prüfungen über die wichtigsten Fachprozesse
 node e2e/integrations.js  # Prüfungen der Schnittstellen und des Fahrzeugbestands
 ```

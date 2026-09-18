@@ -12,6 +12,9 @@ datasource db {
 enum UserStatus {
   active
   inactive
+  /// Auf Verlangen der Person anonymisiert. Das Konto bleibt als Anker für
+  /// aufbewahrungspflichtige Vorgänge bestehen, trägt aber keine Identität mehr.
+  deleted
 }
 
 enum Presence {
@@ -309,6 +312,9 @@ model User {
   annualLeaveDays    Int        @default(30)
   mustChangePassword Boolean    @default(false)
   lastLoginAt        DateTime?
+  /// Zeitpunkt der Anonymisierung nach Art. 17 DSGVO. Gesetzt heißt: die
+  /// identifizierenden Felder sind ersetzt, der Vorgangsbezug bleibt erhalten.
+  anonymizedAt       DateTime?
   /// Darf Mandanten anlegen und sperren - betrifft alle Häuser, nicht nur das eigene.
   isPlatformAdmin    Boolean    @default(false)
   /// Wird bei Sperre und Passwortwechsel erhöht und macht alle bis dahin

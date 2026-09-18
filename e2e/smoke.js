@@ -34,6 +34,7 @@ const ROUTES = [
   "/admin/bestelltermine",
   "/admin/audit",
   "/admin/mandanten",
+  "/admin/datenschutz",
   "/admin/schnittstellen",
   "/admin/schnittstellen/mobile_de",
   "/admin/schnittstellen/vw_rwil",

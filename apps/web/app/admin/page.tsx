@@ -26,6 +26,12 @@ const ADMIN_LINKS = [
     adminOnly: true,
   },
   { href: "/admin/audit", label: "Audit-Log", detail: "Protokoll aller Aktionen", adminOnly: true },
+  {
+    href: "/admin/datenschutz",
+    label: "Datenschutz",
+    detail: "Auskunft, Löschung, Aufbewahrungsfristen",
+    adminOnly: true,
+  },
 ];
 
 /** Nur für die Plattformverwaltung des Betreibers, nicht für Admins im Haus. */

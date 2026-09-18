@@ -37,7 +37,13 @@ export default tseslint.config(
 
   // Seed und Prüfskripte laufen in Node und dürfen auf die Konsole schreiben.
   {
-    files: ["apps/api/prisma/seed.ts", "e2e/**/*.js", "scripts/**/*.{js,mjs,ts}", "**/*.config.js"],
+    files: [
+      "apps/api/prisma/seed.ts",
+      "apps/api/src/scripts/**/*.ts",
+      "e2e/**/*.js",
+      "scripts/**/*.{js,mjs,ts}",
+      "**/*.config.js",
+    ],
     languageOptions: {
       globals: {
         require: "readonly",

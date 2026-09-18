@@ -12,7 +12,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "aufbewahrung": "node dist/scripts/aufbewahrung.js",
+    "aufbewahrung:vorschau": "node dist/scripts/aufbewahrung.js --vorschau"
   },
   "dependencies": {
     "@ah-intranet/shared": "workspace:*",

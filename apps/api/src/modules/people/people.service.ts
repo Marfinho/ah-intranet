@@ -1,7 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
-import type { AppRole, EmployeeDirectoryEntry, PermissionSummary, Presence, RoleSummary } from "@ah-intranet/shared";
+import type {
+  AppRole,
+  EmployeeDirectoryEntry,
+  PermissionSummary,
+  Presence,
+  RoleSummary,
+  UserAccountStatus,
+} from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
 import { AuditService } from "../../core/audit.service";
 import { PRESENCE_LABELS, PRESENCE_VALUES, buildScopes, displayName, primaryRole } from "../../core/mappers";
@@ -40,7 +47,7 @@ export interface UserInput {
   roles: AppRole[];
   responsibilities?: string[];
   annualLeaveDays?: number;
-  status?: "active" | "inactive";
+  status?: UserAccountStatus;
   password?: string;
 }
 
@@ -120,7 +127,7 @@ export class PeopleService {
   async listUsers(filter: { search?: string; status?: string } = {}) {
     const users = await this.prisma.user.findMany({
       where: {
-        ...(filter.status && filter.status !== "all" ? { status: filter.status as "active" | "inactive" } : {}),
+        ...(filter.status && filter.status !== "all" ? { status: filter.status as UserAccountStatus } : {}),
         ...(filter.search
           ? {
               OR: [

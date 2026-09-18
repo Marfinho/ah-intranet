@@ -145,6 +145,28 @@ Mehrere Autohäuser teilen sich eine Installation, ohne einander zu sehen.
 - Gesperrt wird, nicht gelöscht: Anmeldungen scheitern sofort, die Daten bleiben
   für Aufbewahrungsfristen erhalten.
 
+## Datenschutz
+
+Unter **Administration → Datenschutz**:
+
+- **Auskunft nach Art. 15 DSGVO** als Datei, die sich unverändert aushändigen
+  lässt – samt Hinweis auf Freitexte, die maschinell nicht erfassbar sind.
+- **Löschung nach Art. 17 DSGVO** als Anonymisierung: das Konto verliert seine
+  Identität, aufbewahrungspflichtige Bestellungen und Freigaben bleiben erhalten
+  (§ 147 AO, § 257 HGB). Rein persönliche Spuren werden wirklich entfernt.
+- **Aufbewahrungsfristen** je Datenart mit Begründung, dazu eine Vorschau, was
+  ein Lauf heute entfernen würde.
+
+Der Aufräumlauf läuft per Cron:
+
+```bash
+pnpm --filter api aufbewahrung:vorschau   # zählt nur
+pnpm --filter api aufbewahrung            # löscht
+```
+
+Verarbeitungsverzeichnis, Mitbestimmung nach § 87 BetrVG und die offenen Punkte:
+[`docs/datenschutz.md`](docs/datenschutz.md).
+
 ## Rollen und Rechte
 
 Vier Rollen mit aufsteigendem Rang: `mitarbeiter`, `fuehrungskraft`,
@@ -173,7 +195,7 @@ einem GIN-Index ersetzt mehrere Joins; Benutzer tragen ihre Tokens am Datensatz.
 
 ```bash
 pnpm test                 # Unit-Tests (API und Shared)
-node e2e/smoke.js         # alle 36 Seiten laden fehlerfrei
+node e2e/smoke.js         # alle 37 Seiten laden fehlerfrei
 node e2e/flows.js         # 33 Prüfungen der Fachprozesse, inkl. Mandantentrennung
 node e2e/integrations.js  # Prüfungen der Schnittstellen
 ```
