@@ -86,6 +86,11 @@ typprüft: `pnpm --filter @ah-intranet/shared build`.
 Browserprüfungen liegen in `e2e/` und brauchen laufende Dienste sowie ein
 installiertes Playwright (siehe `e2e/README.md`).
 
+Sicherung, Wiederherstellung und der Probelauf liegen in `scripts/`; Einzelheiten
+in [`docs/betrieb.md`](docs/betrieb.md). Der Probelauf gehört nach jeder Änderung
+am Schema gelaufen – er vergleicht Bestände und Migrationsstand, nicht nur den
+Erfolg des Restores.
+
 ## Konventionen
 
 - Oberfläche, Fehlermeldungen, Commit-Botschaften und Kommentare auf Deutsch.
@@ -119,6 +124,9 @@ Datenschutzfunktionen.
 
 Offen vor dem Produktivbetrieb:
 
-- **Betrieb:** Sicherung und geprobte Wiederherstellung, Betriebsdokumentation.
+- **Abzug der Sicherungen auf ein zweites System.** Die Skripte sichern lokal;
+  das schützt gegen Bedienfehler, nicht gegen Ausfall der Maschine. Der Weg
+  dorthin hängt von der Umgebung des Hauses ab.
+- **Zentrale Protokollauswertung.** Die Anwendung schreibt nach stdout.
 - **Rohabfragen:** `$queryRaw` umgeht die Mandantentrennung (siehe oben).
 - **Auftragsverarbeitungsvertrag** zwischen Betreiber und Haus (Vorlage fehlt).

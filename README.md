@@ -202,6 +202,24 @@ node e2e/integrations.js  # Prüfungen der Schnittstellen
 
 Details in [`e2e/README.md`](e2e/README.md).
 
+## Betrieb
+
+```bash
+./scripts/sicherung.sh              # Dump + Prüfsumme, räumt alte Stände auf
+./scripts/wiederherstellung.sh <datei>
+./scripts/probelauf.sh              # sichert, spielt zurück, vergleicht, räumt auf
+```
+
+Der **Probelauf** ist der Punkt, auf den es ankommt: eine Sicherung, die nie
+zurückgespielt wurde, ist eine Vermutung. Er vergleicht je Haus die Zahl der
+Benutzer, Beiträge, Bestellungen, Tickets und Protokolleinträge sowie den
+Migrationsstand und endet bei jeder Abweichung mit Code 1.
+
+`INTEGRATION_SECRET_KEY` gehört getrennt von den Sicherungen aufbewahrt – ohne
+ihn sind die Zugangsdaten zu Fremdsystemen nach einer Wiederherstellung
+unlesbar. Störungsbilder, Cron-Beispiele und der Aktualisierungsweg:
+[`docs/betrieb.md`](docs/betrieb.md).
+
 ## Docker Compose
 
 ```bash

@@ -11,3 +11,6 @@ prisma/dev.db
 
 # Inkrementelle Build-Zwischenstände - reiner Maschinenzustand
 *.tsbuildinfo
+
+# Lokale Sicherungen gehören nicht ins Repository
+backups/
