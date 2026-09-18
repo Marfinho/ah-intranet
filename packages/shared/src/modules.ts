@@ -235,7 +235,7 @@ export const MODULE_DEFINITIONS = [
     group: "ressourcen",
     core: false,
     dependsOn: ["integrations"],
-    defaultEnabled: true,
+    defaultEnabled: false,
   },
   {
     key: "integrations",
@@ -246,7 +246,7 @@ export const MODULE_DEFINITIONS = [
     group: "verwaltung",
     core: false,
     dependsOn: [],
-    defaultEnabled: true,
+    defaultEnabled: false,
   },
   {
     key: "admin",
