@@ -1,23 +1,79 @@
-import { currentUser } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
-import { InfoList, Section } from "@/components/ui";
+import { InfoList, Section, Tag } from "@/components/ui";
+import { ProfileForm } from "./profile-form";
+import { PasswordForm } from "./password-form";
+import { ROLE_LABELS } from "@ah-intranet/shared";
+import { requireSession } from "@/lib/session";
+import { apiGetSafe } from "@/lib/api";
+import type { EmployeeDirectoryEntry } from "@ah-intranet/shared";
 
-export default function ProfilePage() {
+export default async function ProfilePage() {
+  const session = await requireSession();
+
+  // Kontaktdaten stehen im Verzeichnis, nicht im Token.
+  const directory = await apiGetSafe<{ items: EmployeeDirectoryEntry[] }>(
+    `/directory?search=${encodeURIComponent(session.displayName)}`,
+    { items: [] },
+  );
+  const me = directory.items.find((entry) => entry.username === session.username);
+
   return (
-    <AppShell title="Profil" subtitle="Eigene Stammdaten, Rolle und vorbereitete Organisationsstruktur">
-      <Section title="Mein Profil" subtitle="Standort, Abteilung und Fachbereich sind für spätere Prozesse bereits vorgesehen">
+    <AppShell title="Mein Profil" subtitle="Kontaktdaten, Zuständigkeiten und Zugangsdaten">
+      <Section title="Stammdaten" subtitle="Von der Administration gepflegt">
         <InfoList
           items={[
-            { label: "Benutzername", value: currentUser.username },
-            { label: "Anzeigename", value: currentUser.displayName },
-            { label: "Rolle", value: currentUser.role },
-            { label: "Scope", value: currentUser.scope },
-            { label: "Standort", value: currentUser.location ?? "Nicht zugeordnet" },
-            { label: "Abteilung", value: currentUser.department ?? "Nicht zugeordnet" },
-            { label: "Fachbereich", value: currentUser.specialtyArea ?? "Nicht zugeordnet" },
-            { label: "E-Mail", value: currentUser.email ?? "Keine Firmen-E-Mail hinterlegt" },
+            { label: "Name", value: session.displayName },
+            { label: "Benutzername", value: session.username },
+            { label: "Funktion", value: session.jobTitle ?? "–" },
+            { label: "E-Mail", value: session.email ?? "–" },
+            { label: "Standort", value: session.location ?? "–" },
+            { label: "Abteilung", value: session.department ?? "–" },
+            { label: "Fachbereich", value: session.specialtyArea ?? "–" },
+            {
+              label: "Rollen",
+              value: (
+                <span className="flex flex-wrap gap-2">
+                  {session.roles.map((role) => (
+                    <Tag key={role}>{ROLE_LABELS[role] ?? role}</Tag>
+                  ))}
+                </span>
+              ),
+            },
           ]}
         />
+
+        {session.permissions.length > 0 ? (
+          <div className="mt-6">
+            <p className="text-sm font-semibold text-slate-900">Ihre Berechtigungen</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {session.permissions.map((permission) => (
+                <Tag key={permission}>{permission}</Tag>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </Section>
+
+      <Section title="Kontaktdaten pflegen" subtitle="Diese Angaben erscheinen im Mitarbeiterverzeichnis">
+        <ProfileForm
+          defaults={{
+            phone: me?.phone ?? "",
+            mobile: me?.mobile ?? "",
+            presence: me?.presence ?? "vor Ort",
+            responsibilities: (me?.responsibilities ?? []).join(", "),
+          }}
+        />
+      </Section>
+
+      <Section
+        title="Passwort ändern"
+        subtitle={
+          session.mustChangePassword
+            ? "Sie nutzen noch ein Startpasswort – bitte ändern Sie es jetzt."
+            : "Mindestens zehn Zeichen"
+        }
+      >
+        <PasswordForm />
       </Section>
     </AppShell>
   );

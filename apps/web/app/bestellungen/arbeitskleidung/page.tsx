@@ -1,65 +1,56 @@
-import { orderCycles, workwearCatalog, workwearOrders } from "@ah-intranet/shared";
+import type { OrderCycleInfo, OrderSummary, WorkwearCatalogItem } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
-import { DataTable } from "@/components/data-table";
-import { Timeline } from "@/components/timeline";
-import { OrderComments } from "@/components/order-comments";
-import { InfoList, Section, StatusBadge } from "@/components/ui";
-import { WorkwearOrderForm } from "@/components/workwear-order-form";
+import { EmptyState, Section, StatusBadge } from "@/components/ui";
+import { WorkwearForm } from "./workwear-form";
+import { apiGet } from "@/lib/api";
+import { requireModule } from "@/lib/session";
 import { formatDate } from "@/lib/utils";
 
-const nextCycle = orderCycles.find((cycle) => cycle.type === "workwear")!;
-const latestOrder = workwearOrders[0];
+interface CatalogResponse {
+  catalog: WorkwearCatalogItem[];
+  nextCycle: OrderCycleInfo | null;
+  existingOrders: OrderSummary[];
+}
 
-export default function WorkwearPage() {
+export default async function WorkwearPage() {
+  await requireModule("orders");
+  const data = await apiGet<CatalogResponse>("/orders/workwear/catalog");
+
   return (
-    <AppShell title="Arbeitskleidung" subtitle="Pflegbarer Katalog, Größenwahl, Mengen und transparente Bestellhistorie">
-      <Section title="Neue Bestellung" subtitle={`Nächste Sammelbestellung: ${formatDate(nextCycle.nextOrderDate)}`}>
-        <WorkwearOrderForm items={workwearCatalog} />
+    <AppShell title="Arbeitskleidung bestellen" subtitle="Aus dem freigegebenen Katalog wählen und Mengen erfassen">
+      <Section
+        title="Neue Bestellung"
+        subtitle={
+          data.nextCycle
+            ? `Nächste Sammelbestellung am ${formatDate(data.nextCycle.nextOrderDate)} · ${data.nextCycle.notes ?? ""}`
+            : "Derzeit ist kein Sammelbestelltermin hinterlegt."
+        }
+      >
+        {data.catalog.length === 0 ? (
+          <EmptyState title="Katalog ist leer" detail="Die Administration hat noch keine Artikel freigegeben." />
+        ) : (
+          <WorkwearForm catalog={data.catalog} />
+        )}
       </Section>
 
-      <Section title="MVP-Regeln" subtitle="Einfacher Freigabeprozess ohne Lagerbestand oder Budgetprüfung im MVP">
-        <InfoList
-          items={[
-            { label: "Freigabe", value: "1-stufig durch Admin" },
-            { label: "Lagerbestand", value: "Nicht Bestandteil des MVP" },
-            { label: "Budgetprüfung", value: "Nicht Bestandteil des MVP" },
-            { label: "Externe Sammelbestellung", value: "Nach Freigabe separat durch Admin bestätigt" },
-          ]}
-        />
-      </Section>
-
-      <Section title="Bestellhistorie" subtitle="Eigene Arbeitskleidungsbestellungen inklusive Statushistorie">
-        <DataTable
-          rows={workwearOrders}
-          columns={[
-            {
-              key: "id",
-              header: "Bestellung",
-              render: (order) => (
+      <Section title="Ihre bisherigen Kleidungsbestellungen" subtitle="Die letzten zehn Vorgänge">
+        {data.existingOrders.length === 0 ? (
+          <EmptyState title="Keine früheren Bestellungen" detail="Ihre erste Bestellung erscheint nach dem Absenden hier." />
+        ) : (
+          <ul className="space-y-3">
+            {data.existingOrders.map((order) => (
+              <li key={order.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 p-4">
                 <div>
-                  <p className="font-semibold text-slate-900">{order.id}</p>
-                  <p className="text-xs text-slate-500">{formatDate(order.createdAt)}</p>
+                  <p className="font-semibold text-slate-900">{order.orderNumber}</p>
+                  <p className="text-sm text-slate-600">
+                    {order.summary} · {formatDate(order.createdAt)}
+                  </p>
                 </div>
-              ),
-            },
-            { key: "status", header: "Status", render: (order) => <StatusBadge status={order.status} /> },
-            { key: "items", header: "Positionen", render: (order) => `${order.itemCount} Artikel` },
-            { key: "cycle", header: "Nächster Zyklus", render: (order) => formatDate(order.nextCycle) },
-            {
-              key: "detail",
-              header: "Inhalt",
-              render: (order) => order.items.map((item) => `${item.itemName} ${item.size} × ${item.quantity}`).join(", "),
-            },
-          ]}
-        />
-      </Section>
-
-      <Section title={`Bearbeitungsverlauf · ${latestOrder.id}`} subtitle="Transparenter Verlauf bis zur externen Sammelbestellung">
-        <Timeline items={latestOrder.timeline} />
-      </Section>
-
-      <Section title={`Kommentare · ${latestOrder.id}`} subtitle="Rückfragen und Hinweise zwischen Besteller und Administration">
-        <OrderComments comments={latestOrder.comments} />
+                <StatusBadge status={order.status} />
+              </li>
+            ))}
+          </ul>
+        )}
       </Section>
     </AppShell>
   );

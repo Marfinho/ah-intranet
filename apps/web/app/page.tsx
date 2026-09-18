@@ -1,110 +1,229 @@
 import Link from "next/link";
-import { criticalNews, currentUser, dashboardMetrics, openTickets, orderCycles, pendingApprovals, unreadNotifications } from "@ah-intranet/shared";
+import type { DashboardPayload } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
-import { DataGrid, MetricCard, PriorityBadge, Section, StatusBadge } from "@/components/ui";
-import { formatDate } from "@/lib/utils";
+import { DataGrid, EmptyState, MetricCard, PriorityBadge, Section, StatusBadge } from "@/components/ui";
+import { PollCard } from "@/components/poll-card";
+import { apiGet } from "@/lib/api";
+import { requireSession } from "@/lib/session";
+import { formatDate, formatDateTime } from "@/lib/utils";
 
-const quickLinks = [
-  ["/mitarbeiter", "Mitarbeiterverzeichnis"],
-  ["/dokumente", "Dokumente & Vorlagen"],
-  ["/benachrichtigungen", "Benachrichtigungen"],
-  ["/kalender", "Kalender"],
-  ["/tickets", "Serviceanfragen"],
-  ["/onboarding", "Onboarding"],
-] as const;
+export default async function DashboardPage() {
+  const session = await requireSession();
+  const data = await apiGet<DashboardPayload>("/dashboard");
 
-export default function DashboardPage() {
   return (
-    <AppShell title="Dashboard" subtitle="Zentrale Übersicht für News, Bestellungen, Freigaben und interne Services">
+    <AppShell title="Dashboard" subtitle="Ihre Übersicht über News, Aufgaben, Termine und Services">
       <section className="rounded-3xl bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 p-6 text-white shadow-card">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-100">Willkommen zurück</p>
-        <h2 className="mt-2 text-3xl font-bold">{currentUser.displayName}</h2>
+        <h2 className="mt-2 text-3xl font-bold">{session.displayName}</h2>
         <p className="mt-2 max-w-3xl text-sm text-brand-50">
-          Das Intranet bündelt interne News, Mitarbeiterverzeichnis, Dokumente, Bestellungen, Freigaben, Serviceanfragen und Onboarding in einer modular erweiterbaren Oberfläche.
+          {session.jobTitle} · {session.scopeLabel}
         </p>
-        <div className="mt-5 flex flex-wrap gap-3 text-sm">
-          <span className="badge bg-white/15 text-white">Benutzername: {currentUser.username}</span>
-          <span className="badge bg-white/15 text-white">Rolle: {currentUser.role}</span>
-          <span className="badge bg-white/15 text-white">Scope: {currentUser.scope}</span>
-          <span className="badge bg-white/15 text-white">Ungelesen: {unreadNotifications.length}</span>
-        </div>
+        {data.quickLinks.length > 0 ? (
+          <div className="mt-5 flex flex-wrap gap-2">
+            {data.quickLinks.map((link) => (
+              <a
+                key={link.id}
+                href={link.url}
+                target="_blank"
+                rel="noreferrer"
+                className="badge bg-white/15 text-white transition hover:bg-white/25"
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
+        ) : null}
       </section>
 
-      <DataGrid>
-        {dashboardMetrics.map((metric) => (
-          <MetricCard key={metric.label} {...metric} />
-        ))}
-      </DataGrid>
-
-      <Section title="Schnellzugriffe" subtitle="Zentrale Intranet-Bausteine für den täglichen Arbeitsablauf">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {quickLinks.map(([href, label]) => (
-            <Link key={href} href={href} className="rounded-2xl border border-slate-200 p-5 font-semibold text-slate-900 transition hover:border-brand-100 hover:bg-slate-50">
-              {label}
-            </Link>
+      {data.metrics.length > 0 ? (
+        <DataGrid>
+          {data.metrics.map((metric) => (
+            <MetricCard key={metric.label} {...metric} />
           ))}
-        </div>
-      </Section>
+        </DataGrid>
+      ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[1.45fr_1fr]">
-        <Section title="Priorisierte Meldungen" subtitle="Wichtige Informationen aus allen Standorten und Fachbereichen" action={<Link href="/aktuelles" className="text-sm font-semibold text-brand-700">Alle Meldungen</Link>}>
-          <div className="space-y-4">
-            {criticalNews.map((news) => (
-              <Link key={news.id} href={`/aktuelles/${news.slug}`} className="block rounded-2xl border border-slate-200 p-4 transition hover:border-brand-100 hover:bg-slate-50">
-                <div className="flex flex-wrap items-center gap-3">
-                  <StatusBadge status={news.status} />
-                  <PriorityBadge priority={news.priority} />
-                  <span className="text-sm text-slate-500">{formatDate(news.publishedAt)}</span>
-                </div>
-                <h3 className="mt-3 text-lg font-semibold text-slate-900">{news.title}</h3>
-                <p className="mt-2 text-sm text-slate-600">{news.teaser}</p>
-                <p className="mt-3 text-xs uppercase tracking-wide text-slate-400">Zielgruppen: {news.audience.join(", ")}</p>
+      <div className="grid gap-6 xl:grid-cols-2">
+        {data.news.length > 0 ? (
+          <Section
+            title="Aktuelles"
+            subtitle="Beiträge für Ihre Zielgruppe"
+            action={
+              <Link href="/aktuelles" className="text-sm font-semibold text-brand-700 hover:underline">
+                Alle Beiträge
               </Link>
-            ))}
-          </div>
-        </Section>
+            }
+          >
+            <ul className="space-y-3">
+              {data.news.map((item) => (
+                <li key={item.id}>
+                  <Link
+                    href={`/aktuelles/${item.slug}`}
+                    className="block rounded-2xl border border-slate-200 p-4 transition hover:border-brand-100 hover:bg-slate-50"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <PriorityBadge priority={item.priority} />
+                      {!item.read ? <span className="badge bg-brand-50 text-brand-700">neu</span> : null}
+                      {item.pinned ? <span className="badge bg-amber-50 text-amber-700">angepinnt</span> : null}
+                      <span className="text-xs text-slate-500">
+                        {item.publishedAt ? formatDate(item.publishedAt) : "Entwurf"}
+                      </span>
+                    </div>
+                    <p className="mt-2 font-semibold text-slate-900">{item.title}</p>
+                    <p className="mt-1 text-sm text-slate-600">{item.teaser}</p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Section>
+        ) : null}
 
-        <Section title="Nächste Schritte" subtitle="Bestelltermine, offene Tickets und Handlungsbedarf">
-          <div className="space-y-4">
-            {orderCycles.map((cycle) => (
-              <div key={cycle.id} className="rounded-2xl border border-slate-200 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="font-semibold text-slate-900">{cycle.label}</p>
-                    <p className="text-sm text-slate-600">{cycle.notes}</p>
-                  </div>
-                  <span className="badge bg-brand-50 text-brand-700">{formatDate(cycle.nextOrderDate)}</span>
-                </div>
-              </div>
-            ))}
-            <div className="rounded-2xl border border-slate-200 p-4">
-              <p className="font-semibold text-slate-900">Offene Serviceanfragen</p>
-              <div className="mt-3 space-y-2">
-                {openTickets.slice(0, 3).map((ticket) => (
-                  <div key={ticket.id} className="text-sm text-slate-700">
-                    <span className="font-medium text-slate-900">{ticket.title}</span> · {ticket.status}
-                  </div>
+        <div className="space-y-6">
+          {data.approvals.length > 0 ? (
+            <Section
+              title="Offene Freigaben"
+              subtitle="Warten auf Ihre Entscheidung"
+              action={
+                <Link href="/freigaben" className="text-sm font-semibold text-brand-700 hover:underline">
+                  Zu den Freigaben
+                </Link>
+              }
+            >
+              <ul className="space-y-3">
+                {data.approvals.map((task) => (
+                  <li key={task.id} className="rounded-2xl border border-slate-200 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-semibold text-slate-900">{task.orderNumber}</span>
+                      <StatusBadge status={task.status} />
+                    </div>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {task.requester} · {task.summary}
+                    </p>
+                  </li>
                 ))}
-              </div>
-            </div>
-          </div>
-        </Section>
+              </ul>
+            </Section>
+          ) : null}
+
+          {data.notifications.length > 0 ? (
+            <Section
+              title="Ungelesene Benachrichtigungen"
+              subtitle="Ereignisse aus Ihren Modulen"
+              action={
+                <Link href="/benachrichtigungen" className="text-sm font-semibold text-brand-700 hover:underline">
+                  Alle anzeigen
+                </Link>
+              }
+            >
+              <ul className="space-y-3">
+                {data.notifications.map((entry) => (
+                  <li key={entry.id} className="rounded-2xl border border-slate-200 p-4">
+                    <p className="font-semibold text-slate-900">{entry.title}</p>
+                    <p className="mt-1 text-sm text-slate-600">{entry.detail}</p>
+                    <p className="mt-2 text-xs text-slate-500">{formatDateTime(entry.createdAt)}</p>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          ) : null}
+        </div>
       </div>
 
-      <Section title="Freigaben mit Handlungsbedarf" subtitle="Offene Prüfungen und Sammelbestellungen für Admins und Fachbereichsadmins">
-        <div className="grid gap-4 lg:grid-cols-3">
-          {pendingApprovals.map((task) => (
-            <div key={task.id} className="rounded-2xl border border-slate-200 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <p className="font-semibold text-slate-900">{task.orderId}</p>
-                <StatusBadge status={task.status} />
-              </div>
-              <p className="mt-2 text-sm text-slate-600">{task.requester} · {task.scope}</p>
-              <p className="mt-3 text-sm text-slate-700">{task.nextAction}</p>
-            </div>
-          ))}
+      <div className="grid gap-6 xl:grid-cols-2">
+        {data.events.length > 0 ? (
+          <Section title="Nächste Termine" subtitle="Schulungen, Aktionen und Wartungsfenster">
+            <ul className="space-y-3">
+              {data.events.map((event) => (
+                <li key={event.id} className="rounded-2xl border border-slate-200 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-semibold text-slate-900">{event.title}</span>
+                    <span className="badge bg-slate-100 text-slate-600">{event.category}</span>
+                  </div>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {formatDateTime(event.startsAt)} · {event.location ?? "ohne Ort"}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </Section>
+        ) : null}
+
+        <div className="space-y-6">
+          {data.cycles.length > 0 ? (
+            <Section title="Bestelltermine" subtitle="Stichtage der nächsten Sammelbestellungen">
+              <ul className="space-y-3">
+                {data.cycles.map((cycle) => (
+                  <li key={cycle.id} className="rounded-2xl border border-slate-200 p-4">
+                    <p className="font-semibold text-slate-900">{cycle.label}</p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Nächster Termin: {formatDate(cycle.nextOrderDate)} · {cycle.scope}
+                    </p>
+                    {cycle.notes ? <p className="mt-1 text-xs text-slate-500">{cycle.notes}</p> : null}
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          ) : null}
+
+          {data.tickets.length > 0 ? (
+            <Section title="Meine Serviceanfragen" subtitle="Offene Tickets">
+              <ul className="space-y-3">
+                {data.tickets.map((ticket) => (
+                  <li key={ticket.id} className="rounded-2xl border border-slate-200 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-semibold text-slate-900">
+                        {ticket.number} · {ticket.title}
+                      </span>
+                      <StatusBadge status={ticket.status} />
+                    </div>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {ticket.category} · {ticket.assignee ?? "noch nicht zugewiesen"}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          ) : null}
+
+          {data.absences.length > 0 ? (
+            <Section title="Meine Abwesenheiten" subtitle="Anträge und genehmigte Zeiträume">
+              <ul className="space-y-3">
+                {data.absences.map((absence) => (
+                  <li key={absence.id} className="rounded-2xl border border-slate-200 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-semibold text-slate-900">
+                        {formatDate(absence.startDate)} – {formatDate(absence.endDate)}
+                      </span>
+                      <StatusBadge status={absence.status} />
+                    </div>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {absence.type} · {absence.workingDays} Arbeitstage
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          ) : null}
         </div>
-      </Section>
+      </div>
+
+      {data.polls.length > 0 ? (
+        <Section title="Aktuelle Umfrage" subtitle="Ihre Stimme zählt">
+          <div className="space-y-4">
+            {data.polls.map((poll) => (
+              <PollCard key={poll.id} poll={poll} canManage={false} />
+            ))}
+          </div>
+        </Section>
+      ) : null}
+
+      {data.metrics.length === 0 && data.news.length === 0 ? (
+        <EmptyState
+          title="Noch keine Inhalte"
+          detail="Sobald Module aktiviert und Inhalte gepflegt sind, erscheinen sie hier."
+        />
+      ) : null}
     </AppShell>
   );
 }

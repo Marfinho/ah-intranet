@@ -5,8 +5,9 @@
     "dev": "pnpm --filter @ah-intranet/shared build && next dev",
     "build": "pnpm --filter @ah-intranet/shared build && next build",
     "start": "next start",
-    "lint": "echo 'lint placeholder for web'",
-    "format": "prettier --write \"app/**/*.{ts,tsx}\" \"components/**/*.{ts,tsx}\" \"lib/**/*.{ts,tsx}\""
+    "lint": "next lint",
+    "format": "prettier --write \"app/**/*.{ts,tsx}\" \"components/**/*.{ts,tsx}\" \"lib/**/*.{ts,tsx}\"",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@ah-intranet/shared": "workspace:*",

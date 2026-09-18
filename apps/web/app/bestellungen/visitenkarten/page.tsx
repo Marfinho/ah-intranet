@@ -1,61 +1,67 @@
-import { businessCardFields, businessCardOrders, orderCycles } from "@ah-intranet/shared";
+import type { BusinessCardFieldDefinition, OrderCycleInfo, OrderSummary } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
-import { BusinessCardForm } from "@/components/business-card-form";
-import { DataTable } from "@/components/data-table";
-import { Timeline } from "@/components/timeline";
-import { OrderComments } from "@/components/order-comments";
-import { InfoList, Section, StatusBadge } from "@/components/ui";
+import { EmptyState, Section, StatusBadge } from "@/components/ui";
+import { BusinessCardForm } from "./business-card-form";
+import { apiGet } from "@/lib/api";
+import { requireModule } from "@/lib/session";
 import { formatDate } from "@/lib/utils";
 
-const nextCycle = orderCycles.find((cycle) => cycle.type === "business_cards")!;
-const latestOrder = businessCardOrders[0];
+interface ConfigResponse {
+  fields: BusinessCardFieldDefinition[];
+  nextCycle: OrderCycleInfo | null;
+  existingOrders: OrderSummary[];
+}
 
-export default function BusinessCardsPage() {
+export default async function BusinessCardPage() {
+  const session = await requireModule("orders");
+  const config = await apiGet<ConfigResponse>("/orders/business-cards/config");
+
   return (
-    <AppShell title="Visitenkarten" subtitle="Dynamische Feldkonfiguration, Freigabeprozess und Nachbestellung alter Konfigurationen">
-      <Section title="Neue Bestellung" subtitle={`Nächste Sammelbestellung: ${formatDate(nextCycle.nextOrderDate)}`}>
-        <BusinessCardForm fields={businessCardFields} />
+    <AppShell title="Visitenkarten bestellen" subtitle="Die Felder sind vom Marketing vorgegeben und zentral gepflegt">
+      <Section
+        title="Neue Bestellung"
+        subtitle={
+          config.nextCycle
+            ? `Nächste Sammelbestellung am ${formatDate(config.nextCycle.nextOrderDate)} · ${config.nextCycle.notes ?? ""}`
+            : "Derzeit ist kein Sammelbestelltermin hinterlegt."
+        }
+      >
+        {config.fields.length === 0 ? (
+          <EmptyState
+            title="Kein Formular hinterlegt"
+            detail="Die Administration hat noch keine Visitenkartenfelder konfiguriert."
+          />
+        ) : (
+          <BusinessCardForm
+            fields={config.fields}
+            defaults={{
+              fullName: session.displayName,
+              jobTitle: session.jobTitle ?? "",
+              location: session.location ?? "",
+              email: session.email ?? "",
+            }}
+          />
+        )}
       </Section>
 
-      <Section title="Formular- und Prozesshinweise" subtitle="Administrierbare Felder und klarer 1-stufiger Freigabefluss">
-        <InfoList
-          items={[
-            { label: "Bestellzyklus", value: nextCycle.notes },
-            { label: "Freigabe", value: "1-stufig durch Admin" },
-            { label: "Externe Bestellung", value: "Separate Admin-Aktion nach Freigabe" },
-            { label: "Nachbestellung", value: "Auf Basis früherer Konfigurationen möglich" },
-          ]}
-        />
-      </Section>
-
-      <Section title="Meine Bestellungen" subtitle="Statusanzeige, Auflagen und Nachbestellung aus vorhandenen Konfigurationen">
-        <DataTable
-          rows={businessCardOrders}
-          columns={[
-            {
-              key: "id",
-              header: "Bestellung",
-              render: (order) => (
+      <Section title="Ihre bisherigen Visitenkartenbestellungen" subtitle="Die letzten zehn Vorgänge">
+        {config.existingOrders.length === 0 ? (
+          <EmptyState title="Keine früheren Bestellungen" detail="Ihre erste Bestellung erscheint nach dem Absenden hier." />
+        ) : (
+          <ul className="space-y-3">
+            {config.existingOrders.map((order) => (
+              <li key={order.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 p-4">
                 <div>
-                  <p className="font-semibold text-slate-900">{order.id}</p>
-                  <p className="text-xs text-slate-500">Erstellt am {formatDate(order.createdAt)}</p>
+                  <p className="font-semibold text-slate-900">{order.orderNumber}</p>
+                  <p className="text-sm text-slate-600">
+                    {order.summary} · {formatDate(order.createdAt)}
+                  </p>
                 </div>
-              ),
-            },
-            { key: "status", header: "Status", render: (order) => <StatusBadge status={order.status} /> },
-            { key: "qty", header: "Auflage", render: (order) => `${order.requestedQuantity} Stück` },
-            { key: "cycle", header: "Nächster Zyklus", render: (order) => formatDate(order.nextCycle) },
-            { key: "reorder", header: "Nachbestellung", render: (order) => order.reorderOf ?? "–" },
-          ]}
-        />
-      </Section>
-
-      <Section title={`Bearbeitungsverlauf · ${latestOrder.id}`} subtitle="Der vollständige Bearbeitungsverlauf ist für Besteller transparent sichtbar">
-        <Timeline items={latestOrder.timeline} />
-      </Section>
-
-      <Section title={`Kommentare · ${latestOrder.id}`} subtitle="Rückfragen und Hinweise zwischen Besteller und Administration">
-        <OrderComments comments={latestOrder.comments} />
+                <StatusBadge status={order.status} />
+              </li>
+            ))}
+          </ul>
+        )}
       </Section>
     </AppShell>
   );

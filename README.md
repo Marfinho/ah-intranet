@@ -1,61 +1,26 @@
 # AH Intranet
 
-Professionelles, responsives MVP-Intranet für ein Autohaus mit mehreren Standorten.
+Responsives Intranet für ein Autohaus mit mehreren Standorten. Vollständig
+lauffähig: echte Anmeldung, Datenhaltung in PostgreSQL, zwanzig Fachmodule, die
+sich vom Adminbereich einzeln ein- und ausschalten lassen.
 
 ## Architektur
 
 - **Monorepo mit pnpm-Workspace**
-- **Frontend:** Next.js 14, TypeScript, Tailwind CSS
+- **Frontend:** Next.js 14 (App Router, Server Components, Server Actions), TypeScript, Tailwind CSS
 - **Backend:** NestJS, TypeScript, Prisma ORM
 - **Datenbank:** PostgreSQL
-- **Auth:** Lokaler Login mit Benutzername + Passwort (Cookie-/Session-Vorbereitung)
+- **Auth:** Benutzername + Passwort, bcrypt-Hash, JWT im httpOnly-Cookie
 - **Deployment:** Docker Compose für lokale Entwicklung und VPS-Betrieb
-- **Architekturstil:** Modularer Monolith mit vorbereiteten Fachmodulen
-
-## Struktur
 
 ```text
 apps/
-  api/   -> NestJS API
+  api/   -> NestJS API (Prisma, Guards, Fachlogik)
   web/   -> Next.js Intranet-Frontend
 packages/
-  shared/ -> gemeinsame Typen, Demo-Domänendaten und Selektoren
+  shared/ -> gemeinsame Typen und die Modul-Registry
+e2e/      -> browserbasierte Abnahmeprüfungen
 ```
-
-## Fachmodule im MVP
-
-- `auth`
-- `users`
-- `roles_permissions`
-- `news`
-- `orders`
-- `business_cards`
-- `workwear`
-- `approvals`
-- `directory`
-- `documents`
-- `notifications`
-- `calendar`
-- `tickets`
-- `onboarding`
-- `admin`
-- `audit`
-- `order_cycles`
-
-## MVP-Funktionen
-
-- Dashboard mit Kennzahlen, priorisierten News, Benachrichtigungen und Freigaben
-- News-Modul mit Zielgruppen- und Prioritätslogik
-- Bestellmodule für Visitenkarten und Arbeitskleidung inklusive Kommentaren
-- 1-stufiger Freigabeprozess mit separater externer Sammelbestellung
-- Mitarbeiterverzeichnis / Telefonbuch
-- Dokumenten- und Vorlagenzentrale
-- Benachrichtigungszentrale
-- Kalender für interne Termine, Schulungen und Wartungen
-- Interne Serviceanfragen / Tickets
-- Onboarding-Vorlagen für neue Mitarbeitende
-- Adminbereich für Benutzer, Rollen, News, Formulare, Kataloge, Bestelltermine und Audit-Logs
-- Seed-Daten und Demo-Domänendaten für UI-Abnahme und Tests
 
 ## Start lokal
 
@@ -63,18 +28,125 @@ packages/
 pnpm install
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
+
 pnpm --filter @ah-intranet/shared build
 pnpm --filter api prisma:generate
-pnpm --filter api prisma:migrate dev
+pnpm --filter api prisma:migrate deploy   # oder: prisma:migrate dev
 pnpm --filter api prisma:seed
+
 pnpm dev
 ```
 
-Frontend: `http://localhost:3000`
+Frontend: `http://localhost:3000` · Backend: `http://localhost:3001/api`
 
-Backend: `http://localhost:3001/api`
+### Demokonten
 
-Hinweis: Das API-Paket konsumiert das Workspace-Paket `@ah-intranet/shared` als gebautes JavaScript aus `packages/shared/dist`. Sowohl `pnpm dev` als auch die einzelnen `api`- und `web`-Build-/Dev-Skripte bauen dieses Paket automatisch vor dem Start; zusätzlich startet `pnpm dev` einen Watcher für Änderungen an den Shared-Typen und Demo-Daten.
+Alle Konten des Seeds nutzen dasselbe Passwort: **`Intranet2026!`**
+(über `SEED_PASSWORD` überschreibbar).
+
+| Benutzer      | Rolle(n)                          | Wofür geeignet                          |
+| ------------- | --------------------------------- | --------------------------------------- |
+| `admin`       | Administration                    | Modulsteuerung, Benutzer, Rollen, Audit |
+| `s.meier`     | Fachbereichsadmin, Führungskraft  | Freigaben, Bestellwesen, Abwesenheiten  |
+| `t.neumann`   | Fachbereichsadmin                 | News, Marketing                         |
+| `j.kruse`     | Führungskraft                     | Teamanträge freigeben                   |
+| `p.hansen`    | Mitarbeitende                     | normale Nutzersicht                     |
+
+## Modulsteuerung
+
+Herzstück der Anwendung: unter **Administration → Module** lässt sich jedes
+Fachmodul für das gesamte Intranet ein- und ausschalten.
+
+- Die Registry in `packages/shared/src/modules.ts` ist die einzige Quelle der
+  Wahrheit. Ein neues Modul wird dort eingetragen und taucht ohne Migration in
+  API und Adminoberfläche auf.
+- Ein abgeschaltetes Modul verschwindet aus der Navigation, seine Seiten leiten
+  auf einen Hinweis um, und seine API-Routen antworten mit 404 – die Sperre gilt
+  also auch für direkte Aufrufe, nicht nur für die Oberfläche.
+- **Kernmodule** (Dashboard, Benachrichtigungen, Administration) sind gesperrt,
+  damit das Intranet bedienbar bleibt.
+- **Abhängigkeiten** werden mitgeführt: Wird *Bestellungen* deaktiviert, gehen
+  die *Freigaben* automatisch mit. Vor dem Abschalten wird das angezeigt.
+- Daten bleiben erhalten; ein Modul ist nur nicht mehr erreichbar.
+- Jede Schaltung landet im Audit-Log.
+
+Serverseitig sorgt der `ModuleEnabledGuard` dafür; der aktive Zustand wird im
+Prozess gecacht (15 s TTL, sofortige Invalidierung beim Schalten), damit nicht
+jeder Request einen zusätzlichen Datenbankzugriff auslöst.
+
+## Fachmodule
+
+| Gruppe        | Module                                                                 |
+| ------------- | ---------------------------------------------------------------------- |
+| Arbeitsplatz  | Dashboard\*, Globale Suche, Benachrichtigungen\*, Schnellzugriffe       |
+| Kommunikation | Aktuelles (News), Mitarbeiterverzeichnis, Umfragen, Ideenmanagement     |
+| Prozesse      | Dokumente, Wissensdatenbank, Bestellungen, Freigaben, Serviceanfragen, Onboarding, Abwesenheiten |
+| Ressourcen    | Kalender, Raumbuchung, Fuhrpark                                        |
+| Verwaltung    | Administration\*, Audit-Log                                            |
+
+\* Kernmodul, nicht abschaltbar.
+
+### Was die Module können
+
+- **News** – Zielgruppensteuerung über Scope-Tokens, Priorität, Anpinnen,
+  Laufzeit, Lesebestätigung, Kommentare; hohe und kritische Beiträge lösen
+  automatisch Benachrichtigungen an die betroffene Zielgruppe aus.
+- **Bestellungen** – Visitenkarten mit serverseitig konfigurierbarem Formular
+  und Arbeitskleidung aus einem gepflegten Katalog, jeweils mit Sammelbestell-
+  terminen, Verlauf und Rückfragen.
+- **Freigaben** – einstufiger Prozess mit geprüften Statusübergängen
+  (`Eingereicht → Genehmigt → Vorgemerkt → Extern bestellt → Abgeschlossen`),
+  Ablehnung, Stornierung und Sammelbestellung in einem Zug.
+- **Serviceanfragen** – Tickets an IT, Facility, Personal, Marketing und
+  Fuhrpark mit Zuweisung, Status und Verlauf.
+- **Abwesenheiten** – Urlaub, Krankmeldung, Gleitzeit, Sonderurlaub und
+  Fortbildung; Arbeitstage werden berechnet, Überschneidungen abgewiesen,
+  Freigabe durch die Führungskraft, Urlaubskonto inklusive.
+- **Onboarding** – rollenbasierte Vorlagen, Zuweisung an Personen, abhakbare
+  Checkliste mit Fortschritt.
+- **Raumbuchung / Fuhrpark** – Reservierungen mit Kollisionsprüfung; beim
+  Fuhrpark zusätzlich Übergabestatus (reserviert, abgeholt, zurückgegeben).
+- **Ideen / Umfragen** – Vorschläge mit Zustimmung und Bearbeitungsstand,
+  Abstimmungen mit Auswertung in Echtzeit (eine Stimme pro Person, änderbar).
+- **Wissensdatenbank / Dokumente** – durchsuchbare Artikel und verlinkte
+  Unterlagen, beide mit Kategorien und Zielgruppen.
+- **Globale Suche** – eine Abfrage über News, Dokumente, Wiki, Personen und
+  Tickets; deaktivierte Module werden übersprungen.
+- **Administration** – Benutzer (inkl. generiertem Startpasswort und Sperre),
+  Rollen und Rechte, News, Dokumente, Kataloge, Formularfelder, Bestelltermine,
+  Modulsteuerung und Audit-Log.
+
+## Rollen und Rechte
+
+Vier Rollen mit aufsteigendem Rang: `mitarbeiter`, `fuehrungskraft`,
+`fachbereichsadmin`, `admin`. Rollen tragen feingranulare Berechtigungen, die im
+Adminbereich pflegbar sind. Die Rollenprüfung erfolgt serverseitig aus dem JWT –
+nicht aus Anfragedaten.
+
+**Zielgruppen** werden als flache Tokens abgebildet (`global`, `location:HB`,
+`department:SRV`, `specialty:EMOB`). Eine einzige Array-Überlappungsabfrage auf
+einem GIN-Index ersetzt mehrere Joins; Benutzer tragen ihre Tokens am Datensatz.
+
+## Sicherheit
+
+- Passwörter als bcrypt-Hash (Kostenfaktor 12); der Vergleich läuft auch bei
+  unbekanntem Benutzernamen gegen einen Dummy-Hash, damit die Antwortzeit keine
+  Konten verrät.
+- JWT im httpOnly-Cookie, `sameSite=lax`, `secure` in Produktion.
+- Global aktive Guards: Authentifizierung → Rollen → Modulaktivierung.
+- CORS strikt auf `FRONTEND_URL` beschränkt, Cookies nur dorthin.
+- Eingaben werden serverseitig validiert (`class-validator`,
+  `forbidNonWhitelisted`); die Prüfung im Browser ist reiner Komfort.
+- Audit-Log über alle relevanten Aktionen.
+
+## Prüfungen
+
+```bash
+node e2e/smoke.js   # alle 31 Seiten laden fehlerfrei
+node e2e/flows.js   # 27 Prüfungen der Fachprozesse
+```
+
+Details in [`e2e/README.md`](e2e/README.md).
 
 ## Docker Compose
 
@@ -82,22 +154,30 @@ Hinweis: Das API-Paket konsumiert das Workspace-Paket `@ah-intranet/shared` als 
 docker compose up --build
 ```
 
-## Demo-Logins
+Startet PostgreSQL, API und Frontend. Migration und Seed danach einmalig:
 
-- `admin / Start123!`
-- `service.mitte / Start123!`
-- `fachbereich / Start123!`
+```bash
+docker compose exec api npx prisma migrate deploy
+docker compose exec api npx tsx prisma/seed.ts
+```
 
-## Beispiel-Endpunkte
+## Umgebungsvariablen
 
-- `GET /api/health`
-- `POST /api/auth/login`
-- `GET /api/news`
-- `GET /api/orders/overview`
-- `GET /api/documents`
-- `GET /api/notifications`
-- `GET /api/calendar`
-- `GET /api/tickets`
-- `GET /api/onboarding`
-- `GET /api/admin/summary`
-- `GET /api/audit`
+**`apps/api/.env`**
+
+| Variable         | Bedeutung                                            |
+| ---------------- | ---------------------------------------------------- |
+| `PORT`           | Port der API (Standard 3001)                         |
+| `DATABASE_URL`   | PostgreSQL-Verbindung                                |
+| `FRONTEND_URL`   | erlaubte CORS-Herkunft, kommagetrennt möglich        |
+| `JWT_SECRET`     | Sitzungsschlüssel – **in Produktion zwingend setzen** |
+| `JWT_EXPIRES_IN` | Gültigkeit des Tokens (Standard `12h`)               |
+
+**`apps/web/.env.local`**
+
+| Variable              | Bedeutung                                        |
+| --------------------- | ------------------------------------------------ |
+| `API_URL`             | serverseitig genutzte API-Adresse                |
+| `NEXT_PUBLIC_API_URL` | Fallback, auch im Browser sichtbar               |
+
+Ohne `JWT_SECRET` startet die API bewusst nicht.

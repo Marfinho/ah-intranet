@@ -1,0 +1,182 @@
+const { chromium } = require("playwright");
+
+const BASE = process.env.E2E_BASE_URL || "http://localhost:3000";
+const PASS = process.env.E2E_PASSWORD || "Intranet2026!";
+const results = [];
+
+function check(name, ok, detail = "") {
+  results.push({ name, ok, detail });
+  console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? " :: " + detail : ""}`);
+}
+
+async function login(page, username) {
+  await page.goto(`${BASE}/login`, { waitUntil: "networkidle" });
+  await page.fill('input[name="username"]', username);
+  await page.fill('input[name="password"]', PASS);
+  await Promise.all([page.waitForURL((url) => !url.pathname.includes("/login"), { timeout: 20000 }), page.click('button[type="submit"]')]);
+}
+
+(async () => {
+  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
+  const ctx = await browser.newContext({ locale: "de-DE" });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(String(e)));
+  page.on("dialog", (d) => { d.accept().catch(() => {}); });
+
+  try {
+    // 1. Falsche Zugangsdaten
+    await page.goto(`${BASE}/login`, { waitUntil: "networkidle" });
+    await page.fill('input[name="username"]', "admin");
+    await page.fill('input[name="password"]', "falsch");
+    await page.click('form button[type="submit"]');
+    await page.waitForSelector('[role="status"]', { timeout: 10000 });
+    check("Falsches Passwort wird abgewiesen", (await page.textContent('[role="status"]')).includes("Ungültige"));
+
+    // 2. Login als Mitarbeiter
+    await login(page, "p.hansen");
+    check("Login als Mitarbeiter", page.url() === `${BASE}/`, page.url());
+    const body = await page.textContent("body");
+    check("Dashboard zeigt echten Namen", body.includes("Paul Hansen"));
+
+    // 3. Navigation enthält Module, aber keine Freigaben für Mitarbeitende
+    check("Navigation ohne Freigaben für Mitarbeitende", !(await page.locator('nav a[href="/freigaben"]').count()));
+    check("Navigation enthält Fuhrpark", (await page.locator('nav a[href="/fuhrpark"]').count()) > 0);
+
+    // 4. Visitenkartenbestellung anlegen
+    await page.goto(`${BASE}/bestellungen/visitenkarten`, { waitUntil: "networkidle" });
+    await page.fill('input[name="field:fullName"]', "Paul Hansen");
+    await page.fill('input[name="field:jobTitle"]', "Verkaufsberater Neuwagen");
+    await page.selectOption('select[name="field:location"]', "Hauptbetrieb Bremen");
+    await page.fill('input[name="field:phone"]', "0421 5550-310");
+    await page.fill('input[name="field:email"]', "p.hansen@autohaus-beispiel.de");
+    await page.fill('input[name="quantity"]', "150");
+    await page.click('main form button[type="submit"]');
+    await page.waitForSelector('[role="status"]', { timeout: 15000 });
+    check("Bestellung eingereicht", (await page.textContent('[role="status"]')).includes("eingereicht"));
+
+    // 5. Bestellung taucht in der Liste auf
+    await page.goto(`${BASE}/bestellungen/meine`, { waitUntil: "networkidle" });
+    check("Bestellung erscheint in Meine Bestellungen", (await page.textContent("body")).includes("Auflage 150"));
+
+    // 6. Ticket anlegen
+    await page.goto(`${BASE}/tickets`, { waitUntil: "networkidle" });
+    await page.fill('input[name="title"]', "Monitor flackert");
+    await page.fill('textarea[name="description"]', "Der zweite Monitor am Verkaufstresen flackert seit gestern.");
+    await page.click('main form button[type="submit"]');
+    await page.waitForSelector('[role="status"]', { timeout: 15000 });
+    check("Ticket angelegt", (await page.textContent("body")).includes("Monitor flackert"));
+
+    // 7. Abwesenheitsantrag mit ungültigem Zeitraum
+    await page.goto(`${BASE}/abwesenheiten`, { waitUntil: "networkidle" });
+    await page.fill('input[name="startDate"]', "2026-12-20");
+    await page.fill('input[name="endDate"]', "2026-12-10");
+    await page.click('main form button[type="submit"]');
+    await page.waitForSelector('[role="status"]', { timeout: 15000 });
+    check("Enddatum vor Startdatum wird abgewiesen", (await page.textContent('[role="status"]')).includes("Enddatum"));
+
+    // 8. Idee abstimmen
+    await page.goto(`${BASE}/ideen`, { waitUntil: "networkidle" });
+    const voteBtn = page.locator('button[aria-pressed]').first();
+    const before = await voteBtn.textContent();
+    await voteBtn.click();
+    await page.waitForTimeout(2500);
+    const after = await page.locator('button[aria-pressed]').first().textContent();
+    check("Zustimmung zu Idee wird gespeichert", before !== after, `${before?.trim()} -> ${after?.trim()}`);
+
+    // 9. Direktzugriff auf Adminbereich als Mitarbeiter
+    await page.goto(`${BASE}/admin/module`, { waitUntil: "networkidle" });
+    check("Mitarbeiter wird aus der Modulsteuerung umgeleitet", page.url() === `${BASE}/`, page.url());
+
+    // 10. Als Admin anmelden
+    await page.goto(`${BASE}/profil`, { waitUntil: "networkidle" });
+    await page.click('form button[aria-label="Abmelden"]');
+    await page.waitForURL(`${BASE}/login`, { timeout: 15000 });
+    check("Abmelden funktioniert", page.url() === `${BASE}/login`);
+
+    await login(page, "admin");
+    check("Login als Admin", page.url() === `${BASE}/`);
+
+    // 11. Modul abschalten
+    await page.goto(`${BASE}/admin/module`, { waitUntil: "networkidle" });
+    check("Modulsteuerung erreichbar", (await page.textContent("body")).includes("Kernmodul"));
+
+    const coreSwitch = page.locator('button[role="switch"][aria-label*="Administration"]').first();
+    check("Kernmodul-Schalter ist gesperrt", await coreSwitch.isDisabled());
+
+    // Dialoge werden global bestätigt
+    await page.locator('button[role="switch"][aria-label*="Fuhrpark"]').first().click();
+    await page.waitForTimeout(3000);
+    check(
+      "Fuhrpark deaktiviert",
+      (await page.locator('button[role="switch"][aria-label="Fuhrpark aktivieren"]').count()) > 0,
+    );
+
+    // 12. Deaktiviertes Modul ist nicht mehr erreichbar
+    await page.goto(`${BASE}/fuhrpark`, { waitUntil: "networkidle" });
+    check("Route des Moduls gesperrt", page.url().includes("/modul-deaktiviert"), page.url());
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+    check("Modul aus Navigation entfernt", (await page.locator('nav a[href="/fuhrpark"]').count()) === 0);
+
+    // 13. Abhängigkeit: Bestellungen aus -> Freigaben aus
+    await page.goto(`${BASE}/admin/module`, { waitUntil: "networkidle" });
+    // Dialoge werden global bestätigt
+    await page.locator('button[role="switch"][aria-label*="Bestellungen"]').first().click();
+    await page.waitForTimeout(3000);
+    check(
+      "Freigaben folgen Bestellungen in die Deaktivierung",
+      (await page.locator('button[role="switch"][aria-label="Freigaben aktivieren"]').count()) > 0,
+    );
+
+    // 14. Zurücksetzen
+    // Dialoge werden global bestätigt
+    await page.click('main button:has-text("Auf Standard zurücksetzen")');
+    await page.waitForTimeout(3000);
+    check(
+      "Zurücksetzen aktiviert alle Module",
+      (await page.locator(String.raw`button[role="switch"][aria-checked="false"]`).count()) === 0,
+    );
+
+    // 15. Freigabe erteilen als Admin
+    await page.goto(`${BASE}/freigaben`, { waitUntil: "networkidle" });
+    const hasApprovals = (await page.locator('button:has-text("Genehmigen")').count()) > 0;
+    check("Freigabenliste zeigt offene Vorgänge", hasApprovals);
+    if (hasApprovals) {
+      await page.locator('button:has-text("Genehmigen")').first().click();
+      await page.waitForTimeout(3000);
+      check("Freigabe erteilt", (await page.textContent("body")).includes("Sammelbestellung"));
+    }
+
+    // 16. News veröffentlichen
+    await page.goto(`${BASE}/admin/news`, { waitUntil: "networkidle" });
+    await page.fill('input[name="title"]', "Testbeitrag aus der Abnahme");
+    await page.fill('textarea[name="teaser"]', "Kurzfassung des Testbeitrags.");
+    await page.fill('textarea[name="content"]', "Ausführlicher Inhalt des Testbeitrags für die Abnahme.");
+    await page.selectOption('select[name="status"]', "published");
+    await page.click('main form button[type="submit"]');
+    await page.waitForTimeout(3000);
+    await page.goto(`${BASE}/aktuelles`, { waitUntil: "networkidle" });
+    check("Neuer Beitrag ist veröffentlicht", (await page.textContent("body")).includes("Testbeitrag aus der Abnahme"));
+
+    // 17. Globale Suche
+    await page.goto(`${BASE}/suche?q=Hochvolt`, { waitUntil: "networkidle" });
+    const searchBody = await page.textContent("body");
+    check("Globale Suche liefert modulübergreifende Treffer", searchBody.includes("Aktuelles") && searchBody.includes("Wissensdatenbank"));
+
+    // 18. Audit-Log protokolliert die Modulschaltung
+    await page.goto(`${BASE}/admin/audit`, { waitUntil: "networkidle" });
+    const auditBody = await page.textContent("body");
+    check("Audit-Log enthält Modulaktionen", auditBody.includes("module.disable") || auditBody.includes("module.reset"));
+    check("Audit-Log enthält Bestellfreigabe", auditBody.includes("order."));
+
+    check("Keine JavaScript-Fehler im Browser", errors.length === 0, errors.slice(0, 3).join(" | "));
+  } catch (error) {
+    check("Durchlauf ohne Abbruch", false, String(error).slice(0, 300));
+  } finally {
+    await browser.close();
+  }
+
+  const failed = results.filter((r) => !r.ok);
+  console.log(`\n${results.length - failed.length}/${results.length} Prüfungen bestanden`);
+  process.exit(failed.length ? 1 : 0);
+})();

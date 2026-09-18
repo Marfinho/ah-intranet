@@ -7,7 +7,10 @@
     "dev": "pnpm --filter @ah-intranet/shared build && pnpm -r --parallel --filter @ah-intranet/shared --filter api --filter web dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
     "format": "pnpm -r format",
-    "seed": "pnpm --filter api prisma:seed"
+    "seed": "pnpm --filter api prisma:seed",
+    "migrate": "pnpm --filter api prisma:migrate",
+    "e2e": "node e2e/smoke.js && node e2e/flows.js"
   }
 }
