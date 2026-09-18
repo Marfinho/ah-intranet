@@ -26,7 +26,9 @@ export function IdeaCard({ idea, canManage }: { idea: Idea; canManage: boolean }
         }
         className={cn(
           "flex w-20 flex-col items-center rounded-2xl border px-3 py-2 transition disabled:opacity-60",
-          idea.votedByMe ? "border-brand-600 bg-brand-50 text-brand-800" : "border-slate-200 text-slate-600 hover:bg-slate-50",
+          idea.votedByMe
+            ? "border-brand-600 bg-brand-50 text-brand-800"
+            : "border-slate-200 text-slate-600 hover:bg-slate-50",
         )}
       >
         <ChevronUp className="h-5 w-5" />

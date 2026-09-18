@@ -10,12 +10,7 @@ import {
   type ConnectorContext,
   type SyncResult,
 } from "../adapter";
-import {
-  buildBuchungsstapel,
-  datevFileName,
-  toDatevBuffer,
-  type DatevBooking,
-} from "./datev.builder";
+import { buildBuchungsstapel, datevFileName, toDatevBuffer, type DatevBooking } from "./datev.builder";
 
 export interface DatevExportRange {
   from: Date;

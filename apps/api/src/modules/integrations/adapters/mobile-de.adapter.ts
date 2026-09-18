@@ -194,8 +194,7 @@ export class MobileDeAdapter implements ConnectorAdapter {
     const model = this.scalar(vehicle.model) ?? "";
     const priceNode = (ad.price ?? vehicle.price) as Record<string, unknown> | undefined;
 
-    const firstRegistrationRaw =
-      this.scalar(vehicle.firstRegistration) ?? this.scalar(vehicle["first-registration"]);
+    const firstRegistrationRaw = this.scalar(vehicle.firstRegistration) ?? this.scalar(vehicle["first-registration"]);
 
     const images = (ad.images ?? ad.image) as Record<string, unknown> | undefined;
     const firstImage = Array.isArray(images)
@@ -209,10 +208,7 @@ export class MobileDeAdapter implements ConnectorAdapter {
       make,
       model,
       title:
-        this.scalar(ad.description) ??
-        this.scalar(ad.title) ??
-        [make, model].filter(Boolean).join(" ") ??
-        externalId,
+        this.scalar(ad.description) ?? this.scalar(ad.title) ?? [make, model].filter(Boolean).join(" ") ?? externalId,
       price: this.numeric(priceNode?.consumerPriceGross ?? priceNode?.["consumer-price-gross"] ?? priceNode) ?? null,
       currency: this.scalar(priceNode?.currency) ?? "EUR",
       mileageKm: this.numeric(vehicle.mileage) ?? null,

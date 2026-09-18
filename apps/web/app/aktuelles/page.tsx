@@ -65,7 +65,10 @@ export default async function NewsPage({
           />
 
           {items.length === 0 ? (
-            <EmptyState title="Keine Beiträge gefunden" detail="Passen Sie die Filter an oder setzen Sie die Suche zurück." />
+            <EmptyState
+              title="Keine Beiträge gefunden"
+              detail="Passen Sie die Filter an oder setzen Sie die Suche zurück."
+            />
           ) : (
             <ul className="space-y-3">
               {items.map((item) => (

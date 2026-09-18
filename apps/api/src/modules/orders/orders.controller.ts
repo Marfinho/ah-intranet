@@ -33,7 +33,10 @@ class WorkwearItemDto {
 }
 
 class WorkwearOrderDto {
-  @IsArray() @ArrayNotEmpty() @ValidateNested({ each: true }) @Type(() => WorkwearItemDto)
+  @IsArray()
+  @ArrayNotEmpty()
+  @ValidateNested({ each: true })
+  @Type(() => WorkwearItemDto)
   items!: WorkwearItemDto[];
 }
 

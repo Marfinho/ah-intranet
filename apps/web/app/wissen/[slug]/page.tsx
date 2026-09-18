@@ -21,7 +21,10 @@ export default async function WikiDetailPage({ params }: { params: { slug: strin
   }
 
   return (
-    <AppShell title={article.title} subtitle={`${article.category} · zuletzt aktualisiert ${formatDate(article.updatedAt)}`}>
+    <AppShell
+      title={article.title}
+      subtitle={`${article.category} · zuletzt aktualisiert ${formatDate(article.updatedAt)}`}
+    >
       <Section
         title={article.title}
         subtitle={`Verfasst von ${article.author}`}

@@ -94,7 +94,11 @@ export async function changePasswordAction(_previous: ActionState, formData: For
     return { ok: false, message: "Die beiden neuen Passwörter stimmen nicht überein." };
   }
 
-  return run(() => apiSend("POST", "/auth/password", { currentPassword, newPassword }), ["/profil"], "Passwort geändert.");
+  return run(
+    () => apiSend("POST", "/auth/password", { currentPassword, newPassword }),
+    ["/profil"],
+    "Passwort geändert.",
+  );
 }
 
 /* ------------------------------------------------------------ Module */
@@ -140,7 +144,11 @@ export async function markNewsReadAction(slug: string): Promise<ActionState> {
   return run(() => apiSend("POST", `/news/${slug}/read`), [`/aktuelles/${slug}`, "/aktuelles", "/"]);
 }
 
-export async function commentNewsAction(slug: string, _previous: ActionState, formData: FormData): Promise<ActionState> {
+export async function commentNewsAction(
+  slug: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   const message = String(formData.get("message") ?? "").trim();
   if (message.length < 2) {
     return { ok: false, message: "Bitte einen Kommentar eingeben." };
@@ -150,10 +158,7 @@ export async function commentNewsAction(slug: string, _previous: ActionState, fo
 
 /* ------------------------------------------------------- Bestellungen */
 
-export async function createBusinessCardOrderAction(
-  _previous: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
+export async function createBusinessCardOrderAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
   const quantity = Number(formData.get("quantity") ?? 0);
   const values: Record<string, string> = {};
 
@@ -231,7 +236,11 @@ export async function updateTicketAction(
   return run(() => apiSend("PATCH", `/tickets/${id}`, patch), ["/tickets", "/"]);
 }
 
-export async function commentTicketAction(id: string, _previous: ActionState, formData: FormData): Promise<ActionState> {
+export async function commentTicketAction(
+  id: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   const message = String(formData.get("message") ?? "").trim();
   if (!message) {
     return { ok: false, message: "Bitte einen Text eingeben." };
@@ -361,7 +370,9 @@ export async function createPollAction(_previous: ActionState, formData: FormDat
       .split("\n")
       .map((option) => option.trim())
       .filter(Boolean),
-    closesAt: String(formData.get("closesAt") ?? "") ? new Date(String(formData.get("closesAt"))).toISOString() : undefined,
+    closesAt: String(formData.get("closesAt") ?? "")
+      ? new Date(String(formData.get("closesAt"))).toISOString()
+      : undefined,
   };
   return run(() => apiSend("POST", "/polls", payload), ["/umfragen", "/"], "Umfrage gestartet.");
 }
@@ -548,7 +559,11 @@ export async function deleteQuickLinkAction(id: string): Promise<ActionState> {
 
 /* ------------------------------------------------------- Schnittstellen */
 
-export async function saveConnectorAction(key: string, _previous: ActionState, formData: FormData): Promise<ActionState> {
+export async function saveConnectorAction(
+  key: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   const settings: Record<string, string> = {};
   const secrets: Record<string, string> = {};
 

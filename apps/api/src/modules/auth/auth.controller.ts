@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, Post, Res } from "@nestjs/common";
+import { Throttle } from "@nestjs/throttler";
 import { IsNotEmpty, IsString, MinLength } from "class-validator";
 import type { Response } from "express";
 import { AuthService } from "./auth.service";
@@ -33,6 +34,9 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
+  // Deutlich enger als die Grunddrosselung: zehn Versuche pro Minute und
+  // Adresse reichen für Vertipper, nicht für systematisches Raten.
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @Post("login")
   @HttpCode(200)
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) response: Response) {

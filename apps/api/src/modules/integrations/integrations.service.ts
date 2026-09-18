@@ -410,7 +410,17 @@ export class IntegrationsService {
 
   private toState(
     definition: ConnectorDefinition,
-    row: { status: string; settings: unknown; secrets: unknown; lastCheckAt: Date | null; lastCheckOk: boolean | null; lastCheckMessage: string | null; updatedBy: string | null } | undefined,
+    row:
+      | {
+          status: string;
+          settings: unknown;
+          secrets: unknown;
+          lastCheckAt: Date | null;
+          lastCheckOk: boolean | null;
+          lastCheckMessage: string | null;
+          updatedBy: string | null;
+        }
+      | undefined,
     lastRun: SyncRunSummary | null,
   ): ConnectorState {
     const settings = ((row?.settings as Record<string, string> | null) ?? {}) as Record<string, string>;

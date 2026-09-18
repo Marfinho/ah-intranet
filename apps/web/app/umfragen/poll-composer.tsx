@@ -12,7 +12,13 @@ export function PollComposer() {
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
       <Field label="Frage *" wide>
-        <input name="question" required minLength={5} className={inputClass} placeholder="Worüber soll abgestimmt werden?" />
+        <input
+          name="question"
+          required
+          minLength={5}
+          className={inputClass}
+          placeholder="Worüber soll abgestimmt werden?"
+        />
       </Field>
 
       <Field label="Erläuterung" wide>
@@ -20,7 +26,13 @@ export function PollComposer() {
       </Field>
 
       <Field label="Antwortmöglichkeiten *" wide hint="Eine Option pro Zeile, mindestens zwei">
-        <textarea name="options" rows={4} required className={inputClass} placeholder={"Freitagabend\nSamstagnachmittag"} />
+        <textarea
+          name="options"
+          rows={4}
+          required
+          className={inputClass}
+          placeholder={"Freitagabend\nSamstagnachmittag"}
+        />
       </Field>
 
       <Field label="Läuft bis">

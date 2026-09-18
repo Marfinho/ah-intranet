@@ -5,7 +5,13 @@ import { useFormStatus } from "react-dom";
 import { cn } from "@/lib/utils";
 import type { ActionState } from "@/lib/actions";
 
-export function SubmitButton({ children, variant = "primary" }: { children: ReactNode; variant?: "primary" | "ghost" }) {
+export function SubmitButton({
+  children,
+  variant = "primary",
+}: {
+  children: ReactNode;
+  variant?: "primary" | "ghost";
+}) {
   const { pending } = useFormStatus();
   return (
     <button

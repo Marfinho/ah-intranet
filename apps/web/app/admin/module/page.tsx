@@ -49,7 +49,11 @@ export default async function ModulesAdminPage() {
       </Section>
 
       {groups.map((group) => (
-        <Section key={group.key} title={group.label} subtitle={`${group.items.filter((m) => m.enabled).length} von ${group.items.length} aktiv`}>
+        <Section
+          key={group.key}
+          title={group.label}
+          subtitle={`${group.items.filter((m) => m.enabled).length} von ${group.items.length} aktiv`}
+        >
           <ul className="space-y-3">
             {group.items.map((module) => (
               <li key={module.key}>

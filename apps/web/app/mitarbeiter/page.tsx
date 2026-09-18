@@ -33,7 +33,10 @@ export default async function DirectoryPage({
 
   return (
     <AppShell title="Mitarbeiterverzeichnis" subtitle="Ansprechpartner, Durchwahlen und Zuständigkeiten">
-      <Section title={`${data.items.length} Personen`} subtitle="Nach Name, Funktion, Standort oder Zuständigkeit suchen">
+      <Section
+        title={`${data.items.length} Personen`}
+        subtitle="Nach Name, Funktion, Standort oder Zuständigkeit suchen"
+      >
         <div className="space-y-4">
           <FilterBar
             searchPlaceholder="Name, Funktion oder Zuständigkeit"
@@ -90,7 +93,10 @@ export default async function DirectoryPage({
                       <div className="flex gap-2">
                         <dt className="text-slate-500">Mobil:</dt>
                         <dd>
-                          <a href={`tel:${person.mobile.replace(/\s/g, "")}`} className="text-brand-700 hover:underline">
+                          <a
+                            href={`tel:${person.mobile.replace(/\s/g, "")}`}
+                            className="text-brand-700 hover:underline"
+                          >
                             {person.mobile}
                           </a>
                         </dd>

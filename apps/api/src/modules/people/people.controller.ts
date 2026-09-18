@@ -44,7 +44,9 @@ class UserBodyDto {
   @IsOptional() @IsString() departmentId?: string;
   @IsOptional() @IsString() specialtyAreaId?: string;
   @IsOptional() @IsString() managerId?: string;
-  @IsArray() @ArrayNotEmpty() @IsIn(["mitarbeiter", "fuehrungskraft", "fachbereichsadmin", "admin"], { each: true })
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsIn(["mitarbeiter", "fuehrungskraft", "fachbereichsadmin", "admin"], { each: true })
   roles!: AppRole[];
   @IsOptional() @IsArray() @IsString({ each: true }) responsibilities?: string[];
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(60) annualLeaveDays?: number;
@@ -62,7 +64,9 @@ class UserPatchDto {
   @IsOptional() @IsString() departmentId?: string;
   @IsOptional() @IsString() specialtyAreaId?: string;
   @IsOptional() @IsString() managerId?: string;
-  @IsOptional() @IsArray() @IsIn(["mitarbeiter", "fuehrungskraft", "fachbereichsadmin", "admin"], { each: true })
+  @IsOptional()
+  @IsArray()
+  @IsIn(["mitarbeiter", "fuehrungskraft", "fachbereichsadmin", "admin"], { each: true })
   roles?: AppRole[];
   @IsOptional() @IsArray() @IsString({ each: true }) responsibilities?: string[];
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(60) annualLeaveDays?: number;

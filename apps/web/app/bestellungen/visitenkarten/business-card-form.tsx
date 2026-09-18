@@ -43,7 +43,11 @@ export function BusinessCardForm({
 
         if (field.type === "select") {
           return (
-            <Field key={field.key} label={`${field.label}${field.required ? " *" : ""}`} hint={field.helpText ?? undefined}>
+            <Field
+              key={field.key}
+              label={`${field.label}${field.required ? " *" : ""}`}
+              hint={field.helpText ?? undefined}
+            >
               <select name={name} required={field.required} defaultValue={defaultValue} className={inputClass}>
                 <option value="">Bitte auswählen</option>
                 {field.options.map((option) => (
@@ -57,7 +61,11 @@ export function BusinessCardForm({
         }
 
         return (
-          <Field key={field.key} label={`${field.label}${field.required ? " *" : ""}`} hint={field.helpText ?? undefined}>
+          <Field
+            key={field.key}
+            label={`${field.label}${field.required ? " *" : ""}`}
+            hint={field.helpText ?? undefined}
+          >
             <input
               name={name}
               type={field.type === "email" ? "email" : field.type === "phone" ? "tel" : "text"}
@@ -70,7 +78,16 @@ export function BusinessCardForm({
       })}
 
       <Field label="Auflage *" hint="Mindestens 50, höchstens 5000 Stück">
-        <input name="quantity" type="number" min={50} max={5000} step={50} defaultValue={100} required className={inputClass} />
+        <input
+          name="quantity"
+          type="number"
+          min={50}
+          max={5000}
+          step={50}
+          defaultValue={100}
+          required
+          className={inputClass}
+        />
       </Field>
 
       <div className="md:col-span-2">

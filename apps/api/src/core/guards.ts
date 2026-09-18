@@ -13,6 +13,7 @@ import type { AppRole } from "@ah-intranet/shared";
 import { getModule } from "@ah-intranet/shared";
 import { FEATURE_KEY, PUBLIC_KEY, ROLES_KEY } from "./decorators";
 import { ModuleRegistryService } from "./module-registry.service";
+import { PrismaService } from "./prisma.service";
 import type { RequestUser } from "./request-user";
 
 export const SESSION_COOKIE = "ah_session";
@@ -27,6 +28,8 @@ export interface JwtPayload {
   scopes: string[];
   locationId: string | null;
   departmentId: string | null;
+  /** Muss mit dem Wert am Benutzer übereinstimmen, sonst ist die Sitzung ungültig. */
+  tokenVersion: number;
 }
 
 export function payloadToUser(payload: JwtPayload): RequestUser {
@@ -40,6 +43,7 @@ export function payloadToUser(payload: JwtPayload): RequestUser {
     scopes: payload.scopes,
     locationId: payload.locationId,
     departmentId: payload.departmentId,
+    tokenVersion: payload.tokenVersion,
   };
 }
 
@@ -52,13 +56,11 @@ export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly jwt: JwtService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const isPublic = this.reflector.getAllAndOverride<boolean>(PUBLIC_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const isPublic = this.reflector.getAllAndOverride<boolean>(PUBLIC_KEY, [context.getHandler(), context.getClass()]);
     if (isPublic) {
       return true;
     }
@@ -69,13 +71,29 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException("Nicht angemeldet");
     }
 
+    let payload: JwtPayload;
     try {
-      const payload = await this.jwt.verifyAsync<JwtPayload>(token);
-      (request as Request & { user: RequestUser }).user = payloadToUser(payload);
-      return true;
+      payload = await this.jwt.verifyAsync<JwtPayload>(token);
     } catch {
       throw new UnauthorizedException("Sitzung abgelaufen oder ungültig");
     }
+
+    // Ein gültig signiertes Token genügt nicht: Sperre, Rollenentzug und
+    // Passwortwechsel müssen sofort wirken, nicht erst nach Ablauf der Laufzeit.
+    const account = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { status: true, tokenVersion: true },
+    });
+
+    if (!account || account.status !== "active") {
+      throw new UnauthorizedException("Das Konto ist nicht mehr aktiv.");
+    }
+    if (account.tokenVersion !== payload.tokenVersion) {
+      throw new UnauthorizedException("Die Sitzung wurde beendet. Bitte melden Sie sich erneut an.");
+    }
+
+    (request as Request & { user: RequestUser }).user = payloadToUser(payload);
+    return true;
   }
 }
 
@@ -94,10 +112,7 @@ export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const required = this.reflector.getAllAndOverride<AppRole[]>(ROLES_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const required = this.reflector.getAllAndOverride<AppRole[]>(ROLES_KEY, [context.getHandler(), context.getClass()]);
     if (!required?.length) {
       return true;
     }
@@ -125,10 +140,7 @@ export class ModuleEnabledGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const moduleKey = this.reflector.getAllAndOverride<string>(FEATURE_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const moduleKey = this.reflector.getAllAndOverride<string>(FEATURE_KEY, [context.getHandler(), context.getClass()]);
     if (!moduleKey) {
       return true;
     }

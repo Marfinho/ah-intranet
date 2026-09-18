@@ -35,7 +35,13 @@ export function EventComposer() {
       </Field>
 
       <Field label="Beginn *">
-        <input name="startsAt" type="datetime-local" required defaultValue={toLocalInput(start)} className={inputClass} />
+        <input
+          name="startsAt"
+          type="datetime-local"
+          required
+          defaultValue={toLocalInput(start)}
+          className={inputClass}
+        />
       </Field>
 
       <Field label="Ende *">

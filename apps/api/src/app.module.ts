@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
 import { ConfigModule } from "@nestjs/config";
+import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { CoreModule } from "./core/core.module";
@@ -17,6 +18,9 @@ import { IntegrationsModule } from "./modules/integrations/integrations.module";
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    // Grunddrosselung gegen automatisierte Zugriffe. Der Login ist zusätzlich
+    // enger begrenzt und kennt eine Kontosperre.
+    ThrottlerModule.forRoot([{ name: "default", ttl: 60_000, limit: 300 }]),
     CoreModule,
     AuthModule,
     ContentModule,
@@ -30,9 +34,10 @@ import { IntegrationsModule } from "./modules/integrations/integrations.module";
   controllers: [AppController],
   providers: [
     AppService,
-    // Reihenfolge ist bedeutsam: erst authentifizieren, dann Rollen prüfen,
-    // zuletzt die Modulaktivierung - so kann eine anonyme Anfrage nie erfahren,
-    // welche Module geschaltet sind.
+    // Reihenfolge ist bedeutsam: erst drosseln, dann authentifizieren, dann
+    // Rollen prüfen, zuletzt die Modulaktivierung - so kann eine anonyme
+    // Anfrage nie erfahren, welche Module geschaltet sind.
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_GUARD, useClass: ModuleEnabledGuard },

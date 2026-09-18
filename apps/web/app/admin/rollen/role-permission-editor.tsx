@@ -40,7 +40,9 @@ export function RolePermissionEditor({ role, permissions }: { role: RoleSummary;
               }
               className={cn(
                 "rounded-xl border px-3 py-2 text-xs font-medium transition",
-                active ? "border-brand-600 bg-brand-50 text-brand-800" : "border-slate-200 text-slate-600 hover:bg-slate-50",
+                active
+                  ? "border-brand-600 bg-brand-50 text-brand-800"
+                  : "border-slate-200 text-slate-600 hover:bg-slate-50",
               )}
             >
               {permission.name}

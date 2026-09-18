@@ -12,7 +12,9 @@ const userWithContext = {
   location: { select: { name: true, code: true } },
   department: { select: { name: true, code: true } },
   specialtyArea: { select: { name: true, code: true } },
-  roles: { select: { role: { select: { key: true, permissions: { select: { permission: { select: { key: true } } } } } } } },
+  roles: {
+    select: { role: { select: { key: true, permissions: { select: { permission: { select: { key: true } } } } } } },
+  },
 } as const;
 
 @Injectable()
@@ -23,10 +25,18 @@ export class AuthService {
     private readonly audit: AuditService,
   ) {}
 
+  /** Nach so vielen Fehlversuchen wird das Konto vorübergehend gesperrt. */
+  private static readonly MAX_FAILED_LOGINS = 5;
+  private static readonly LOCK_MINUTES = 15;
+
   /**
    * Prüft die Zugangsdaten gegen den in der Datenbank gespeicherten bcrypt-Hash.
    * Existiert der Benutzer nicht, wird trotzdem ein Vergleich gegen einen
    * Dummy-Hash ausgeführt, damit die Antwortzeit keine Benutzernamen verrät.
+   *
+   * Fehlversuche werden gezählt; nach `MAX_FAILED_LOGINS` ist das Konto für
+   * `LOCK_MINUTES` gesperrt. Das begrenzt Rateversuche auch dann, wenn jemand
+   * die IP-Drosselung über viele Adressen umgeht.
    */
   async validate(username: string, password: string) {
     const user = await this.prisma.user.findUnique({
@@ -34,10 +44,18 @@ export class AuthService {
       include: userWithContext,
     });
 
+    if (user?.lockedUntil && user.lockedUntil > new Date()) {
+      const minuten = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60_000);
+      throw new UnauthorizedException(`Das Konto ist nach mehreren Fehlversuchen für ${minuten} Minute(n) gesperrt.`);
+    }
+
     const hash = user?.passwordHash ?? "$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalidin";
     const matches = await bcrypt.compare(password, hash);
 
     if (!user || !matches) {
+      if (user) {
+        await this.registerFailedAttempt(user.id, user.failedLoginCount);
+      }
       throw new UnauthorizedException("Ungültige Zugangsdaten");
     }
     if (user.status !== "active") {
@@ -49,7 +67,10 @@ export class AuthService {
   async login(username: string, password: string): Promise<{ token: string; user: SessionUser }> {
     const user = await this.validate(username, password);
 
-    await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date(), failedLoginCount: 0, lockedUntil: null },
+    });
 
     const session = this.toSessionUser(user);
     const payload: JwtPayload = {
@@ -62,6 +83,7 @@ export class AuthService {
       scopes: session.scopes,
       locationId: user.locationId,
       departmentId: user.departmentId,
+      tokenVersion: user.tokenVersion,
     };
 
     await this.audit.log({
@@ -96,7 +118,12 @@ export class AuthService {
 
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash: await bcrypt.hash(newPassword, 12), mustChangePassword: false },
+      data: {
+        passwordHash: await bcrypt.hash(newPassword, 12),
+        mustChangePassword: false,
+        // Alle anderen Sitzungen verlieren damit sofort ihre Gültigkeit.
+        tokenVersion: { increment: 1 },
+      },
     });
 
     await this.audit.log({
@@ -105,6 +132,20 @@ export class AuthService {
       entityType: "user",
       entityId: user.id,
       detail: "Passwort geändert",
+    });
+  }
+
+  /** Zählt einen Fehlversuch und sperrt das Konto beim Erreichen der Grenze. */
+  private async registerFailedAttempt(userId: string, current: number): Promise<void> {
+    const next = current + 1;
+    const gesperrt = next >= AuthService.MAX_FAILED_LOGINS;
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        failedLoginCount: gesperrt ? 0 : next,
+        lockedUntil: gesperrt ? new Date(Date.now() + AuthService.LOCK_MINUTES * 60_000) : null,
+      },
     });
   }
 

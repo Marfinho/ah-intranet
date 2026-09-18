@@ -45,13 +45,13 @@ Frontend: `http://localhost:3000` · Backend: `http://localhost:3001/api`
 Alle Konten des Seeds nutzen dasselbe Passwort: **`Intranet2026!`**
 (über `SEED_PASSWORD` überschreibbar).
 
-| Benutzer      | Rolle(n)                          | Wofür geeignet                          |
-| ------------- | --------------------------------- | --------------------------------------- |
-| `admin`       | Administration                    | Modulsteuerung, Benutzer, Rollen, Audit |
-| `s.meier`     | Fachbereichsadmin, Führungskraft  | Freigaben, Bestellwesen, Abwesenheiten  |
-| `t.neumann`   | Fachbereichsadmin                 | News, Marketing                         |
-| `j.kruse`     | Führungskraft                     | Teamanträge freigeben                   |
-| `p.hansen`    | Mitarbeitende                     | normale Nutzersicht                     |
+| Benutzer    | Rolle(n)                         | Wofür geeignet                          |
+| ----------- | -------------------------------- | --------------------------------------- |
+| `admin`     | Administration                   | Modulsteuerung, Benutzer, Rollen, Audit |
+| `s.meier`   | Fachbereichsadmin, Führungskraft | Freigaben, Bestellwesen, Abwesenheiten  |
+| `t.neumann` | Fachbereichsadmin                | News, Marketing                         |
+| `j.kruse`   | Führungskraft                    | Teamanträge freigeben                   |
+| `p.hansen`  | Mitarbeitende                    | normale Nutzersicht                     |
 
 ## Modulsteuerung
 
@@ -66,8 +66,8 @@ Fachmodul für das gesamte Intranet ein- und ausschalten.
   also auch für direkte Aufrufe, nicht nur für die Oberfläche.
 - **Kernmodule** (Dashboard, Benachrichtigungen, Administration) sind gesperrt,
   damit das Intranet bedienbar bleibt.
-- **Abhängigkeiten** werden mitgeführt: Wird *Bestellungen* deaktiviert, gehen
-  die *Freigaben* automatisch mit. Vor dem Abschalten wird das angezeigt.
+- **Abhängigkeiten** werden mitgeführt: Wird _Bestellungen_ deaktiviert, gehen
+  die _Freigaben_ automatisch mit. Vor dem Abschalten wird das angezeigt.
 - Daten bleiben erhalten; ein Modul ist nur nicht mehr erreichbar.
 - Jede Schaltung landet im Audit-Log.
 
@@ -77,13 +77,13 @@ jeder Request einen zusätzlichen Datenbankzugriff auslöst.
 
 ## Fachmodule
 
-| Gruppe        | Module                                                                 |
-| ------------- | ---------------------------------------------------------------------- |
-| Arbeitsplatz  | Dashboard\*, Globale Suche, Benachrichtigungen\*, Schnellzugriffe       |
-| Kommunikation | Aktuelles (News), Mitarbeiterverzeichnis, Umfragen, Ideenmanagement     |
+| Gruppe        | Module                                                                                           |
+| ------------- | ------------------------------------------------------------------------------------------------ |
+| Arbeitsplatz  | Dashboard\*, Globale Suche, Benachrichtigungen\*, Schnellzugriffe                                |
+| Kommunikation | Aktuelles (News), Mitarbeiterverzeichnis, Umfragen, Ideenmanagement                              |
 | Prozesse      | Dokumente, Wissensdatenbank, Bestellungen, Freigaben, Serviceanfragen, Onboarding, Abwesenheiten |
-| Ressourcen    | Kalender, Raumbuchung, Fuhrpark, Fahrzeugbestand                       |
-| Verwaltung    | Administration\*, Schnittstellen, Audit-Log                             |
+| Ressourcen    | Kalender, Raumbuchung, Fuhrpark, Fahrzeugbestand                                                 |
+| Verwaltung    | Administration\*, Schnittstellen, Audit-Log                                                      |
 
 \* Kernmodul, nicht abschaltbar.
 
@@ -170,21 +170,21 @@ docker compose exec api npx tsx prisma/seed.ts
 
 **`apps/api/.env`**
 
-| Variable         | Bedeutung                                            |
-| ---------------- | ---------------------------------------------------- |
-| `PORT`           | Port der API (Standard 3001)                         |
-| `DATABASE_URL`   | PostgreSQL-Verbindung                                |
-| `FRONTEND_URL`   | erlaubte CORS-Herkunft, kommagetrennt möglich        |
-| `JWT_SECRET`     | Sitzungsschlüssel – **in Produktion zwingend setzen** |
-| `JWT_EXPIRES_IN` | Gültigkeit des Tokens (Standard `12h`)               |
-| `INTEGRATION_SECRET_KEY` | Verschlüsselt Zugangsdaten zu Fremdsystemen  |
+| Variable                 | Bedeutung                                             |
+| ------------------------ | ----------------------------------------------------- |
+| `PORT`                   | Port der API (Standard 3001)                          |
+| `DATABASE_URL`           | PostgreSQL-Verbindung                                 |
+| `FRONTEND_URL`           | erlaubte CORS-Herkunft, kommagetrennt möglich         |
+| `JWT_SECRET`             | Sitzungsschlüssel – **in Produktion zwingend setzen** |
+| `JWT_EXPIRES_IN`         | Gültigkeit des Tokens (Standard `12h`)                |
+| `INTEGRATION_SECRET_KEY` | Verschlüsselt Zugangsdaten zu Fremdsystemen           |
 
 **`apps/web/.env.local`**
 
-| Variable              | Bedeutung                                        |
-| --------------------- | ------------------------------------------------ |
-| `API_URL`             | serverseitig genutzte API-Adresse                |
-| `NEXT_PUBLIC_API_URL` | Fallback, auch im Browser sichtbar               |
+| Variable              | Bedeutung                          |
+| --------------------- | ---------------------------------- |
+| `API_URL`             | serverseitig genutzte API-Adresse  |
+| `NEXT_PUBLIC_API_URL` | Fallback, auch im Browser sichtbar |
 
 Ohne `JWT_SECRET` startet die API bewusst nicht. Ohne `INTEGRATION_SECRET_KEY`
 lassen sich keine Zugangsdaten zu Fremdsystemen speichern – ebenfalls Absicht.

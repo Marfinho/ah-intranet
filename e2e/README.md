@@ -63,8 +63,8 @@ vorher `pnpm --filter api prisma:seed`.
 
 ## Konfiguration
 
-| Variable         | Standard                 |
-| ---------------- | ------------------------ |
-| `E2E_BASE_URL`   | `http://localhost:3000`  |
-| `E2E_PASSWORD`   | `Intranet2026!`          |
-| `CHROMIUM_PATH`  | Playwright-Standardpfad  |
+| Variable        | Standard                |
+| --------------- | ----------------------- |
+| `E2E_BASE_URL`  | `http://localhost:3000` |
+| `E2E_PASSWORD`  | `Intranet2026!`         |
+| `CHROMIUM_PATH` | Playwright-Standardpfad |

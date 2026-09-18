@@ -104,7 +104,10 @@ export default async function OrderDetailPage({ params }: { params: { id: string
           <div className="mt-6 flex flex-wrap gap-3 border-t border-slate-100 pt-5">
             {manage && order.status === "submitted" ? (
               <>
-                <ActionButton variant="success" action={orderTransitionAction.bind(null, order.id, "approved", undefined)}>
+                <ActionButton
+                  variant="success"
+                  action={orderTransitionAction.bind(null, order.id, "approved", undefined)}
+                >
                   Genehmigen
                 </ActionButton>
                 <ActionButton
@@ -130,7 +133,10 @@ export default async function OrderDetailPage({ params }: { params: { id: string
             ) : null}
 
             {manage && order.status === "ordered" ? (
-              <ActionButton variant="success" action={orderTransitionAction.bind(null, order.id, "completed", undefined)}>
+              <ActionButton
+                variant="success"
+                action={orderTransitionAction.bind(null, order.id, "completed", undefined)}
+              >
                 Abschließen
               </ActionButton>
             ) : null}
@@ -160,7 +166,10 @@ export default async function OrderDetailPage({ params }: { params: { id: string
           />
         </Section>
 
-        <Section title={`Rückfragen (${order.comments.length})`} subtitle="Abstimmung zwischen Fachbereich und Besteller">
+        <Section
+          title={`Rückfragen (${order.comments.length})`}
+          subtitle="Abstimmung zwischen Fachbereich und Besteller"
+        >
           <div className="space-y-4">
             {order.comments.length > 0 ? (
               <ul className="space-y-3">

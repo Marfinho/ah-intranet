@@ -12,6 +12,7 @@ export interface RequestUser {
   scopes: string[];
   locationId: string | null;
   departmentId: string | null;
+  tokenVersion: number;
 }
 
 export function hasRole(user: RequestUser, ...roles: AppRole[]): boolean {

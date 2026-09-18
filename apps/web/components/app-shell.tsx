@@ -27,7 +27,8 @@ export async function AppShell({
     // Verwaltungsmodule nur für die passenden Rollen einblenden.
     if (module.key === "admin") return session.roles.includes("admin") || session.roles.includes("fachbereichsadmin");
     if (module.key === "audit") return session.roles.includes("admin");
-    if (module.key === "approvals") return session.roles.includes("admin") || session.roles.includes("fachbereichsadmin");
+    if (module.key === "approvals")
+      return session.roles.includes("admin") || session.roles.includes("fachbereichsadmin");
     return true;
   });
 

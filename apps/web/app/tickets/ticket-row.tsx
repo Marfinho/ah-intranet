@@ -79,7 +79,11 @@ export function TicketRow({
 
       {open ? (
         <div className="mt-4">
-          <CommentForm action={commentTicketAction.bind(null, ticket.id)} placeholder="Antwort schreiben …" label="Antworten" />
+          <CommentForm
+            action={commentTicketAction.bind(null, ticket.id)}
+            placeholder="Antwort schreiben …"
+            label="Antworten"
+          />
         </div>
       ) : null}
     </div>

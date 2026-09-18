@@ -35,11 +35,7 @@ export class IntegrationsController {
   @Put("connectors/:key")
   @Roles("admin")
   save(@Param("key") key: string, @Body() dto: ConnectorConfigDto, @CurrentUser() user: RequestUser) {
-    return this.integrations.saveConfig(
-      key,
-      { settings: dto.settings ?? {}, secrets: dto.secrets ?? {} },
-      user,
-    );
+    return this.integrations.saveConfig(key, { settings: dto.settings ?? {}, secrets: dto.secrets ?? {} }, user);
   }
 
   @Put("connectors/:key/enabled")

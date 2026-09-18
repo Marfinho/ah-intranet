@@ -19,7 +19,10 @@ export default async function CyclesAdminPage() {
 
   return (
     <AppShell title="Bestelltermine" subtitle="Stichtage der externen Sammelbestellungen">
-      <Section title="Termin anlegen oder ändern" subtitle="Der nächste Termin in der Zukunft wird Bestellungen zugeordnet">
+      <Section
+        title="Termin anlegen oder ändern"
+        subtitle="Der nächste Termin in der Zukunft wird Bestellungen zugeordnet"
+      >
         <CycleForm />
       </Section>
 

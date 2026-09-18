@@ -41,7 +41,9 @@ export default async function AbsencesPage({ searchParams }: { searchParams: { s
 
       <Section
         title={scope === "team" ? "Anträge im Team" : "Meine Anträge"}
-        subtitle={data.canSeeTeam ? "Zwischen eigenen Anträgen und Teamansicht wechseln" : "Ihre eingereichten Zeiträume"}
+        subtitle={
+          data.canSeeTeam ? "Zwischen eigenen Anträgen und Teamansicht wechseln" : "Ihre eingereichten Zeiträume"
+        }
       >
         <div className="space-y-4">
           <FilterBar
@@ -102,7 +104,10 @@ export default async function AbsencesPage({ searchParams }: { searchParams: { s
                     <div className="mt-4 flex flex-wrap gap-3">
                       {canDecide ? (
                         <>
-                          <ActionButton variant="success" action={decideAbsenceAction.bind(null, absence.id, true, undefined)}>
+                          <ActionButton
+                            variant="success"
+                            action={decideAbsenceAction.bind(null, absence.id, true, undefined)}
+                          >
                             Genehmigen
                           </ActionButton>
                           <ActionButton

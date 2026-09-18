@@ -90,9 +90,7 @@ export function statusLabel(status: string): string {
 
 export function StatusBadge({ status }: { status: string }) {
   return (
-    <span className={cn("badge", STATUS_STYLES[status] ?? "bg-slate-100 text-slate-700")}>
-      {statusLabel(status)}
-    </span>
+    <span className={cn("badge", STATUS_STYLES[status] ?? "bg-slate-100 text-slate-700")}>{statusLabel(status)}</span>
   );
 }
 
@@ -114,7 +112,17 @@ export function DataGrid({ children }: { children: ReactNode }) {
   return <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{children}</div>;
 }
 
-export function MetricCard({ label, value, helper, href }: { label: string; value: string; helper: string; href?: string }) {
+export function MetricCard({
+  label,
+  value,
+  helper,
+  href,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+  href?: string;
+}) {
   const content = (
     <>
       <p className="text-sm text-slate-500">{label}</p>

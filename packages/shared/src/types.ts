@@ -21,14 +21,7 @@ export type AudienceScope = string;
 export const GLOBAL_SCOPE: AudienceScope = "global";
 
 export type OrderStatus =
-  | "draft"
-  | "submitted"
-  | "approved"
-  | "rejected"
-  | "queued_for_bulk_order"
-  | "ordered"
-  | "completed"
-  | "cancelled";
+  "draft" | "submitted" | "approved" | "rejected" | "queued_for_bulk_order" | "ordered" | "completed" | "cancelled";
 
 export const ORDER_STATUSES: OrderStatus[] = [
   "draft",

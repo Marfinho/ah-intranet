@@ -16,11 +16,25 @@ export function PasswordForm() {
       </Field>
 
       <Field label="Neues Passwort *">
-        <input name="newPassword" type="password" autoComplete="new-password" minLength={10} required className={inputClass} />
+        <input
+          name="newPassword"
+          type="password"
+          autoComplete="new-password"
+          minLength={10}
+          required
+          className={inputClass}
+        />
       </Field>
 
       <Field label="Neues Passwort wiederholen *">
-        <input name="repeatPassword" type="password" autoComplete="new-password" minLength={10} required className={inputClass} />
+        <input
+          name="repeatPassword"
+          type="password"
+          autoComplete="new-password"
+          minLength={10}
+          required
+          className={inputClass}
+        />
       </Field>
 
       <div className="md:col-span-2">

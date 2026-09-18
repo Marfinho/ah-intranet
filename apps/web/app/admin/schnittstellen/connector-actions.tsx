@@ -42,7 +42,10 @@ export function ConnectorActions({ connector }: { connector: ConnectorState }) {
             onClick={() =>
               startTransition(async () => {
                 const result = await checkConnectorAction(connector.key);
-                setFeedback({ ok: result.ok, text: result.ok ? (result.detail ?? "In Ordnung") : (result.message ?? "Fehler") });
+                setFeedback({
+                  ok: result.ok,
+                  text: result.ok ? (result.detail ?? "In Ordnung") : (result.message ?? "Fehler"),
+                });
               })
             }
             className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
@@ -70,11 +73,7 @@ export function ConnectorActions({ connector }: { connector: ConnectorState }) {
               key={capability.key}
               type="button"
               disabled={pending || connector.status !== "configured"}
-              title={
-                connector.status !== "configured"
-                  ? "Zuerst Zugangsdaten hinterlegen"
-                  : capability.description
-              }
+              title={connector.status !== "configured" ? "Zuerst Zugangsdaten hinterlegen" : capability.description}
               onClick={() =>
                 startTransition(async () => {
                   const result = await runConnectorAction(connector.key, capability.key);
@@ -96,7 +95,9 @@ export function ConnectorActions({ connector }: { connector: ConnectorState }) {
         <p
           className={cn(
             "rounded-xl border px-3 py-2 text-xs",
-            feedback.ok ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-rose-200 bg-rose-50 text-rose-900",
+            feedback.ok
+              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+              : "border-rose-200 bg-rose-50 text-rose-900",
           )}
         >
           {feedback.text}

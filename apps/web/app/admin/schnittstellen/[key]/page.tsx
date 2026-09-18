@@ -39,7 +39,12 @@ export default async function ConnectorDetailPage({ params }: { params: { key: s
         <div className="flex flex-wrap items-center gap-2">
           <AvailabilityBadge availability={connector.availability} />
           {connector.docsUrl ? (
-            <a href={connector.docsUrl} target="_blank" rel="noreferrer" className="badge bg-brand-50 text-brand-700 hover:underline">
+            <a
+              href={connector.docsUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="badge bg-brand-50 text-brand-700 hover:underline"
+            >
               Dokumentation
             </a>
           ) : null}
@@ -66,7 +71,10 @@ export default async function ConnectorDetailPage({ params }: { params: { key: s
             <p className="text-sm font-semibold text-slate-900">Vorgänge</p>
             <ul className="mt-2 space-y-2">
               {connector.capabilities.map((capability) => (
-                <li key={capability.key} className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 p-3 text-sm">
+                <li
+                  key={capability.key}
+                  className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 p-3 text-sm"
+                >
                   <span className="font-medium text-slate-900">{capability.label}</span>
                   <span className="badge bg-slate-100 text-slate-600">
                     {capability.direction === "inbound" ? "eingehend" : "ausgehend"}

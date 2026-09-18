@@ -1,10 +1,5 @@
 import { Module } from "@nestjs/common";
-import {
-  DocumentsController,
-  NewsController,
-  QuickLinksController,
-  WikiController,
-} from "./content.controller";
+import { DocumentsController, NewsController, QuickLinksController, WikiController } from "./content.controller";
 import { NewsService } from "./news.service";
 import { DocumentsService } from "./documents.service";
 import { QuickLinksService } from "./quicklinks.service";

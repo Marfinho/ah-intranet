@@ -124,16 +124,14 @@ export class ResourcesService {
     ]);
 
     return {
-      rooms: rooms.map(
-        (room): Room => ({
-          id: room.id,
-          name: room.name,
-          location: room.location?.name ?? "Ohne Standort",
-          capacity: room.capacity,
-          equipment: room.equipment,
-          isActive: room.isActive,
-        }),
-      ),
+      rooms: rooms.map((room): Room => ({
+        id: room.id,
+        name: room.name,
+        location: room.location?.name ?? "Ohne Standort",
+        capacity: room.capacity,
+        equipment: room.equipment,
+        isActive: room.isActive,
+      })),
       bookings: bookings.map((booking) => this.toRoomBooking(booking)),
     };
   }
@@ -207,16 +205,14 @@ export class ResourcesService {
     ]);
 
     return {
-      vehicles: vehicles.map(
-        (vehicle): Vehicle => ({
-          id: vehicle.id,
-          label: vehicle.label,
-          plate: vehicle.plate,
-          category: vehicle.category,
-          location: vehicle.location?.name ?? null,
-          isActive: vehicle.isActive,
-        }),
-      ),
+      vehicles: vehicles.map((vehicle): Vehicle => ({
+        id: vehicle.id,
+        label: vehicle.label,
+        plate: vehicle.plate,
+        category: vehicle.category,
+        location: vehicle.location?.name ?? null,
+        isActive: vehicle.isActive,
+      })),
       bookings: bookings.map((booking) => this.toVehicleBooking(booking)),
     };
   }
@@ -319,9 +315,7 @@ export class ResourcesService {
     };
   }
 
-  private toRoomBooking(
-    booking: Prisma.RoomBookingGetPayload<{ include: typeof roomBookingInclude }>,
-  ): RoomBooking {
+  private toRoomBooking(booking: Prisma.RoomBookingGetPayload<{ include: typeof roomBookingInclude }>): RoomBooking {
     return {
       id: booking.id,
       roomId: booking.roomId,

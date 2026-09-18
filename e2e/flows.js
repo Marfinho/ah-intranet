@@ -13,7 +13,10 @@ async function login(page, username) {
   await page.goto(`${BASE}/login`, { waitUntil: "networkidle" });
   await page.fill('input[name="username"]', username);
   await page.fill('input[name="password"]', PASS);
-  await Promise.all([page.waitForURL((url) => !url.pathname.includes("/login"), { timeout: 20000 }), page.click('button[type="submit"]')]);
+  await Promise.all([
+    page.waitForURL((url) => !url.pathname.includes("/login"), { timeout: 20000 }),
+    page.click('button[type="submit"]'),
+  ]);
 }
 
 (async () => {
@@ -22,7 +25,9 @@ async function login(page, username) {
   const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
-  page.on("dialog", (d) => { d.accept().catch(() => {}); });
+  page.on("dialog", (d) => {
+    d.accept().catch(() => {});
+  });
 
   try {
     // 1. Falsche Zugangsdaten
@@ -77,11 +82,11 @@ async function login(page, username) {
 
     // 8. Idee abstimmen
     await page.goto(`${BASE}/ideen`, { waitUntil: "networkidle" });
-    const voteBtn = page.locator('button[aria-pressed]').first();
+    const voteBtn = page.locator("button[aria-pressed]").first();
     const before = await voteBtn.textContent();
     await voteBtn.click();
     await page.waitForTimeout(2500);
-    const after = await page.locator('button[aria-pressed]').first().textContent();
+    const after = await page.locator("button[aria-pressed]").first().textContent();
     check("Zustimmung zu Idee wird gespeichert", before !== after, `${before?.trim()} -> ${after?.trim()}`);
 
     // 9. Direktzugriff auf Adminbereich als Mitarbeiter
@@ -161,12 +166,18 @@ async function login(page, username) {
     // 17. Globale Suche
     await page.goto(`${BASE}/suche?q=Hochvolt`, { waitUntil: "networkidle" });
     const searchBody = await page.textContent("body");
-    check("Globale Suche liefert modulübergreifende Treffer", searchBody.includes("Aktuelles") && searchBody.includes("Wissensdatenbank"));
+    check(
+      "Globale Suche liefert modulübergreifende Treffer",
+      searchBody.includes("Aktuelles") && searchBody.includes("Wissensdatenbank"),
+    );
 
     // 18. Audit-Log protokolliert die Modulschaltung
     await page.goto(`${BASE}/admin/audit`, { waitUntil: "networkidle" });
     const auditBody = await page.textContent("body");
-    check("Audit-Log enthält Modulaktionen", auditBody.includes("module.disable") || auditBody.includes("module.reset"));
+    check(
+      "Audit-Log enthält Modulaktionen",
+      auditBody.includes("module.disable") || auditBody.includes("module.reset"),
+    );
     check("Audit-Log enthält Bestellfreigabe", auditBody.includes("order."));
 
     check("Keine JavaScript-Fehler im Browser", errors.length === 0, errors.slice(0, 3).join(" | "));

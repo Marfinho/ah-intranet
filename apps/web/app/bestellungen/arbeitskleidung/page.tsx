@@ -35,11 +35,17 @@ export default async function WorkwearPage() {
 
       <Section title="Ihre bisherigen Kleidungsbestellungen" subtitle="Die letzten zehn Vorgänge">
         {data.existingOrders.length === 0 ? (
-          <EmptyState title="Keine früheren Bestellungen" detail="Ihre erste Bestellung erscheint nach dem Absenden hier." />
+          <EmptyState
+            title="Keine früheren Bestellungen"
+            detail="Ihre erste Bestellung erscheint nach dem Absenden hier."
+          />
         ) : (
           <ul className="space-y-3">
             {data.existingOrders.map((order) => (
-              <li key={order.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 p-4">
+              <li
+                key={order.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 p-4"
+              >
                 <div>
                   <p className="font-semibold text-slate-900">{order.orderNumber}</p>
                   <p className="text-sm text-slate-600">

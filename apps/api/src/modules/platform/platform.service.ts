@@ -41,11 +41,15 @@ export class PlatformService {
       on("news") ? this.news.list(user, { take: 5 }) : Promise.resolve([]),
       this.notifications.list(user, true),
       on("approvals") && managing ? this.orders.approvals(user) : Promise.resolve([]),
-      on("tickets") ? this.desk.tickets(user, { scope: "mine" }).then((result) => result.items.slice(0, 5)) : Promise.resolve([]),
+      on("tickets")
+        ? this.desk.tickets(user, { scope: "mine" }).then((result) => result.items.slice(0, 5))
+        : Promise.resolve([]),
       on("calendar") ? this.resources.events(user).then((items) => items.slice(0, 5)) : Promise.resolve([]),
       on("orders") ? this.orders.cycles() : Promise.resolve([]),
       on("quicklinks") ? this.quickLinks.list(user) : Promise.resolve([]),
-      on("absences") ? this.absences.list(user, { scope: "mine" }).then((result) => result.items.slice(0, 5)) : Promise.resolve([]),
+      on("absences")
+        ? this.absences.list(user, { scope: "mine" }).then((result) => result.items.slice(0, 5))
+        : Promise.resolve([]),
       on("polls") ? this.desk.polls(user).then((result) => result.items.slice(0, 2)) : Promise.resolve([]),
     ]);
 
@@ -81,12 +85,13 @@ export class PlatformService {
         : 0,
       enabled.has("orders")
         ? this.prisma.order.count({
-            where: { requesterId: user.id, status: { in: ["submitted", "approved", "queued_for_bulk_order", "ordered"] } },
+            where: {
+              requesterId: user.id,
+              status: { in: ["submitted", "approved", "queued_for_bulk_order", "ordered"] },
+            },
           })
         : 0,
-      enabled.has("approvals") && managing
-        ? this.prisma.order.count({ where: { status: "submitted" } })
-        : 0,
+      enabled.has("approvals") && managing ? this.prisma.order.count({ where: { status: "submitted" } }) : 0,
       enabled.has("tickets")
         ? this.prisma.ticket.count({
             where: { OR: [{ requesterId: user.id }, { assigneeId: user.id }], status: { not: "geloest" } },
@@ -97,7 +102,12 @@ export class PlatformService {
     ]);
 
     if (enabled.has("news")) {
-      metrics.push({ label: "Ungelesene News", value: String(unreadNews), helper: "für Ihre Zielgruppe", href: "/aktuelles" });
+      metrics.push({
+        label: "Ungelesene News",
+        value: String(unreadNews),
+        helper: "für Ihre Zielgruppe",
+        href: "/aktuelles",
+      });
     }
     metrics.push({
       label: "Benachrichtigungen",
@@ -106,16 +116,36 @@ export class PlatformService {
       href: "/benachrichtigungen",
     });
     if (enabled.has("orders")) {
-      metrics.push({ label: "Laufende Bestellungen", value: String(myOrders), helper: "noch nicht abgeschlossen", href: "/bestellungen/meine" });
+      metrics.push({
+        label: "Laufende Bestellungen",
+        value: String(myOrders),
+        helper: "noch nicht abgeschlossen",
+        href: "/bestellungen/meine",
+      });
     }
     if (enabled.has("approvals") && managing) {
-      metrics.push({ label: "Offene Freigaben", value: String(openApprovals), helper: "warten auf Entscheidung", href: "/freigaben" });
+      metrics.push({
+        label: "Offene Freigaben",
+        value: String(openApprovals),
+        helper: "warten auf Entscheidung",
+        href: "/freigaben",
+      });
     }
     if (enabled.has("tickets")) {
-      metrics.push({ label: "Meine Tickets", value: String(myTickets), helper: "offen oder in Bearbeitung", href: "/tickets" });
+      metrics.push({
+        label: "Meine Tickets",
+        value: String(myTickets),
+        helper: "offen oder in Bearbeitung",
+        href: "/tickets",
+      });
     }
     if (enabled.has("absences")) {
-      metrics.push({ label: "Abwesenheitsanträge", value: String(openAbsences), helper: "in Freigabe", href: "/abwesenheiten" });
+      metrics.push({
+        label: "Abwesenheitsanträge",
+        value: String(openAbsences),
+        helper: "in Freigabe",
+        href: "/abwesenheiten",
+      });
     }
 
     return metrics;

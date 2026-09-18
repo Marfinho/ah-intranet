@@ -1,7 +1,10 @@
 const { chromium } = require("playwright");
 const BASE = process.env.E2E_BASE_URL || "http://localhost:3000";
 const results = [];
-const check = (n, ok, d = "") => { results.push({ n, ok }); console.log(`${ok ? "PASS" : "FAIL"}  ${n}${d ? " :: " + d : ""}`); };
+const check = (n, ok, d = "") => {
+  results.push({ n, ok });
+  console.log(`${ok ? "PASS" : "FAIL"}  ${n}${d ? " :: " + d : ""}`);
+};
 
 (async () => {
   const b = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
@@ -69,8 +72,10 @@ const check = (n, ok, d = "") => { results.push({ n, ok }); console.log(`${ok ? 
     await p.goto(`${BASE}/admin/module`, { waitUntil: "networkidle" });
     await p.click('main button:has-text("Auf Standard zurücksetzen")');
     await p.waitForTimeout(4000);
-    check("Zurücksetzen stellt beide Module wieder her",
-      (await p.locator('button[role="switch"][aria-checked="false"]').count()) === 0);
+    check(
+      "Zurücksetzen stellt beide Module wieder her",
+      (await p.locator('button[role="switch"][aria-checked="false"]').count()) === 0,
+    );
 
     check("Keine JavaScript-Fehler", errors.length === 0, errors.slice(0, 2).join(" | "));
   } catch (e) {

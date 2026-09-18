@@ -34,7 +34,11 @@ export function TicketComposer() {
         </select>
       </Field>
 
-      <Field label="Beschreibung *" wide hint="Was ist passiert, seit wann, welcher Arbeitsplatz oder welches Fahrzeug?">
+      <Field
+        label="Beschreibung *"
+        wide
+        hint="Was ist passiert, seit wann, welcher Arbeitsplatz oder welches Fahrzeug?"
+      >
         <textarea name="description" rows={4} required minLength={5} className={inputClass} />
       </Field>
 

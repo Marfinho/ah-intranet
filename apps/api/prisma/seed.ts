@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { PrismaClient, type Prisma } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { MODULE_DEFINITIONS } from "@ah-intranet/shared";
@@ -62,7 +61,14 @@ const ROLES = [
     name: "Fachbereichsadmin",
     description: "Redaktion und Freigaben: News, Bestellungen, Tickets, Kataloge.",
     rank: 20,
-    permissions: ["news.publish", "orders.approve", "orders.bulk", "catalog.manage", "tickets.manage", "absences.approve"],
+    permissions: [
+      "news.publish",
+      "orders.approve",
+      "orders.bulk",
+      "catalog.manage",
+      "tickets.manage",
+      "absences.approve",
+    ],
   },
   {
     key: "admin",
@@ -466,8 +472,16 @@ async function main() {
   const hvNews = await prisma.newsPost.findUniqueOrThrow({ where: { slug: "neue-hochvolt-schulung" } });
   await prisma.newsComment.createMany({
     data: [
-      { newsPostId: hvNews.id, authorId: dennis.id, message: "Ich habe die Schulung schon im Januar gemacht - zählt die?" },
-      { newsPostId: hvNews.id, authorId: jana.id, message: "Ja, Januar-Termine sind gültig. Ich trage dich in die Liste ein." },
+      {
+        newsPostId: hvNews.id,
+        authorId: dennis.id,
+        message: "Ich habe die Schulung schon im Januar gemacht - zählt die?",
+      },
+      {
+        newsPostId: hvNews.id,
+        authorId: jana.id,
+        message: "Ja, Januar-Termine sind gültig. Ich trage dich in die Liste ein.",
+      },
     ],
   });
   await prisma.newsRead.createMany({ data: [{ newsPostId: hvNews.id, userId: jana.id }] });
@@ -477,7 +491,14 @@ async function main() {
   await prisma.businessCardFieldDefinition.createMany({
     data: [
       { key: "fullName", label: "Name", fieldType: "text", sortOrder: 0, isRequired: true, options: [] },
-      { key: "jobTitle", label: "Funktionsbezeichnung", fieldType: "text", sortOrder: 1, isRequired: true, options: [] },
+      {
+        key: "jobTitle",
+        label: "Funktionsbezeichnung",
+        fieldType: "text",
+        sortOrder: 1,
+        isRequired: true,
+        options: [],
+      },
       {
         key: "location",
         label: "Standort",
@@ -502,11 +523,36 @@ async function main() {
   });
 
   const workwear = [
-    { name: "Poloshirt Service", category: "Oberteile", sizes: ["S", "M", "L", "XL", "XXL"], description: "Kurzarm, mit Logo-Stick" },
-    { name: "Softshelljacke", category: "Oberteile", sizes: ["S", "M", "L", "XL", "XXL"], description: "Wind- und wasserabweisend" },
-    { name: "Arbeitshose Werkstatt", category: "Hosen", sizes: ["46", "48", "50", "52", "54", "56"], description: "Mit Kniepolstertaschen" },
-    { name: "Sicherheitsschuhe S3", category: "Schuhe", sizes: ["39", "40", "41", "42", "43", "44", "45", "46"], description: "Durchtrittsicher" },
-    { name: "Hemd Verkauf", category: "Oberteile", sizes: ["38", "39", "40", "41", "42", "43"], description: "Langarm, bügelleicht" },
+    {
+      name: "Poloshirt Service",
+      category: "Oberteile",
+      sizes: ["S", "M", "L", "XL", "XXL"],
+      description: "Kurzarm, mit Logo-Stick",
+    },
+    {
+      name: "Softshelljacke",
+      category: "Oberteile",
+      sizes: ["S", "M", "L", "XL", "XXL"],
+      description: "Wind- und wasserabweisend",
+    },
+    {
+      name: "Arbeitshose Werkstatt",
+      category: "Hosen",
+      sizes: ["46", "48", "50", "52", "54", "56"],
+      description: "Mit Kniepolstertaschen",
+    },
+    {
+      name: "Sicherheitsschuhe S3",
+      category: "Schuhe",
+      sizes: ["39", "40", "41", "42", "43", "44", "45", "46"],
+      description: "Durchtrittsicher",
+    },
+    {
+      name: "Hemd Verkauf",
+      category: "Oberteile",
+      sizes: ["38", "39", "40", "41", "42", "43"],
+      description: "Langarm, bügelleicht",
+    },
   ];
 
   for (const item of workwear) {
@@ -552,7 +598,11 @@ async function main() {
       status: "submitted",
       submittedAt: days(-3),
       orderCycleId: bcCycle.id,
-      statusHistory: { create: [{ status: "submitted", note: "Bestellung eingereicht", actorName: "Paul Hansen", changedAt: days(-3) }] },
+      statusHistory: {
+        create: [
+          { status: "submitted", note: "Bestellung eingereicht", actorName: "Paul Hansen", changedAt: days(-3) },
+        ],
+      },
       businessCardOrder: {
         create: {
           quantity: 250,
@@ -569,7 +619,11 @@ async function main() {
           },
         },
       },
-      comments: { create: [{ authorId: sandra.id, message: "Bitte prüfe noch die Schreibweise der Mobilnummer.", createdAt: days(-2) }] },
+      comments: {
+        create: [
+          { authorId: sandra.id, message: "Bitte prüfe noch die Schreibweise der Mobilnummer.", createdAt: days(-2) },
+        ],
+      },
     },
   });
 
@@ -588,7 +642,9 @@ async function main() {
           { status: "approved", note: "Freigegeben", actorName: "Sandra Meier", changedAt: days(-8) },
         ],
       },
-      approvalDecisions: { create: [{ actorId: sandra.id, decision: "approved", note: "Freigegeben", decidedAt: days(-8) }] },
+      approvalDecisions: {
+        create: [{ actorId: sandra.id, decision: "approved", note: "Freigegeben", decidedAt: days(-8) }],
+      },
       businessCardOrder: {
         create: {
           quantity: 100,
@@ -618,7 +674,11 @@ async function main() {
       status: "submitted",
       submittedAt: days(-1),
       orderCycleId: wwCycle.id,
-      statusHistory: { create: [{ status: "submitted", note: "Bestellung eingereicht", actorName: "Dennis Wagner", changedAt: days(-1) }] },
+      statusHistory: {
+        create: [
+          { status: "submitted", note: "Bestellung eingereicht", actorName: "Dennis Wagner", changedAt: days(-1) },
+        ],
+      },
       workwearOrder: {
         create: {
           items: {
@@ -773,11 +833,42 @@ async function main() {
 
   await prisma.quickLink.createMany({
     data: [
-      { label: "Zeiterfassung", url: "https://zeiterfassung.example.com", description: "Kommen, Gehen, Korrekturen", icon: "Clock", sortOrder: 0 },
-      { label: "Warenwirtschaft (DMS)", url: "https://dms.example.com", description: "Fahrzeugakte und Aufträge", icon: "Database", sortOrder: 1 },
-      { label: "Herstellerportal", url: "https://partner.example.com", description: "Technische Unterlagen und Rückrufe", icon: "Factory", sortOrder: 2 },
-      { label: "Teilekatalog", url: "https://teile.example.com", description: "Ersatzteilsuche", icon: "Wrench", sortOrder: 3, audienceScopes: ["department:TDI", "department:SRV"] },
-      { label: "IT-Servicedesk", url: "https://support.example.com", description: "Störungen melden", icon: "LifeBuoy", sortOrder: 4 },
+      {
+        label: "Zeiterfassung",
+        url: "https://zeiterfassung.example.com",
+        description: "Kommen, Gehen, Korrekturen",
+        icon: "Clock",
+        sortOrder: 0,
+      },
+      {
+        label: "Warenwirtschaft (DMS)",
+        url: "https://dms.example.com",
+        description: "Fahrzeugakte und Aufträge",
+        icon: "Database",
+        sortOrder: 1,
+      },
+      {
+        label: "Herstellerportal",
+        url: "https://partner.example.com",
+        description: "Technische Unterlagen und Rückrufe",
+        icon: "Factory",
+        sortOrder: 2,
+      },
+      {
+        label: "Teilekatalog",
+        url: "https://teile.example.com",
+        description: "Ersatzteilsuche",
+        icon: "Wrench",
+        sortOrder: 3,
+        audienceScopes: ["department:TDI", "department:SRV"],
+      },
+      {
+        label: "IT-Servicedesk",
+        url: "https://support.example.com",
+        description: "Störungen melden",
+        icon: "LifeBuoy",
+        sortOrder: 4,
+      },
     ],
   });
 
@@ -845,9 +936,19 @@ async function main() {
 
   await prisma.room.createMany({
     data: [
-      { name: "Besprechungsraum Nord", locationId: bremen.id, capacity: 12, equipment: ["Beamer", "Whiteboard", "Videokonferenz"] },
+      {
+        name: "Besprechungsraum Nord",
+        locationId: bremen.id,
+        capacity: 12,
+        equipment: ["Beamer", "Whiteboard", "Videokonferenz"],
+      },
       { name: "Schulungsraum Bremen", locationId: bremen.id, capacity: 24, equipment: ["Beamer", "Flipchart"] },
-      { name: "Besprechungsraum Delmenhorst", locationId: delmenhorst.id, capacity: 8, equipment: ["TV", "Whiteboard"] },
+      {
+        name: "Besprechungsraum Delmenhorst",
+        locationId: delmenhorst.id,
+        capacity: 8,
+        equipment: ["TV", "Whiteboard"],
+      },
     ],
   });
 
@@ -858,10 +959,27 @@ async function main() {
 
   await prisma.vehicle.createMany({
     data: [
-      { label: "Vorführwagen Kompakt-SUV", plate: "HB-AH 101", category: "vorfuehrwagen", locationId: bremen.id, notes: "Vollelektrisch" },
+      {
+        label: "Vorführwagen Kompakt-SUV",
+        plate: "HB-AH 101",
+        category: "vorfuehrwagen",
+        locationId: bremen.id,
+        notes: "Vollelektrisch",
+      },
       { label: "Vorführwagen Kombi", plate: "HB-AH 102", category: "vorfuehrwagen", locationId: bremen.id },
-      { label: "Werkstattersatzwagen Kleinwagen", plate: "DEL-AH 201", category: "werkstattersatz", locationId: delmenhorst.id },
-      { label: "Poolfahrzeug Transporter", plate: "HB-AH 301", category: "poolfahrzeug", locationId: bremen.id, notes: "Für Teiletransporte" },
+      {
+        label: "Werkstattersatzwagen Kleinwagen",
+        plate: "DEL-AH 201",
+        category: "werkstattersatz",
+        locationId: delmenhorst.id,
+      },
+      {
+        label: "Poolfahrzeug Transporter",
+        plate: "HB-AH 301",
+        category: "poolfahrzeug",
+        locationId: bremen.id,
+        notes: "Für Teiletransporte",
+      },
     ],
   });
 
@@ -892,8 +1010,16 @@ async function main() {
   });
   await prisma.ticketComment.createMany({
     data: [
-      { ticketId: ticket1.id, authorId: fatih.id, message: "Ich prüfe den Druckertreiber und melde mich in einer Stunde." },
-      { ticketId: ticket1.id, authorId: userByUsername.get("a.roth")!.id, message: "Danke, die Etiketten werden dringend gebraucht." },
+      {
+        ticketId: ticket1.id,
+        authorId: fatih.id,
+        message: "Ich prüfe den Druckertreiber und melde mich in einer Stunde.",
+      },
+      {
+        ticketId: ticket1.id,
+        authorId: userByUsername.get("a.roth")!.id,
+        message: "Danke, die Etiketten werden dringend gebraucht.",
+      },
     ],
   });
 

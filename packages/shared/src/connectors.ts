@@ -8,13 +8,7 @@
  * nicht gibt.
  */
 
-export type ConnectorCategory =
-  | "hersteller"
-  | "dms"
-  | "teile"
-  | "bewertung"
-  | "boerse"
-  | "buchhaltung";
+export type ConnectorCategory = "hersteller" | "dms" | "teile" | "bewertung" | "boerse" | "buchhaltung";
 
 export const CONNECTOR_CATEGORY_LABELS: Record<ConnectorCategory, string> = {
   hersteller: "Hersteller & Konzernsysteme",
@@ -125,7 +119,14 @@ export const CONNECTOR_DEFINITIONS = [
       },
     ],
     fields: [
-      { key: "partnerId", label: "Partnernummer (Betriebsnummer)", type: "text", required: true, secret: false, placeholder: "z. B. 12345" },
+      {
+        key: "partnerId",
+        label: "Partnernummer (Betriebsnummer)",
+        type: "text",
+        required: true,
+        secret: false,
+        placeholder: "z. B. 12345",
+      },
       { key: "endpoint", label: "Endpunkt aus der Partnerdokumentation", type: "url", required: true, secret: false },
       { key: "clientId", label: "Client-ID", type: "text", required: true, secret: false },
       { key: "clientSecret", label: "Client-Secret", type: "password", required: true, secret: true },
@@ -184,7 +185,14 @@ export const CONNECTOR_DEFINITIONS = [
     portalUrl: "https://vwgroupsupply.com",
     capabilities: [],
     fields: [
-      { key: "portalUrl", label: "Portaladresse", type: "url", required: true, secret: false, help: "Bei Bedarf auf die markenspezifische Adresse anpassen." },
+      {
+        key: "portalUrl",
+        label: "Portaladresse",
+        type: "url",
+        required: true,
+        secret: false,
+        help: "Bei Bedarf auf die markenspezifische Adresse anpassen.",
+      },
     ],
     onboarding: ["Kein Datenaustausch für Drittsysteme; die Anmeldung erfolgt personenbezogen im Portal."],
   },
@@ -198,9 +206,7 @@ export const CONNECTOR_DEFINITIONS = [
     summary:
       "Reparaturleitfäden, Stromlaufpläne, Wartungstabellen und technische Aktionen. Arbeitsmittel der Werkstatt, kein Drittsystem-Datenaustausch.",
     capabilities: [],
-    fields: [
-      { key: "portalUrl", label: "ElsaPro-Adresse", type: "url", required: true, secret: false },
-    ],
+    fields: [{ key: "portalUrl", label: "ElsaPro-Adresse", type: "url", required: true, secret: false }],
     onboarding: ["Absprung mit Fahrgestellnummer, sofern die interne Adresse das unterstützt."],
   },
   {
@@ -226,7 +232,9 @@ export const CONNECTOR_DEFINITIONS = [
     summary:
       "Diagnose, Steuergeräte-Codierung und Programmierung. Läuft an gebundenen Werkstattarbeitsplätzen, nicht als Serverdienst.",
     capabilities: [],
-    fields: [{ key: "portalUrl", label: "Diagnose-Portal / Startadresse", type: "url", required: false, secret: false }],
+    fields: [
+      { key: "portalUrl", label: "Diagnose-Portal / Startadresse", type: "url", required: false, secret: false },
+    ],
     onboarding: ["Arbeitsplatzgebundene Software ohne Serverschnittstelle für ein Intranet."],
   },
 
@@ -361,7 +369,14 @@ export const CONNECTOR_DEFINITIONS = [
         placeholder: "https://services.mobile.de",
         help: "Für Tests: https://services.sandbox.mobile.de",
       },
-      { key: "sellerId", label: "mobile.de Händler-ID", type: "text", required: true, secret: false, placeholder: "z. B. 12345" },
+      {
+        key: "sellerId",
+        label: "mobile.de Händler-ID",
+        type: "text",
+        required: true,
+        secret: false,
+        placeholder: "z. B. 12345",
+      },
       { key: "username", label: "API-Benutzer", type: "text", required: true, secret: false },
       { key: "password", label: "API-Passwort", type: "password", required: true, secret: true },
     ],
@@ -505,10 +520,39 @@ export const CONNECTOR_DEFINITIONS = [
       },
     ],
     fields: [
-      { key: "consultantNumber", label: "Beraternummer", type: "number", required: true, secret: false, placeholder: "1234567" },
-      { key: "clientNumber", label: "Mandantennummer", type: "number", required: true, secret: false, placeholder: "12345" },
-      { key: "accountLength", label: "Sachkontenlänge", type: "number", required: false, secret: false, placeholder: "4" },
-      { key: "fiscalStart", label: "Beginn Wirtschaftsjahr", type: "text", required: false, secret: false, placeholder: "0101", help: "TTMM, Standard 0101." },
+      {
+        key: "consultantNumber",
+        label: "Beraternummer",
+        type: "number",
+        required: true,
+        secret: false,
+        placeholder: "1234567",
+      },
+      {
+        key: "clientNumber",
+        label: "Mandantennummer",
+        type: "number",
+        required: true,
+        secret: false,
+        placeholder: "12345",
+      },
+      {
+        key: "accountLength",
+        label: "Sachkontenlänge",
+        type: "number",
+        required: false,
+        secret: false,
+        placeholder: "4",
+      },
+      {
+        key: "fiscalStart",
+        label: "Beginn Wirtschaftsjahr",
+        type: "text",
+        required: false,
+        secret: false,
+        placeholder: "0101",
+        help: "TTMM, Standard 0101.",
+      },
       {
         key: "expenseAccountBusinessCards",
         label: "Aufwandskonto Visitenkarten",

@@ -23,7 +23,13 @@ export function CycleForm() {
       </Field>
 
       <Field label="Bezeichnung *">
-        <input name="title" required minLength={2} className={inputClass} placeholder="Sammelbestellung Visitenkarten" />
+        <input
+          name="title"
+          required
+          minLength={2}
+          className={inputClass}
+          placeholder="Sammelbestellung Visitenkarten"
+        />
       </Field>
 
       <Field label="Stichtag *">

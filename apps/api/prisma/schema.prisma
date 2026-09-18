@@ -196,29 +196,35 @@ model LocationDepartment {
 // -------------------------------------------------- Benutzer & Rechte
 
 model User {
-  id               String     @id @default(cuid())
-  username         String     @unique
-  email            String?    @unique
-  passwordHash     String
-  firstName        String
-  lastName         String
-  jobTitle         String     @default("Mitarbeitende:r")
-  phone            String?
-  mobile           String?
-  presence         Presence   @default(vor_ort)
-  responsibilities String[]   @default([])
-  status           UserStatus @default(active)
+  id                 String     @id @default(cuid())
+  username           String     @unique
+  email              String?    @unique
+  passwordHash       String
+  firstName          String
+  lastName           String
+  jobTitle           String     @default("Mitarbeitende:r")
+  phone              String?
+  mobile             String?
+  presence           Presence   @default(vor_ort)
+  responsibilities   String[]   @default([])
+  status             UserStatus @default(active)
   /// Zielgruppen-Tokens (global, location:*, department:*, specialty:*) - bei Stammdatenänderung neu berechnet.
-  scopes           String[]   @default([])
-  annualLeaveDays  Int        @default(30)
-  mustChangePassword Boolean  @default(false)
-  lastLoginAt      DateTime?
-  locationId       String?
-  departmentId     String?
-  specialtyAreaId  String?
-  managerId        String?
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  scopes             String[]   @default([])
+  annualLeaveDays    Int        @default(30)
+  mustChangePassword Boolean    @default(false)
+  lastLoginAt        DateTime?
+  /// Wird bei Sperre und Passwortwechsel erhöht und macht alle bis dahin
+  /// ausgegebenen Tokens sofort ungültig.
+  tokenVersion       Int        @default(0)
+  failedLoginCount   Int        @default(0)
+  /// Gesetzt, solange das Konto nach zu vielen Fehlversuchen gesperrt ist.
+  lockedUntil        DateTime?
+  locationId         String?
+  departmentId       String?
+  specialtyAreaId    String?
+  managerId          String?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
 
   location      Location?      @relation(fields: [locationId], references: [id])
   department    Department?    @relation(fields: [departmentId], references: [id])
@@ -227,28 +233,28 @@ model User {
   reports       User[]         @relation("ManagerRelation")
 
   roles             UserRole[]
-  newsPosts         NewsPost[]         @relation("NewsAuthor")
+  newsPosts         NewsPost[]             @relation("NewsAuthor")
   newsComments      NewsComment[]
   newsReads         NewsRead[]
-  orders            Order[]            @relation("OrderRequester")
+  orders            Order[]                @relation("OrderRequester")
   orderComments     OrderComment[]
-  approvalDecisions ApprovalDecision[] @relation("ApprovalActor")
-  auditLogs         AuditLog[]         @relation("AuditActor")
+  approvalDecisions ApprovalDecision[]     @relation("ApprovalActor")
+  auditLogs         AuditLog[]             @relation("AuditActor")
   notifications     Notification[]
-  documents         Document[]         @relation("DocumentOwner")
-  events            CalendarEvent[]    @relation("EventOrganizer")
-  ticketsRequested  Ticket[]           @relation("TicketRequester")
-  ticketsAssigned   Ticket[]           @relation("TicketAssignee")
+  documents         Document[]             @relation("DocumentOwner")
+  events            CalendarEvent[]        @relation("EventOrganizer")
+  ticketsRequested  Ticket[]               @relation("TicketRequester")
+  ticketsAssigned   Ticket[]               @relation("TicketAssignee")
   ticketComments    TicketComment[]
   onboarding        OnboardingAssignment[] @relation("OnboardingEmployee")
-  absences          Absence[]          @relation("AbsenceEmployee")
-  absenceDecisions  Absence[]          @relation("AbsenceDecider")
+  absences          Absence[]              @relation("AbsenceEmployee")
+  absenceDecisions  Absence[]              @relation("AbsenceDecider")
   roomBookings      RoomBooking[]
   vehicleBookings   VehicleBooking[]
-  wikiArticles      WikiArticle[]      @relation("WikiAuthor")
-  ideas             Idea[]             @relation("IdeaAuthor")
+  wikiArticles      WikiArticle[]          @relation("WikiAuthor")
+  ideas             Idea[]                 @relation("IdeaAuthor")
   ideaVotes         IdeaVote[]
-  polls             Poll[]             @relation("PollAuthor")
+  polls             Poll[]                 @relation("PollAuthor")
   pollVotes         PollVote[]
 
   @@index([status])
@@ -322,20 +328,20 @@ model ModuleSetting {
 // -------------------------------------------------------------- News
 
 model NewsPost {
-  id             String       @id @default(cuid())
-  slug           String       @unique
+  id             String     @id @default(cuid())
+  slug           String     @unique
   title          String
   teaser         String
   content        String
-  priority       Priority     @default(normal)
-  status         NewsStatus   @default(draft)
-  pinned         Boolean      @default(false)
-  audienceScopes String[]     @default(["global"])
+  priority       Priority   @default(normal)
+  status         NewsStatus @default(draft)
+  pinned         Boolean    @default(false)
+  audienceScopes String[]   @default(["global"])
   publishedAt    DateTime?
   expiresAt      DateTime?
   authorId       String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
   author      User             @relation("NewsAuthor", fields: [authorId], references: [id])
   attachments NewsAttachment[]
@@ -387,22 +393,22 @@ model NewsRead {
 // ------------------------------------------------------- Bestellungen
 
 model Order {
-  id           String      @id @default(cuid())
-  orderNumber  String      @unique
-  type         OrderType
-  requesterId  String
-  status       OrderStatus @default(draft)
-  orderCycleId String?
-  submittedAt  DateTime?
-  approvedAt   DateTime?
-  rejectedAt   DateTime?
-  orderedAt    DateTime?
-  completedAt  DateTime?
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique
+  type            OrderType
+  requesterId     String
+  status          OrderStatus @default(draft)
+  orderCycleId    String?
+  submittedAt     DateTime?
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  orderedAt       DateTime?
+  completedAt     DateTime?
   /// Rechnungsbetrag des externen Dienstleisters, Grundlage für den DATEV-Export.
-  netAmount       Decimal? @db.Decimal(12, 2)
+  netAmount       Decimal?    @db.Decimal(12, 2)
   supplierInvoice String?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   requester         User                 @relation("OrderRequester", fields: [requesterId], references: [id])
   orderCycle        OrderCycle?          @relation(fields: [orderCycleId], references: [id])

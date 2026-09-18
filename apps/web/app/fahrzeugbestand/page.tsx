@@ -98,7 +98,12 @@ export default async function StockPage({ searchParams }: { searchParams: { sear
                       </td>
                       <td className="px-4 py-3">
                         {vehicle.url ? (
-                          <a href={vehicle.url} target="_blank" rel="noreferrer" className="text-brand-700 hover:underline">
+                          <a
+                            href={vehicle.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-brand-700 hover:underline"
+                          >
                             {vehicle.sourceName}
                           </a>
                         ) : (

@@ -72,7 +72,11 @@ export class PeopleService {
     };
 
     const [users, locations, departments] = await Promise.all([
-      this.prisma.user.findMany({ where, select: directorySelect, orderBy: [{ lastName: "asc" }, { firstName: "asc" }] }),
+      this.prisma.user.findMany({
+        where,
+        select: directorySelect,
+        orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+      }),
       this.prisma.location.findMany({ select: { name: true }, orderBy: { name: "asc" } }),
       this.prisma.department.findMany({ select: { name: true }, orderBy: { name: "asc" } }),
     ]);
@@ -142,7 +146,10 @@ export class PeopleService {
     return { locations, departments, specialties };
   }
 
-  async createUser(actor: RequestUser, input: UserInput): Promise<{ user: EmployeeDirectoryEntry; initialPassword: string }> {
+  async createUser(
+    actor: RequestUser,
+    input: UserInput,
+  ): Promise<{ user: EmployeeDirectoryEntry; initialPassword: string }> {
     const username = input.username.trim().toLowerCase();
     if (await this.prisma.user.findUnique({ where: { username }, select: { id: true } })) {
       throw new BadRequestException(`Der Benutzername "${username}" ist bereits vergeben.`);
@@ -214,10 +221,11 @@ export class PeopleService {
         ...(input.responsibilities !== undefined ? { responsibilities: input.responsibilities } : {}),
         ...(input.annualLeaveDays !== undefined ? { annualLeaveDays: input.annualLeaveDays } : {}),
         ...(input.status !== undefined ? { status: input.status } : {}),
+        // Sperre und Rollenwechsel müssen sofort greifen, nicht erst nach
+        // Ablauf des Tokens - deshalb werden laufende Sitzungen verworfen.
+        ...(input.status !== undefined || input.roles !== undefined ? { tokenVersion: { increment: 1 } } : {}),
         scopes,
-        ...(input.roles
-          ? { roles: { deleteMany: {}, create: await this.roleConnections(input.roles) } }
-          : {}),
+        ...(input.roles ? { roles: { deleteMany: {}, create: await this.roleConnections(input.roles) } } : {}),
       },
       select: directorySelect,
     });
@@ -242,7 +250,13 @@ export class PeopleService {
     const initialPassword = this.generatePassword();
     await this.prisma.user.update({
       where: { id },
-      data: { passwordHash: await bcrypt.hash(initialPassword, 12), mustChangePassword: true },
+      data: {
+        passwordHash: await bcrypt.hash(initialPassword, 12),
+        mustChangePassword: true,
+        failedLoginCount: 0,
+        lockedUntil: null,
+        tokenVersion: { increment: 1 },
+      },
     });
 
     await this.audit.log({
@@ -331,7 +345,9 @@ export class PeopleService {
     specialtyAreaId?: string | null;
   }): Promise<string[]> {
     const [location, department, specialty] = await Promise.all([
-      input.locationId ? this.prisma.location.findUnique({ where: { id: input.locationId }, select: { code: true } }) : null,
+      input.locationId
+        ? this.prisma.location.findUnique({ where: { id: input.locationId }, select: { code: true } })
+        : null,
       input.departmentId
         ? this.prisma.department.findUnique({ where: { id: input.departmentId }, select: { code: true } })
         : null,

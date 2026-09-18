@@ -3,6 +3,14 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { PrismaService } from "../../../core/prisma.service";
 import {
+  normaliseHeader,
+  parseFlexibleDate,
+  parseGermanInteger,
+  parseGermanNumber,
+  splitCsvLine,
+  stripBom,
+} from "../../../core/csv";
+import {
   ConnectorError,
   requireFields,
   type CheckResult,
@@ -157,20 +165,20 @@ export class DmsFileAdapter implements ConnectorAdapter {
     const delimiter = context.settings.delimiter?.trim() || ";";
 
     const raw = await readFile(file);
-    const text = raw.toString(encoding).replace(/^﻿/, "");
+    const text = stripBom(raw.toString(encoding));
     const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0);
 
     if (lines.length < 2) {
       throw new ConnectorError(`Die Datei ${file} enthält keine Datenzeilen.`);
     }
 
-    const header = this.splitLine(lines[0], delimiter).map((cell) => this.normalise(cell));
+    const header = splitCsvLine(lines[0], delimiter).map(normaliseHeader);
     const index = this.mapColumns(header);
 
     const headerIssues = ["externalId", "make"].filter((field) => index[field] === undefined);
 
     const rows = lines.slice(1).map((line) => {
-      const cells = this.splitLine(line, delimiter);
+      const cells = splitCsvLine(line, delimiter);
       const pick = (field: string) => {
         const position = index[field];
         return position === undefined ? undefined : cells[position]?.trim();
@@ -182,12 +190,12 @@ export class DmsFileAdapter implements ConnectorAdapter {
         make: pick("make"),
         model: pick("model"),
         title: pick("title") ?? "",
-        price: this.number(pick("price")),
-        mileageKm: this.integer(pick("mileageKm")),
-        firstRegistration: this.date(pick("firstRegistration")),
+        price: parseGermanNumber(pick("price")),
+        mileageKm: parseGermanInteger(pick("mileageKm")),
+        firstRegistration: parseFlexibleDate(pick("firstRegistration")),
         fuel: pick("fuel"),
         gearbox: pick("gearbox"),
-        powerKw: this.integer(pick("powerKw")),
+        powerKw: parseGermanInteger(pick("powerKw")),
         raw: Object.fromEntries(header.map((name, position) => [name, cells[position] ?? ""])),
       };
     });
@@ -195,53 +203,7 @@ export class DmsFileAdapter implements ConnectorAdapter {
     return { rows, headerIssues };
   }
 
-  /** CSV mit Anführungszeichen und verdoppelten Anführungszeichen im Feld. */
-  private splitLine(line: string, delimiter: string): string[] {
-    const cells: string[] = [];
-    let current = "";
-    let quoted = false;
-
-    for (let position = 0; position < line.length; position += 1) {
-      const character = line[position];
-
-      if (quoted) {
-        if (character === '"') {
-          if (line[position + 1] === '"') {
-            current += '"';
-            position += 1;
-          } else {
-            quoted = false;
-          }
-        } else {
-          current += character;
-        }
-      } else if (character === '"') {
-        quoted = true;
-      } else if (character === delimiter) {
-        cells.push(current);
-        current = "";
-      } else {
-        current += character;
-      }
-    }
-    cells.push(current);
-    return cells;
-  }
-
-  private normalise(value: string): string {
-    return value
-      .trim()
-      .toLowerCase()
-      .replace(/"/g, "")
-      .replace(/ä/g, "ae")
-      .replace(/ö/g, "oe")
-      .replace(/ü/g, "ue")
-      .replace(/ß/g, "ss")
-      .replace(/[^a-z0-9]/g, "_")
-      .replace(/_+/g, "_")
-      .replace(/(^_|_$)/g, "");
-  }
-
+  /** Ordnet die Spalten der Datei den Zielfeldern zu. */
   private mapColumns(header: string[]): Record<string, number> {
     const index: Record<string, number> = {};
 
@@ -255,39 +217,5 @@ export class DmsFileAdapter implements ConnectorAdapter {
       }
     }
     return index;
-  }
-
-  private number(value: string | undefined): number | undefined {
-    if (!value) return undefined;
-    // Deutsche Schreibweise: 12.345,67
-    const parsed = Number(value.replace(/\./g, "").replace(",", ".").replace(/[^0-9.-]/g, ""));
-    return Number.isFinite(parsed) ? parsed : undefined;
-  }
-
-  private integer(value: string | undefined): number | undefined {
-    const parsed = this.number(value);
-    return parsed === undefined ? undefined : Math.round(parsed);
-  }
-
-  /** Akzeptiert TT.MM.JJJJ, JJJJ-MM-TT und MM/JJJJ. */
-  private date(value: string | undefined): Date | undefined {
-    if (!value) return undefined;
-
-    const german = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(value);
-    if (german) {
-      return new Date(Date.UTC(Number(german[3]), Number(german[2]) - 1, Number(german[1])));
-    }
-
-    const iso = /^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?$/.exec(value);
-    if (iso) {
-      return new Date(Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3] ?? 1)));
-    }
-
-    const monthYear = /^(\d{1,2})\/(\d{4})$/.exec(value);
-    if (monthYear) {
-      return new Date(Date.UTC(Number(monthYear[2]), Number(monthYear[1]) - 1, 1));
-    }
-
-    return undefined;
   }
 }

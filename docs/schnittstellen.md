@@ -16,12 +16,12 @@ Konnektor nach seiner tatsächlichen Zugänglichkeit. Erfundene Endpunkte gibt e
 hier nicht: Wo die Spezifikation fehlt, steht das ausdrücklich dran, und die API
 weist Ausführungsversuche mit einer klaren Begründung ab.
 
-| Klasse | Bedeutung | Anzahl |
-| ------ | --------- | ------ |
-| `public_api` | Öffentlich dokumentiert, vollständig implementiert | 1 |
-| `documented_format` | Austauschformat öffentlich, vollständig implementiert | 2 |
-| `partner_contract` | Spezifikation nur mit Vertrag, bewusst nicht implementiert | 7 |
-| `portal_link` | Kein Datenaustausch vorgesehen, Absprung ins Portal | 4 |
+| Klasse              | Bedeutung                                                  | Anzahl |
+| ------------------- | ---------------------------------------------------------- | ------ |
+| `public_api`        | Öffentlich dokumentiert, vollständig implementiert         | 1      |
+| `documented_format` | Austauschformat öffentlich, vollständig implementiert      | 2      |
+| `partner_contract`  | Spezifikation nur mit Vertrag, bewusst nicht implementiert | 7      |
+| `portal_link`       | Kein Datenaustausch vorgesehen, Absprung ins Portal        | 4      |
 
 ## Was im Konzernumfeld läuft
 

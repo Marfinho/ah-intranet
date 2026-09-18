@@ -37,12 +37,13 @@ export class ServiceDeskService {
 
   /* ---------------------------------------------------------- Tickets */
 
-  async tickets(user: RequestUser, filter: { scope?: "mine" | "all"; status?: string; category?: string; search?: string } = {}) {
+  async tickets(
+    user: RequestUser,
+    filter: { scope?: "mine" | "all"; status?: string; category?: string; search?: string } = {},
+  ) {
     const scope = filter.scope ?? (isManaging(user) ? "all" : "mine");
     const where: Prisma.TicketWhereInput = {
-      ...(scope === "mine" || !isManaging(user)
-        ? { OR: [{ requesterId: user.id }, { assigneeId: user.id }] }
-        : {}),
+      ...(scope === "mine" || !isManaging(user) ? { OR: [{ requesterId: user.id }, { assigneeId: user.id }] } : {}),
       ...(filter.status && filter.status !== "all" ? { status: filter.status as TicketStatus } : {}),
       ...(filter.category && filter.category !== "all" ? { category: filter.category as TicketCategory } : {}),
       ...(filter.search
@@ -121,7 +122,10 @@ export class ServiceDeskService {
     id: string,
     input: { status?: TicketStatus; priority?: Priority; assigneeId?: string | null },
   ): Promise<TicketSummary> {
-    const ticket = await this.prisma.ticket.findUnique({ where: { id }, select: { id: true, number: true, requesterId: true } });
+    const ticket = await this.prisma.ticket.findUnique({
+      where: { id },
+      select: { id: true, number: true, requesterId: true },
+    });
     if (!ticket) {
       throw new NotFoundException("Ticket nicht gefunden");
     }

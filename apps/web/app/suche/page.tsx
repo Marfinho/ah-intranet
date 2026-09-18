@@ -23,7 +23,10 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
         {query.length < 2 ? (
           <EmptyState title="Mindestens zwei Zeichen" detail="Nutzen Sie das Suchfeld oben rechts." />
         ) : hits.length === 0 ? (
-          <EmptyState title="Nichts gefunden" detail="Versuchen Sie einen anderen Begriff oder eine andere Schreibweise." />
+          <EmptyState
+            title="Nichts gefunden"
+            detail="Versuchen Sie einen anderen Begriff oder eine andere Schreibweise."
+          />
         ) : (
           <div className="space-y-6">
             {[...byModule.entries()].map(([moduleLabel, moduleHits]) => (

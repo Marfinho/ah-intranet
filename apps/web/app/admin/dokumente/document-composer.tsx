@@ -28,7 +28,13 @@ export function DocumentComposer({ categories }: { categories: string[] }) {
       </Field>
 
       <Field label="Kategorie *">
-        <input name="category" required list="doc-categories" className={inputClass} placeholder="Formulare, Prozesse …" />
+        <input
+          name="category"
+          required
+          list="doc-categories"
+          className={inputClass}
+          placeholder="Formulare, Prozesse …"
+        />
         <datalist id="doc-categories">
           {categories.map((category) => (
             <option key={category} value={category} />
@@ -56,7 +62,10 @@ export function DocumentComposer({ categories }: { categories: string[] }) {
       <Field label="Zielgruppen" wide hint="Ohne Auswahl für alle sichtbar">
         <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {AUDIENCES.map((audience) => (
-            <label key={audience.value} className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm">
+            <label
+              key={audience.value}
+              className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            >
               <input
                 type="checkbox"
                 name="audienceScopes"

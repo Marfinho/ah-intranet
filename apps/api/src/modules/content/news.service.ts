@@ -121,7 +121,10 @@ export class NewsService {
   }
 
   async comment(user: RequestUser, slug: string, message: string): Promise<void> {
-    const post = await this.prisma.newsPost.findUnique({ where: { slug }, select: { id: true, authorId: true, title: true } });
+    const post = await this.prisma.newsPost.findUnique({
+      where: { slug },
+      select: { id: true, authorId: true, title: true },
+    });
     if (!post) {
       throw new NotFoundException("Beitrag nicht gefunden");
     }
@@ -251,7 +254,10 @@ export class NewsService {
     });
   }
 
-  private canView(user: RequestUser, post: { status: string; audienceScopes: string[]; expiresAt: Date | null }): boolean {
+  private canView(
+    user: RequestUser,
+    post: { status: string; audienceScopes: string[]; expiresAt: Date | null },
+  ): boolean {
     if (isManaging(user)) {
       return true;
     }
@@ -290,10 +296,7 @@ export class NewsService {
     return `${base}-${suffix}`;
   }
 
-  private toNewsItem(
-    post: Prisma.NewsPostGetPayload<{ include: typeof newsInclude }>,
-    read: boolean,
-  ): NewsItem {
+  private toNewsItem(post: Prisma.NewsPostGetPayload<{ include: typeof newsInclude }>, read: boolean): NewsItem {
     return {
       id: post.id,
       slug: post.slug,

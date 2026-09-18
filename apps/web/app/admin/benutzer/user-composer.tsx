@@ -81,7 +81,13 @@ export function UserComposer({
         <div className="mt-2 flex flex-wrap gap-3">
           {APP_ROLES.map((role) => (
             <label key={role} className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm">
-              <input type="checkbox" name="roles" value={role} defaultChecked={role === "mitarbeiter"} className="h-4 w-4" />
+              <input
+                type="checkbox"
+                name="roles"
+                value={role}
+                defaultChecked={role === "mitarbeiter"}
+                className="h-4 w-4"
+              />
               {ROLE_LABELS[role]}
             </label>
           ))}

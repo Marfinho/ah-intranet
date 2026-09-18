@@ -65,7 +65,10 @@ export default async function ApprovalsPage({ searchParams }: { searchParams: { 
                 <li key={task.id} className="rounded-2xl border border-slate-200 p-5">
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div className="min-w-0">
-                      <Link href={`/bestellungen/${task.orderId}`} className="font-semibold text-slate-900 hover:underline">
+                      <Link
+                        href={`/bestellungen/${task.orderId}`}
+                        className="font-semibold text-slate-900 hover:underline"
+                      >
                         {task.orderNumber}
                       </Link>
                       <p className="mt-1 text-sm text-slate-600">
@@ -98,7 +101,9 @@ export default async function ApprovalsPage({ searchParams }: { searchParams: { 
                     ) : null}
 
                     {task.status === "approved" ? (
-                      <ActionButton action={orderTransitionAction.bind(null, task.orderId, "queued_for_bulk_order", undefined)}>
+                      <ActionButton
+                        action={orderTransitionAction.bind(null, task.orderId, "queued_for_bulk_order", undefined)}
+                      >
                         Für Sammelbestellung vormerken
                       </ActionButton>
                     ) : null}

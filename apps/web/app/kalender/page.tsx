@@ -25,7 +25,9 @@ export default async function CalendarPage({ searchParams }: { searchParams: { c
 
   const events = await apiGet<CalendarEvent[]>(`/calendar?${query.toString()}`);
   const canCreate =
-    session.roles.includes("admin") || session.roles.includes("fachbereichsadmin") || session.roles.includes("fuehrungskraft");
+    session.roles.includes("admin") ||
+    session.roles.includes("fachbereichsadmin") ||
+    session.roles.includes("fuehrungskraft");
 
   // Nach Monat gruppieren, damit lange Listen lesbar bleiben.
   const byMonth = new Map<string, CalendarEvent[]>();
@@ -71,13 +73,19 @@ export default async function CalendarPage({ searchParams }: { searchParams: { c
                         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className={`badge ${CATEGORY_STYLES[event.category] ?? "bg-slate-100 text-slate-600"}`}>
+                              <span
+                                className={`badge ${CATEGORY_STYLES[event.category] ?? "bg-slate-100 text-slate-600"}`}
+                              >
                                 {event.category}
                               </span>
-                              <span className="text-xs text-slate-500">{formatRange(event.startsAt, event.endsAt)}</span>
+                              <span className="text-xs text-slate-500">
+                                {formatRange(event.startsAt, event.endsAt)}
+                              </span>
                             </div>
                             <p className="mt-2 font-semibold text-slate-900">{event.title}</p>
-                            {event.description ? <p className="mt-1 text-sm text-slate-600">{event.description}</p> : null}
+                            {event.description ? (
+                              <p className="mt-1 text-sm text-slate-600">{event.description}</p>
+                            ) : null}
                             <p className="mt-2 text-xs text-slate-500">
                               {event.location ?? "ohne Ort"} · {event.organizer}
                             </p>

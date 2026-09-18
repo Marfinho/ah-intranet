@@ -14,7 +14,10 @@ export default async function NewsAdminPage() {
 
   return (
     <AppShell title="News verwalten" subtitle="Beiträge verfassen, veröffentlichen und archivieren">
-      <Section title="Neuen Beitrag verfassen" subtitle="Zielgruppe und Priorität steuern Sichtbarkeit und Benachrichtigung">
+      <Section
+        title="Neuen Beitrag verfassen"
+        subtitle="Zielgruppe und Priorität steuern Sichtbarkeit und Benachrichtigung"
+      >
         <NewsComposer />
       </Section>
 

@@ -52,9 +52,7 @@ export class ConnectorError extends Error {
 export function requireFields(context: ConnectorContext, keys: string[]): void {
   const missing = keys.filter((key) => !context.settings[key]?.trim() && !context.secrets[key]?.trim());
   if (missing.length > 0) {
-    const labels = missing.map(
-      (key) => context.definition.fields.find((field) => field.key === key)?.label ?? key,
-    );
+    const labels = missing.map((key) => context.definition.fields.find((field) => field.key === key)?.label ?? key);
     throw new ConnectorError(`Konfiguration unvollständig. Es fehlen: ${labels.join(", ")}.`);
   }
 }

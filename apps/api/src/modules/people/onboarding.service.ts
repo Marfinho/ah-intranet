@@ -103,7 +103,12 @@ export class OnboardingService {
   }
 
   /** Weist einer Person eine Vorlage zu und legt die Checkliste an. */
-  async assign(user: RequestUser, templateId: string, userId: string, startDate: string): Promise<OnboardingAssignment> {
+  async assign(
+    user: RequestUser,
+    templateId: string,
+    userId: string,
+    startDate: string,
+  ): Promise<OnboardingAssignment> {
     const template = await this.prisma.onboardingTemplate.findUnique({
       where: { id: templateId },
       include: { steps: true },

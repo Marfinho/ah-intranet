@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   AVAILABILITY_HINTS,
-  AVAILABILITY_LABELS,
   CONNECTOR_CATEGORY_LABELS,
   type ConnectorCategory,
   type ConnectorState,
@@ -23,7 +22,9 @@ export default async function ConnectorsPage() {
     apiGet<SyncRunSummary[]>("/integrations/runs"),
   ]);
 
-  const ready = connectors.filter((entry) => entry.availability === "public_api" || entry.availability === "documented_format");
+  const ready = connectors.filter(
+    (entry) => entry.availability === "public_api" || entry.availability === "documented_format",
+  );
   const gated = connectors.filter((entry) => entry.availability === "partner_contract");
   const configured = connectors.filter((entry) => entry.status === "configured");
 
@@ -44,7 +45,10 @@ export default async function ConnectorsPage() {
         <MetricCard label="Vertrag nötig" value={String(gated.length)} helper="Spezifikation nicht öffentlich" />
       </DataGrid>
 
-      <Section title="Wie diese Übersicht zu lesen ist" subtitle="Nicht jede Schnittstelle lässt sich ohne Weiteres anbinden">
+      <Section
+        title="Wie diese Übersicht zu lesen ist"
+        subtitle="Nicht jede Schnittstelle lässt sich ohne Weiteres anbinden"
+      >
         <div className="space-y-3 text-sm text-slate-700">
           <p>
             Im Umfeld der Konzernmarken sind die meisten Schnittstellen vertraglich geschützt: Hersteller und Anbieter
@@ -53,7 +57,10 @@ export default async function ConnectorsPage() {
           </p>
           <ul className="space-y-2">
             {(["public_api", "documented_format", "partner_contract", "portal_link"] as const).map((availability) => (
-              <li key={availability} className="flex flex-col gap-2 rounded-2xl border border-slate-200 p-4 md:flex-row md:items-start">
+              <li
+                key={availability}
+                className="flex flex-col gap-2 rounded-2xl border border-slate-200 p-4 md:flex-row md:items-start"
+              >
                 <span className="shrink-0">
                   <AvailabilityBadge availability={availability} />
                 </span>
@@ -147,7 +154,11 @@ export default async function ConnectorsPage() {
                               : "bg-sky-100 text-sky-800"
                         }`}
                       >
-                        {run.status === "succeeded" ? "erfolgreich" : run.status === "failed" ? "fehlgeschlagen" : "läuft"}
+                        {run.status === "succeeded"
+                          ? "erfolgreich"
+                          : run.status === "failed"
+                            ? "fehlgeschlagen"
+                            : "läuft"}
                       </span>
                       {run.itemsProcessed > 0 ? (
                         <span className="ml-2 text-xs text-slate-500">{run.itemsProcessed} Datensätze</span>

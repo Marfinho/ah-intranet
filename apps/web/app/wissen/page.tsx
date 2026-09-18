@@ -38,7 +38,10 @@ export default async function WikiPage({ searchParams }: { searchParams: { searc
           />
 
           {data.items.length === 0 ? (
-            <EmptyState title="Keine Artikel gefunden" detail="Passen Sie die Suche an oder legen Sie einen Artikel an." />
+            <EmptyState
+              title="Keine Artikel gefunden"
+              detail="Passen Sie die Suche an oder legen Sie einen Artikel an."
+            />
           ) : (
             <ul className="space-y-3">
               {data.items.map((article) => (

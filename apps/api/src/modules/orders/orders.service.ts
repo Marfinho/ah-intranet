@@ -41,7 +41,7 @@ const orderInclude = {
 type OrderWithRelations = Prisma.OrderGetPayload<{ include: typeof orderInclude }>;
 
 /** Welche Statusübergänge fachlich erlaubt sind. */
-const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+export const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   draft: ["submitted", "cancelled"],
   submitted: ["approved", "rejected", "cancelled"],
   approved: ["queued_for_bulk_order", "cancelled"],
@@ -52,7 +52,7 @@ const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   cancelled: [],
 };
 
-const STATUS_LABELS: Record<OrderStatus, string> = {
+export const STATUS_LABELS: Record<OrderStatus, string> = {
   draft: "Entwurf",
   submitted: "Eingereicht",
   approved: "Genehmigt",
@@ -213,16 +213,14 @@ export class OrdersService {
     ]);
 
     return {
-      catalog: items.map(
-        (item): WorkwearCatalogItem => ({
-          id: item.id,
-          name: item.name,
-          category: item.category,
-          description: item.description,
-          sizes: item.sizes.map((size) => size.sizeLabel),
-          active: item.isActive,
-        }),
-      ),
+      catalog: items.map((item): WorkwearCatalogItem => ({
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        description: item.description,
+        sizes: item.sizes.map((size) => size.sizeLabel),
+        active: item.isActive,
+      })),
       nextCycle: cycle,
       existingOrders: orders.map((order) => this.toSummary(order)),
     };
@@ -488,7 +486,13 @@ export class OrdersService {
 
   async upsertCycle(
     user: RequestUser,
-    input: { id?: string; cycleType: "business_cards" | "workwear"; title: string; nextOrderDate: string; notes?: string },
+    input: {
+      id?: string;
+      cycleType: "business_cards" | "workwear";
+      title: string;
+      nextOrderDate: string;
+      notes?: string;
+    },
   ): Promise<OrderCycleInfo[]> {
     const data = {
       cycleType: input.cycleType,
