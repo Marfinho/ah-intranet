@@ -29,6 +29,10 @@ Erster vollständiger Stand. Lauffähig, aber in keinem Haus im Einsatz.
   entzogen, endet die Sitzung der betroffenen Konten sofort. Eine Änderung, nach
   der kein aktives Konto mehr an die Rollen- oder Benutzerverwaltung käme, wird
   zurückgerollt.
+- **Anmeldung:** Passwort als Grundweg, zusätzliche Anmeldearten je Haus
+  hinterlegbar (Microsoft Entra ID vorbereitet). Clientschlüssel verschlüsselt
+  gespeichert und nie von der API zurückgegeben. Der Austausch mit dem Anbieter
+  ist noch nicht gebaut; freischalten lässt sich die Anmeldeart deshalb nicht.
 - **Datenschutz:** Auskunft nach Art. 15 als Datei, Löschung nach Art. 17 als
   Anonymisierung, acht Aufbewahrungsfristen mit nächtlichem Aufräumlauf.
 - **Erscheinungsbild AHOI** aus einer Quelle für Anwendung und Präsentation.

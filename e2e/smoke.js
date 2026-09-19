@@ -26,6 +26,7 @@ const ROUTES = [
   "/admin/module",
   "/admin/benutzer",
   "/admin/rollen",
+  "/admin/anmeldung",
   "/admin/news",
   "/admin/dokumente",
   "/admin/katalog",

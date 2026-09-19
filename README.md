@@ -193,6 +193,29 @@ zurückgerollt. Ein Recht in einer leeren Rolle zählt dabei nicht.
 `department:SRV`, `specialty:EMOB`). Eine einzige Array-Überlappungsabfrage auf
 einem GIN-Index ersetzt mehrere Joins; Benutzer tragen ihre Tokens am Datensatz.
 
+## Anmeldung
+
+**Passwort ist der Grundweg** und nicht abschaltbar. Jedes Haus startet damit
+ohne Vorbedingung, und der Zugang funktioniert auf jedem Gerät – auch vom
+privaten Telefon in der Halle.
+
+Unter _Administration → Anmeldung_ hinterlegt ein Haus **zusätzliche**
+Anmeldearten. Vorbereitet ist **Microsoft Entra ID** (OpenID Connect): auf
+Entra-beigetretenen Rechnern läuft die Anmeldung ohne Eingabe durch, sonst über
+das Microsoft-Anmeldefenster.
+
+**Ehrlich benannt:** Der Austausch mit Entra ist in dieser Fassung _nicht
+gebaut_. Die Zugangsdaten lassen sich hinterlegen – der Clientschlüssel
+verschlüsselt (AES-256-GCM, Schlüssel aus `SECRET_KEY`) und ohne Rückgabe durch
+die API –, freischalten lässt sich die Anmeldeart aber nicht. Ein Knopf im
+Anmeldeformular, der ins Leere führt, wäre schlimmer als keiner. Gebaut wird
+der Austausch, wenn das erste Haus danach fragt.
+
+**Kerberos/SPNEGO bleibt draußen.** Es funktioniert nur auf domänenbeigetretenen
+Rechnern, deckt den Monteur mit dem eigenen Telefon also gerade nicht ab, kennt
+protokollbedingt keinen zweiten Faktor und braucht je Haus Dienstkonto, SPN und
+Browser-Richtlinie.
+
 ## Sicherheit
 
 - Passwörter als bcrypt-Hash (Kostenfaktor 12); der Vergleich läuft auch bei
