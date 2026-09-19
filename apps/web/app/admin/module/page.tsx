@@ -4,11 +4,11 @@ import { ActionButton } from "@/components/forms";
 import { Section } from "@/components/ui";
 import { ModuleToggle } from "./module-toggle";
 import { apiGet } from "@/lib/api";
-import { requireRole } from "@/lib/session";
+import { requirePermission } from "@/lib/session";
 import { resetModulesAction } from "@/lib/actions";
 
 export default async function ModulesAdminPage() {
-  await requireRole("admin");
+  await requirePermission("modules.manage");
   const modules = await apiGet<ModuleState[]>("/modules");
 
   const active = modules.filter((module) => module.enabled).length;

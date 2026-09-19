@@ -3,10 +3,10 @@ import { AppShell } from "@/components/app-shell";
 import { EmptyState, Section, Tag } from "@/components/ui";
 import { CatalogItemForm } from "./catalog-item-form";
 import { apiGet } from "@/lib/api";
-import { requireRole } from "@/lib/session";
+import { requirePermission } from "@/lib/session";
 
 export default async function CatalogAdminPage() {
-  await requireRole("admin", "fachbereichsadmin");
+  await requirePermission("catalog.manage");
   const catalog = await apiGet<WorkwearCatalogItem[]>("/orders/catalog/workwear");
 
   return (

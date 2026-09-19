@@ -4,7 +4,7 @@ import { ActionButton } from "@/components/forms";
 import { FilterBar } from "@/components/filter-bar";
 import { EmptyState, Section } from "@/components/ui";
 import { apiGet } from "@/lib/api";
-import { requireRole } from "@/lib/session";
+import { requirePermission } from "@/lib/session";
 import { aufbewahrungAusfuehrenAction } from "@/lib/actions";
 import { PersonActions } from "./person-actions";
 
@@ -17,7 +17,7 @@ interface Vorschau {
 }
 
 export default async function DatenschutzPage({ searchParams }: { searchParams: { search?: string } }) {
-  await requireRole("admin");
+  await requirePermission("privacy.manage");
 
   const query = new URLSearchParams();
   if (searchParams.search) query.set("search", searchParams.search);

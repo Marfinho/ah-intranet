@@ -63,19 +63,27 @@ export function scopeLabel(input: {
   );
 }
 
-/** Höchste Rolle nach Rangfolge; bestimmt die angezeigte Hauptrolle. */
-const ROLE_RANK: Record<AppRole, number> = {
-  mitarbeiter: 0,
-  fuehrungskraft: 10,
-  fachbereichsadmin: 20,
-  admin: 30,
-};
+/** Eine Rolle, so wie die Anzeige sie braucht: Schlüssel, Name, Rangfolge. */
+export interface RollenAnzeige {
+  key: AppRole;
+  name: string;
+  rank: number;
+}
 
-export function primaryRole(roles: AppRole[]): AppRole {
-  return roles.reduce<AppRole>(
-    (best, role) => (ROLE_RANK[role] > ROLE_RANK[best] ? role : best),
-    roles[0] ?? "mitarbeiter",
-  );
+/**
+ * Rollen nach Rangfolge, höchste zuerst.
+ *
+ * Die Rangfolge steht am Datensatz, nicht im Code: welche Rolle über welcher
+ * steht, entscheidet jedes Haus selbst. Bei Gleichstand entscheidet der Name,
+ * damit die Reihenfolge stabil bleibt.
+ */
+export function sortiereRollen(roles: RollenAnzeige[]): RollenAnzeige[] {
+  return [...roles].sort((a, b) => b.rank - a.rank || a.name.localeCompare(b.name, "de"));
+}
+
+/** Höchste Rolle nach Rangfolge; bestimmt die angezeigte Hauptrolle. */
+export function primaryRole(roles: RollenAnzeige[]): AppRole {
+  return sortiereRollen(roles)[0]?.key ?? "mitarbeiter";
 }
 
 export function toIso(value: Date | null | undefined): string | null {

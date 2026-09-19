@@ -4,12 +4,12 @@ import { ActionButton } from "@/components/forms";
 import { EmptyState, Section, Tag } from "@/components/ui";
 import { DocumentComposer } from "./document-composer";
 import { apiGet } from "@/lib/api";
-import { requireRole } from "@/lib/session";
+import { can, requirePermission } from "@/lib/session";
 import { deleteDocumentAction } from "@/lib/actions";
 import { formatDate } from "@/lib/utils";
 
 export default async function DocumentsAdminPage() {
-  const session = await requireRole("admin", "fachbereichsadmin");
+  const session = await requirePermission("documents.manage");
   const data = await apiGet<{ items: DocumentItem[]; categories: string[] }>("/documents");
 
   return (
@@ -40,7 +40,7 @@ export default async function DocumentsAdminPage() {
                   </p>
                 </div>
 
-                {session.roles.includes("admin") ? (
+                {can(session, "documents.manage") ? (
                   <ActionButton
                     variant="ghost"
                     confirm={`Dokument "${document.title}" löschen?`}

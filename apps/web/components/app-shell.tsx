@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Bell, LogOut, UserCircle2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { MODULE_GROUP_LABELS, type ModuleGroup } from "@ah-intranet/shared";
-import { getModules, getUnreadCount, requireSession } from "@/lib/session";
+import { can, getModules, getUnreadCount, requireSession } from "@/lib/session";
 import { FeedbackButton } from "@/components/feedback-button";
 import { Logo } from "@/components/logo";
 import { logoutAction } from "@/lib/actions";
@@ -26,11 +26,10 @@ export async function AppShell({
 
   const visible = modules.filter((module) => {
     if (!module.enabled) return false;
-    // Verwaltungsmodule nur für die passenden Rollen einblenden.
-    if (module.key === "admin") return session.roles.includes("admin") || session.roles.includes("fachbereichsadmin");
-    if (module.key === "audit") return session.roles.includes("admin");
-    if (module.key === "approvals")
-      return session.roles.includes("admin") || session.roles.includes("fachbereichsadmin");
+    // Verwaltungsmodule nur zeigen, wenn das Recht dazu vorliegt.
+    if (module.key === "admin") return can(session, "admin.access");
+    if (module.key === "audit") return can(session, "audit.read");
+    if (module.key === "approvals") return can(session, "orders.approve");
     return true;
   });
 

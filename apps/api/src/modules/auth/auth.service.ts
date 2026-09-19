@@ -1,11 +1,11 @@
 import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcryptjs";
-import type { AppRole, SessionUser } from "@ah-intranet/shared";
+import type { SessionUser } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
 import { currentTenant } from "../../core/tenant-context";
 import { AuditService } from "../../core/audit.service";
-import { buildScopes, displayName, primaryRole, scopeLabel } from "../../core/mappers";
+import { buildScopes, displayName, scopeLabel, sortiereRollen } from "../../core/mappers";
 import type { JwtPayload } from "../../core/guards";
 import type { RequestUser } from "../../core/request-user";
 
@@ -15,7 +15,16 @@ const userWithContext = {
   department: { select: { name: true, code: true } },
   specialtyArea: { select: { name: true, code: true } },
   roles: {
-    select: { role: { select: { key: true, permissions: { select: { permission: { select: { key: true } } } } } } },
+    select: {
+      role: {
+        select: {
+          key: true,
+          name: true,
+          rank: true,
+          permissions: { select: { permission: { select: { key: true } } } },
+        },
+      },
+    },
   },
 } as const;
 
@@ -184,10 +193,10 @@ export class AuthService {
     location: { name: string; code: string } | null;
     department: { name: string; code: string } | null;
     specialtyArea: { name: string; code: string } | null;
-    roles: { role: { key: string; permissions: { permission: { key: string } }[] } }[];
+    roles: { role: { key: string; name: string; rank: number; permissions: { permission: { key: string } }[] } }[];
   }): SessionUser {
-    const roles = (user.roles.map((entry) => entry.role.key) as AppRole[]).filter(Boolean);
-    const effectiveRoles = roles.length ? roles : (["mitarbeiter"] as AppRole[]);
+    const sortiert = sortiereRollen(user.roles.map((entry) => entry.role));
+    const effectiveRoles = sortiert.length ? sortiert : [{ key: "mitarbeiter", name: "Mitarbeitende", rank: 0 }];
     const permissions = [
       ...new Set(user.roles.flatMap((entry) => entry.role.permissions.map((rp) => rp.permission.key))),
     ];
@@ -197,8 +206,9 @@ export class AuthService {
       username: user.username,
       displayName: displayName(user),
       email: user.email,
-      role: primaryRole(effectiveRoles),
-      roles: effectiveRoles,
+      role: effectiveRoles[0].key,
+      roles: effectiveRoles.map((rolle) => rolle.key),
+      roleLabels: effectiveRoles.map((rolle) => rolle.name),
       jobTitle: user.jobTitle,
       location: user.location?.name ?? null,
       department: user.department?.name ?? null,

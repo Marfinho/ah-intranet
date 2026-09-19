@@ -2,7 +2,6 @@ import { AppShell } from "@/components/app-shell";
 import { InfoList, Section, Tag } from "@/components/ui";
 import { ProfileForm } from "./profile-form";
 import { PasswordForm } from "./password-form";
-import { ROLE_LABELS } from "@ah-intranet/shared";
 import { requireSession } from "@/lib/session";
 import { apiGetSafe } from "@/lib/api";
 import type { EmployeeDirectoryEntry } from "@ah-intranet/shared";
@@ -33,8 +32,8 @@ export default async function ProfilePage() {
               label: "Rollen",
               value: (
                 <span className="flex flex-wrap gap-2">
-                  {session.roles.map((role) => (
-                    <Tag key={role}>{ROLE_LABELS[role] ?? role}</Tag>
+                  {session.roleLabels.map((label) => (
+                    <Tag key={label}>{label}</Tag>
                   ))}
                 </span>
               ),

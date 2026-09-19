@@ -15,7 +15,7 @@ import type { DocumentFileType, NewsPriority, NewsStatus } from "@ah-intranet/sh
 import { NewsService } from "./news.service";
 import { DocumentsService } from "./documents.service";
 import { QuickLinksService } from "./quicklinks.service";
-import { CurrentUser, Feature, Permission, Roles } from "../../core/decorators";
+import { CurrentUser, Feature, Permission } from "../../core/decorators";
 import type { RequestUser } from "../../core/request-user";
 
 /* ------------------------------------------------------------------ DTOs */
@@ -128,21 +128,18 @@ export class NewsController {
   }
 
   @Post()
-  @Roles("admin", "fachbereichsadmin")
   @Permission("news.publish")
   create(@CurrentUser() user: RequestUser, @Body() dto: NewsBodyDto) {
     return this.news.create(user, dto);
   }
 
   @Patch(":id")
-  @Roles("admin", "fachbereichsadmin")
   @Permission("news.publish")
   update(@CurrentUser() user: RequestUser, @Param("id") id: string, @Body() dto: NewsPatchDto) {
     return this.news.update(user, id, dto);
   }
 
   @Delete(":id")
-  @Roles("admin")
   @HttpCode(204)
   @Permission("news.publish")
   remove(@CurrentUser() user: RequestUser, @Param("id") id: string) {
@@ -161,19 +158,19 @@ export class DocumentsController {
   }
 
   @Post()
-  @Roles("admin", "fachbereichsadmin")
+  @Permission("documents.manage")
   create(@CurrentUser() user: RequestUser, @Body() dto: DocumentBodyDto) {
     return this.documents.create(user, dto);
   }
 
   @Patch(":id")
-  @Roles("admin", "fachbereichsadmin")
+  @Permission("documents.manage")
   update(@CurrentUser() user: RequestUser, @Param("id") id: string, @Body() dto: DocumentPatchDto) {
     return this.documents.update(user, id, dto);
   }
 
   @Delete(":id")
-  @Roles("admin")
+  @Permission("documents.manage")
   @HttpCode(204)
   remove(@CurrentUser() user: RequestUser, @Param("id") id: string) {
     return this.documents.remove(user, id);
@@ -196,19 +193,19 @@ export class WikiController {
   }
 
   @Post()
-  @Roles("admin", "fachbereichsadmin")
+  @Permission("wiki.manage")
   create(@CurrentUser() user: RequestUser, @Body() dto: WikiBodyDto) {
     return this.documents.createWiki(user, dto);
   }
 
   @Patch(":id")
-  @Roles("admin", "fachbereichsadmin")
+  @Permission("wiki.manage")
   update(@CurrentUser() user: RequestUser, @Param("id") id: string, @Body() dto: WikiPatchDto) {
     return this.documents.updateWiki(user, id, dto);
   }
 
   @Delete(":id")
-  @Roles("admin")
+  @Permission("wiki.manage")
   @HttpCode(204)
   remove(@CurrentUser() user: RequestUser, @Param("id") id: string) {
     return this.documents.removeWiki(user, id);
@@ -226,19 +223,19 @@ export class QuickLinksController {
   }
 
   @Post()
-  @Roles("admin")
+  @Permission("quicklinks.manage")
   create(@CurrentUser() user: RequestUser, @Body() dto: QuickLinkBodyDto) {
     return this.quickLinks.create(user, dto);
   }
 
   @Patch(":id")
-  @Roles("admin")
+  @Permission("quicklinks.manage")
   update(@CurrentUser() user: RequestUser, @Param("id") id: string, @Body() dto: QuickLinkBodyDto) {
     return this.quickLinks.update(user, id, dto);
   }
 
   @Delete(":id")
-  @Roles("admin")
+  @Permission("quicklinks.manage")
   remove(@CurrentUser() user: RequestUser, @Param("id") id: string) {
     return this.quickLinks.remove(user, id);
   }

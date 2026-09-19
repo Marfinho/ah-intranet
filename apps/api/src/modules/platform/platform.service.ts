@@ -5,7 +5,7 @@ import { PrismaService } from "../../core/prisma.service";
 import { ModuleRegistryService } from "../../core/module-registry.service";
 import { NotificationsService } from "../../core/notifications.service";
 import { audienceFilter, displayName } from "../../core/mappers";
-import { isManaging, type RequestUser } from "../../core/request-user";
+import { can, type RequestUser } from "../../core/request-user";
 import { NewsService } from "../content/news.service";
 import { QuickLinksService } from "../content/quicklinks.service";
 import { OrdersService } from "../orders/orders.service";
@@ -35,12 +35,12 @@ export class PlatformService {
   async dashboard(user: RequestUser): Promise<DashboardPayload> {
     const enabled = await this.modules.enabledKeys();
     const on = (key: string) => enabled.has(key);
-    const managing = isManaging(user);
+    const darfFreigeben = can(user, "orders.approve");
 
     const [news, notifications, approvals, tickets, events, cycles, quickLinks, absences, polls] = await Promise.all([
       on("news") ? this.news.list(user, { take: 5 }) : Promise.resolve([]),
       this.notifications.list(user, true),
-      on("approvals") && managing ? this.orders.approvals(user) : Promise.resolve([]),
+      on("approvals") && darfFreigeben ? this.orders.approvals(user) : Promise.resolve([]),
       on("tickets")
         ? this.desk.tickets(user, { scope: "mine" }).then((result) => result.items.slice(0, 5))
         : Promise.resolve([]),
@@ -68,7 +68,7 @@ export class PlatformService {
   }
 
   private async metrics(user: RequestUser, enabled: Set<string>): Promise<DashboardMetric[]> {
-    const managing = isManaging(user);
+    const darfFreigeben = can(user, "orders.approve");
     const metrics: DashboardMetric[] = [];
 
     // Alle Zählungen parallel; jede ist ein reiner COUNT über einen Index.
@@ -91,7 +91,7 @@ export class PlatformService {
             },
           })
         : 0,
-      enabled.has("approvals") && managing ? this.prisma.order.count({ where: { status: "submitted" } }) : 0,
+      enabled.has("approvals") && darfFreigeben ? this.prisma.order.count({ where: { status: "submitted" } }) : 0,
       enabled.has("tickets")
         ? this.prisma.ticket.count({
             where: { OR: [{ requesterId: user.id }, { assigneeId: user.id }], status: { not: "geloest" } },
@@ -123,7 +123,7 @@ export class PlatformService {
         href: "/bestellungen/meine",
       });
     }
-    if (enabled.has("approvals") && managing) {
+    if (enabled.has("approvals") && darfFreigeben) {
       metrics.push({
         label: "Offene Freigaben",
         value: String(openApprovals),
@@ -162,7 +162,7 @@ export class PlatformService {
 
     const enabled = await this.modules.enabledKeys();
     const like = { contains: term, mode: "insensitive" as const };
-    const managing = isManaging(user);
+    const darfAlleAnfragen = can(user, "tickets.manage");
 
     const [news, documents, wiki, people, tickets] = await Promise.all([
       enabled.has("news")
@@ -203,7 +203,7 @@ export class PlatformService {
       enabled.has("tickets")
         ? this.prisma.ticket.findMany({
             where: {
-              ...(managing ? {} : { OR: [{ requesterId: user.id }, { assigneeId: user.id }] }),
+              ...(darfAlleAnfragen ? {} : { OR: [{ requesterId: user.id }, { assigneeId: user.id }] }),
               AND: [{ OR: [{ title: like }, { number: like }, { description: like }] }],
             },
             select: { id: true, number: true, title: true, description: true },

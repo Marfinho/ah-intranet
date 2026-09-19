@@ -5,7 +5,7 @@ import { FilterBar } from "@/components/filter-bar";
 import { EmptyState, Section, Tag } from "@/components/ui";
 import { WikiComposer } from "./wiki-composer";
 import { apiGet } from "@/lib/api";
-import { isManaging, requireModule } from "@/lib/session";
+import { can, requireModule } from "@/lib/session";
 import { formatDate } from "@/lib/utils";
 
 interface WikiResponse {
@@ -72,7 +72,7 @@ export default async function WikiPage({ searchParams }: { searchParams: { searc
         </div>
       </Section>
 
-      {isManaging(session) ? (
+      {can(session, "wiki.manage") ? (
         <Section title="Neuen Artikel anlegen" subtitle="Wissen dokumentieren und für alle auffindbar machen">
           <WikiComposer categories={data.categories} />
         </Section>

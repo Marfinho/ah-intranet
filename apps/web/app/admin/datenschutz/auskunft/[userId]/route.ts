@@ -11,7 +11,7 @@ import { getSession } from "@/lib/session";
  */
 export async function GET(_request: Request, { params }: { params: { userId: string } }) {
   const session = await getSession();
-  if (!session?.roles.includes("admin")) {
+  if (!session?.permissions.includes("privacy.manage")) {
     return NextResponse.json({ message: "Nicht berechtigt" }, { status: 403 });
   }
 

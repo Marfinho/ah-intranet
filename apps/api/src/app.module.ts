@@ -7,7 +7,7 @@ import { AppService } from "./app.service";
 import { CoreModule } from "./core/core.module";
 import { TenantMiddleware } from "./core/tenant.middleware";
 import { RequestLogMiddleware } from "./core/request-log.middleware";
-import { JwtAuthGuard, ModuleEnabledGuard, RolesGuard } from "./core/guards";
+import { JwtAuthGuard, ModuleEnabledGuard, PermissionGuard } from "./core/guards";
 import { AuthModule } from "./modules/auth/auth.module";
 import { PlatformModule } from "./modules/platform/platform.module";
 import { ContentModule } from "./modules/content/content.module";
@@ -41,7 +41,7 @@ import { PrivacyModule } from "./modules/privacy/privacy.module";
     // Anfrage nie erfahren, welche Module geschaltet sind.
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
-    { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: PermissionGuard },
     { provide: APP_GUARD, useClass: ModuleEnabledGuard },
   ],
 })

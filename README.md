@@ -172,10 +172,22 @@ Verarbeitungsverzeichnis, Mitbestimmung nach § 87 BetrVG und die offenen Punkte
 
 ## Rollen und Rechte
 
-Vier Rollen mit aufsteigendem Rang: `mitarbeiter`, `fuehrungskraft`,
-`fachbereichsadmin`, `admin`. Rollen tragen feingranulare Berechtigungen, die im
-Adminbereich pflegbar sind. Die Rollenprüfung erfolgt serverseitig aus dem JWT –
-nicht aus Anfragedaten.
+**Rechte gehören dem Code, Rollen dem Haus.** Der Katalog der 21 Berechtigungen
+steht in `packages/shared/src/rbac.ts`; jede entspricht einer Prüfung im Code
+und wächst nur mit neuen Funktionen. Geprüft wird ausschließlich das Recht,
+serverseitig aus dem JWT – nie ein Rollenschlüssel. Ein Rollenschlüssel im Code
+wäre genau die Sperre, an der eigene Rollen eines Hauses scheitern.
+
+**Rollen sind Daten.** Unter *Administration → Rollen & Rechte* legt ein Haus
+eigene Rollen an: Name, Beschreibung, Rangfolge, Rechte anklicken. Die vier
+Rollen der Grundausstattung (`mitarbeiter`, `fuehrungskraft`,
+`fachbereichsadmin`, `admin`) lassen sich in allem ändern außer im Löschen;
+eigene Rollen werden gelöscht, sobald kein Konto sie mehr trägt.
+
+Wird einer Rolle ein Recht entzogen, **enden die Sitzungen** der betroffenen
+Konten sofort. Nach jeder Änderung prüft dieselbe Transaktion, ob noch ein
+aktives Konto `roles.manage` und `users.manage` trägt – sonst wird die Änderung
+zurückgerollt. Ein Recht in einer leeren Rolle zählt dabei nicht.
 
 **Zielgruppen** werden als flache Tokens abgebildet (`global`, `location:HB`,
 `department:SRV`, `specialty:EMOB`). Eine einzige Array-Überlappungsabfrage auf
@@ -187,7 +199,7 @@ einem GIN-Index ersetzt mehrere Joins; Benutzer tragen ihre Tokens am Datensatz.
   unbekanntem Benutzernamen gegen einen Dummy-Hash, damit die Antwortzeit keine
   Konten verrät.
 - JWT im httpOnly-Cookie, `sameSite=lax`, `secure` in Produktion.
-- Global aktive Guards: Authentifizierung → Rollen → Modulaktivierung.
+- Global aktive Guards: Authentifizierung → Recht → Modulaktivierung.
 - CORS strikt auf `FRONTEND_URL` beschränkt, Cookies nur dorthin.
 - Eingaben werden serverseitig validiert (`class-validator`,
   `forbidNonWhitelisted`); die Prüfung im Browser ist reiner Komfort.

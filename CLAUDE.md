@@ -62,15 +62,25 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
   wirken ohne Migration in API und Oberfläche – und gelten für jedes Haus gleich.
 - **Serverseitige Durchsetzung.** Rollen kommen aus dem JWT, nie aus
   Anfragedaten. Prüfungen im Browser sind Komfort, nicht Sicherheit.
-- **Guards in fester Reihenfolge:** Authentifizierung → Rollen → Recht →
+- **Guards in fester Reihenfolge:** Authentifizierung → Recht →
   Modulaktivierung. Ein abgeschaltetes Modul antwortet mit 404, nicht 403.
-- **Rolle und Recht sind zweierlei.** `@Roles` sagt, wer grundsätzlich in einen
-  Bereich gehört; `@Permission` sagt, was ein Haus der Rolle darin zugesteht.
-  Das Recht wird nach der Rolle geprüft – wer den Bereich nicht betreten darf,
-  soll nicht erfahren, welches Recht ihm darin fehlte. Entzogene Rechte greifen
-  sofort: die Sitzungen der betroffenen Konten enden beim Speichern.
-  `roles.manage` und `users.manage` lassen sich nicht aus der letzten Rolle
-  nehmen, die sie trägt – sonst käme niemand mehr an die Verwaltung.
+- **Nur Rechte schützen, nie Rollenschlüssel.** Der Code prüft ausschließlich
+  `@Permission(...)` bzw. `can(user, …)`. Ein Rollenschlüssel im Code wäre genau
+  die Sperre, die eigene Rollen des Hauses aussperrt – sie kämen an ihr nicht
+  vorbei. Eine Route ohne Recht steht jedem angemeldeten Konto offen; das ist
+  eine Aussage, keine Lücke. Ein Unit-Test hält Code und Registry zusammen:
+  kein unbekannter Rechteschlüssel, kein Recht ohne prüfende Stelle, keine
+  Rollenschranke.
+- **Rechte gehören dem Code, Rollen dem Haus.** Der Rechtekatalog steht in
+  `rbac.ts` und wächst nur mit neuen Funktionen. Rollen sind Daten: jedes Haus
+  legt eigene an, benennt sie, vergibt Rechte und eine Rangfolge. Die vier
+  Rollen der Grundausstattung sind änderbar, aber nicht löschbar. Entzogene
+  Rechte greifen sofort – die Sitzungen der betroffenen Konten enden beim
+  Speichern.
+- **Aussperrsperre als Invariante, nicht als Sonderfall.** Nach jeder Änderung
+  an Rollen wird in derselben Transaktion geprüft, ob noch ein **aktives Konto**
+  `roles.manage` und `users.manage` trägt. Nein heißt Rückabwicklung. Ein Recht
+  in einer leeren Rolle rettet niemanden.
 - **Zielgruppen als flache Scope-Tokens** (`location:HB`, `department:SRV`)
   mit GIN-Index statt Join-Ketten.
 - **Ehrlichkeit über erfundene Funktionalität.** Wo eine Spezifikation fehlt

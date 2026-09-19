@@ -1,7 +1,7 @@
 "use client";
 
 import { useFormState } from "react-dom";
-import { APP_ROLES, ROLE_LABELS } from "@ah-intranet/shared";
+import type { RoleSummary } from "@ah-intranet/shared";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
 import { createUserAction, type ActionState } from "@/lib/actions";
 
@@ -9,12 +9,15 @@ const initialState: ActionState = { ok: true };
 
 export function UserComposer({
   organisation,
+  roles,
 }: {
   organisation: {
     locations: { id: string; name: string }[];
     departments: { id: string; name: string }[];
     specialties: { id: string; name: string }[];
   };
+  /** Rollen dieses Hauses - der Code kennt sie nicht, er zeigt sie nur an. */
+  roles: RoleSummary[];
 }) {
   const [state, formAction] = useFormState(createUserAction, initialState);
 
@@ -79,16 +82,19 @@ export function UserComposer({
 
       <Field label="Rollen *" hint="Mehrfachauswahl möglich" wide>
         <div className="mt-2 flex flex-wrap gap-3">
-          {APP_ROLES.map((role) => (
-            <label key={role} className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm">
+          {roles.map((role) => (
+            <label
+              key={role.key}
+              className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            >
               <input
                 type="checkbox"
                 name="roles"
-                value={role}
-                defaultChecked={role === "mitarbeiter"}
+                value={role.key}
+                defaultChecked={role.key === "mitarbeiter"}
                 className="h-4 w-4"
               />
-              {ROLE_LABELS[role]}
+              {role.name}
             </label>
           ))}
         </div>
