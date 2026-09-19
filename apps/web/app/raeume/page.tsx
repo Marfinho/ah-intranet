@@ -4,7 +4,7 @@ import { ActionButton } from "@/components/forms";
 import { EmptyState, Section, Tag } from "@/components/ui";
 import { RoomBookingForm } from "./room-booking-form";
 import { apiGet } from "@/lib/api";
-import { requireModule } from "@/lib/session";
+import { can, requireModule } from "@/lib/session";
 import { cancelRoomBookingAction } from "@/lib/actions";
 import { formatRange } from "@/lib/utils";
 
@@ -64,7 +64,7 @@ export default async function RoomsPage() {
                   </p>
                 </div>
 
-                {booking.organizerUsername === session.username || session.roles.includes("admin") ? (
+                {booking.organizerUsername === session.username || can(session, "calendar.manage") ? (
                   <ActionButton
                     variant="ghost"
                     confirm="Buchung stornieren?"

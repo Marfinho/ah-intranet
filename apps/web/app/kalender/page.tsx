@@ -5,7 +5,7 @@ import { ActionButton } from "@/components/forms";
 import { EmptyState, Section } from "@/components/ui";
 import { EventComposer } from "./event-composer";
 import { apiGet } from "@/lib/api";
-import { requireModule } from "@/lib/session";
+import { can, requireModule } from "@/lib/session";
 import { deleteEventAction } from "@/lib/actions";
 import { formatRange } from "@/lib/utils";
 
@@ -24,10 +24,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: { c
   if (searchParams.category) query.set("category", searchParams.category);
 
   const events = await apiGet<CalendarEvent[]>(`/calendar?${query.toString()}`);
-  const canCreate =
-    session.roles.includes("admin") ||
-    session.roles.includes("fachbereichsadmin") ||
-    session.roles.includes("fuehrungskraft");
+  const canCreate = can(session, "calendar.manage");
 
   // Nach Monat gruppieren, damit lange Listen lesbar bleiben.
   const byMonth = new Map<string, CalendarEvent[]>();

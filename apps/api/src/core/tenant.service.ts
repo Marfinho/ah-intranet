@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleInit } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { PERMISSION_DEFINITIONS, ROLE_DEFINITIONS } from "@ah-intranet/shared";
@@ -12,8 +12,42 @@ import type { TenantContext } from "./tenant-context";
  * der Mandant noch gar nicht fest.
  */
 @Injectable()
-export class TenantService {
+export class TenantService implements OnModuleInit {
   private readonly client = new PrismaClient();
+  private readonly logger = new Logger(TenantService.name);
+
+  /**
+   * Gleicht den Rechtekatalog beim Start in jedes Haus ab.
+   *
+   * Rechte stehen in der Registry, aber jedes Haus führt eigene Zeilen - sonst
+   * ließen sie sich nicht an Rollen hängen. Ein neues Recht in der Registry
+   * muss deshalb ankommen, ohne dass jemand eine Migration schreibt. Rollen
+   * bleiben unangetastet: welche Rolle das neue Recht bekommt, entscheidet das
+   * Haus.
+   */
+  async onModuleInit(): Promise<void> {
+    const tenants = await this.client.tenant.findMany({ select: { id: true, slug: true } });
+    for (const tenant of tenants) {
+      const vorhanden = new Set(
+        (await this.client.permission.findMany({ where: { tenantId: tenant.id }, select: { key: true } })).map(
+          (row) => row.key,
+        ),
+      );
+      const fehlend = PERMISSION_DEFINITIONS.filter((recht) => !vorhanden.has(recht.key));
+      if (fehlend.length === 0) {
+        continue;
+      }
+      await this.client.permission.createMany({
+        data: fehlend.map((recht) => ({
+          tenantId: tenant.id,
+          key: recht.key,
+          name: recht.name,
+          description: recht.description,
+        })),
+      });
+      this.logger.log(`${tenant.slug}: ${fehlend.length} neue Berechtigung(en) aus der Registry ergänzt`);
+    }
+  }
 
   /** Kurzer Cache: die Zuordnung ändert sich selten, wird aber pro Anfrage gebraucht. */
   private static readonly CACHE_TTL_MS = 30_000;
@@ -184,7 +218,12 @@ export class TenantService {
       const tenantId = tenant.id;
 
       await tx.permission.createMany({
-        data: PERMISSION_DEFINITIONS.map((permission) => ({ ...permission, tenantId })),
+        data: PERMISSION_DEFINITIONS.map((permission) => ({
+          tenantId,
+          key: permission.key,
+          name: permission.name,
+          description: permission.description,
+        })),
       });
       const permissionByKey = new Map(
         (await tx.permission.findMany({ where: { tenantId }, select: { id: true, key: true } })).map((entry) => [

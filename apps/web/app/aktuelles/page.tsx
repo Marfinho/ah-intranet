@@ -4,7 +4,7 @@ import { AppShell } from "@/components/app-shell";
 import { FilterBar } from "@/components/filter-bar";
 import { EmptyState, PriorityBadge, Section, StatusBadge } from "@/components/ui";
 import { apiGet } from "@/lib/api";
-import { isManaging, requireModule } from "@/lib/session";
+import { can, requireModule } from "@/lib/session";
 import { formatDate } from "@/lib/utils";
 
 export default async function NewsPage({
@@ -21,7 +21,7 @@ export default async function NewsPage({
   if (searchParams.unread) query.set("unread", searchParams.unread);
 
   const items = await apiGet<NewsItem[]>(`/news?${query.toString()}`);
-  const manage = isManaging(session);
+  const manage = can(session, "news.publish");
 
   return (
     <AppShell title="Aktuelles" subtitle="Interne Nachrichten für Ihre Standorte und Fachbereiche">

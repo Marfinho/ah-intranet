@@ -2,16 +2,14 @@ import type { ModuleStage } from "./modules";
 
 /** Gemeinsame Vertragstypen zwischen API und Frontend. */
 
-export type AppRole = "mitarbeiter" | "fuehrungskraft" | "fachbereichsadmin" | "admin";
-
-export const APP_ROLES: AppRole[] = ["mitarbeiter", "fuehrungskraft", "fachbereichsadmin", "admin"];
-
-export const ROLE_LABELS: Record<AppRole, string> = {
-  mitarbeiter: "Mitarbeitende",
-  fuehrungskraft: "Führungskraft",
-  fachbereichsadmin: "Fachbereichsadmin",
-  admin: "Administration",
-};
+/**
+ * Schlüssel einer Rolle.
+ *
+ * Bewusst kein fester Aufzählungstyp: Rollen sind Daten des Hauses, nicht des
+ * Codes. Die Grundausstattung steht in `ROLE_DEFINITIONS`, jedes Haus kann
+ * eigene Rollen anlegen. Was der Code prüft, sind Rechte - nie Rollenschlüssel.
+ */
+export type AppRole = string;
 
 /**
  * Zielgruppen werden als flache Tokens abgebildet: `global`, `location:<code>`,
@@ -59,6 +57,8 @@ export interface SessionUser {
   email?: string | null;
   role: AppRole;
   roles: AppRole[];
+  /** Klartextnamen der Rollen, höchster Rang zuerst - Rollen sind Hausdaten. */
+  roleLabels: string[];
   jobTitle?: string | null;
   location?: string | null;
   department?: string | null;
@@ -277,7 +277,10 @@ export interface EmployeeDirectoryEntry {
   username: string;
   displayName: string;
   jobTitle: string;
-  role: AppRole;
+  /** Klartextname der höchsten Rolle - zur Anzeige. */
+  role: string;
+  /** Schlüssel aller Rollen - für Auswahlfelder. */
+  roleKeys: AppRole[];
   location?: string | null;
   department?: string | null;
   specialtyArea?: string | null;
@@ -300,8 +303,12 @@ export interface RoleSummary {
   key: AppRole;
   name: string;
   description: string;
+  /** Höherer Rang gewinnt, wenn eine Person mehrere Rollen hat. */
+  rank: number;
   permissions: string[];
   userCount: number;
+  /** Rollen der Grundausstattung lassen sich ändern, aber nicht löschen. */
+  isSystem: boolean;
 }
 
 export interface PermissionSummary {
@@ -309,6 +316,8 @@ export interface PermissionSummary {
   key: string;
   name: string;
   description: string;
+  /** Überschrift, unter der das Recht in der Auswahl steht. */
+  bereich: string;
 }
 
 /* ------------------------------------------------------------ Prozesse */

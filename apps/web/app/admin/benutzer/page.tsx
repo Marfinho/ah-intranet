@@ -1,11 +1,11 @@
-import { ROLE_LABELS, type EmployeeDirectoryEntry } from "@ah-intranet/shared";
+import type { EmployeeDirectoryEntry, RoleSummary } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
 import { FilterBar } from "@/components/filter-bar";
 import { EmptyState, Section, Tag } from "@/components/ui";
 import { UserComposer } from "./user-composer";
 import { UserRowActions } from "./user-row-actions";
 import { apiGet } from "@/lib/api";
-import { requireRole } from "@/lib/session";
+import { requirePermission } from "@/lib/session";
 
 interface Organisation {
   locations: { id: string; name: string }[];
@@ -14,21 +14,22 @@ interface Organisation {
 }
 
 export default async function UsersAdminPage({ searchParams }: { searchParams: { search?: string; status?: string } }) {
-  await requireRole("admin");
+  await requirePermission("users.manage");
 
   const query = new URLSearchParams();
   if (searchParams.search) query.set("search", searchParams.search);
   if (searchParams.status) query.set("status", searchParams.status);
 
-  const [users, organisation] = await Promise.all([
+  const [users, organisation, roles] = await Promise.all([
     apiGet<EmployeeDirectoryEntry[]>(`/users?${query.toString()}`),
     apiGet<Organisation>("/users/organisation"),
+    apiGet<RoleSummary[]>("/roles"),
   ]);
 
   return (
     <AppShell title="Benutzerverwaltung" subtitle="Konten anlegen, Rollen vergeben und Passwörter zurücksetzen">
       <Section title="Neues Konto" subtitle="Das Startpasswort wird erzeugt und einmalig angezeigt">
-        <UserComposer organisation={organisation} />
+        <UserComposer organisation={organisation} roles={roles} />
       </Section>
 
       <Section title={`${users.length} Konten`} subtitle="Nach Name, Benutzername oder Status filtern">
@@ -60,7 +61,7 @@ export default async function UsersAdminPage({ searchParams }: { searchParams: {
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-semibold text-slate-900">{user.displayName}</p>
                       <Tag>{user.username}</Tag>
-                      <Tag>{ROLE_LABELS[user.role] ?? user.role}</Tag>
+                      <Tag>{user.role}</Tag>
                       {user.status === "inactive" ? (
                         <span className="badge bg-rose-100 text-rose-800">deaktiviert</span>
                       ) : null}

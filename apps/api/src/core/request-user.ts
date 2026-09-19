@@ -7,6 +7,7 @@ export interface RequestUser {
   tenantId: string;
   username: string;
   displayName: string;
+  /** Rolle mit dem höchsten Rang - nur für Anzeige, nie für Prüfungen. */
   role: AppRole;
   roles: AppRole[];
   permissions: string[];
@@ -18,20 +19,18 @@ export interface RequestUser {
   isPlatformAdmin?: boolean;
 }
 
-export function hasRole(user: RequestUser, ...roles: AppRole[]): boolean {
-  return roles.some((role) => user.roles.includes(role));
+/**
+ * Prüft ein Recht.
+ *
+ * Die einzige Frage, die der Fachcode über Befugnisse stellen darf. Ein
+ * Rollenschlüssel sagt nichts: welche Rolle was darf, entscheidet jedes Haus
+ * selbst, und eigene Rollen kennt der Code gar nicht.
+ */
+export function can(user: RequestUser, permission: string): boolean {
+  return user.permissions.includes(permission);
 }
 
 /** Plattformadministration: darf Mandanten anlegen und sperren. */
 export function isPlatformAdmin(user: RequestUser): boolean {
   return user.isPlatformAdmin === true;
-}
-
-export function isAdmin(user: RequestUser): boolean {
-  return hasRole(user, "admin");
-}
-
-/** Admins und Fachbereichsadmins dürfen fremde Vorgänge sehen und steuern. */
-export function isManaging(user: RequestUser): boolean {
-  return hasRole(user, "admin", "fachbereichsadmin");
 }

@@ -4,7 +4,7 @@ import { ActionButton } from "@/components/forms";
 import { EmptyState, Section } from "@/components/ui";
 import { CycleForm } from "./cycle-form";
 import { apiGet } from "@/lib/api";
-import { requireRole } from "@/lib/session";
+import { can, requirePermission } from "@/lib/session";
 import { deleteCycleAction } from "@/lib/actions";
 import { formatDate } from "@/lib/utils";
 
@@ -14,7 +14,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default async function CyclesAdminPage() {
-  const session = await requireRole("admin", "fachbereichsadmin");
+  const session = await requirePermission("catalog.manage");
   const cycles = await apiGet<OrderCycleInfo[]>("/orders/cycles");
 
   return (
@@ -48,7 +48,7 @@ export default async function CyclesAdminPage() {
                   <p className="mt-2 font-mono text-xs text-slate-400">{cycle.id}</p>
                 </div>
 
-                {session.roles.includes("admin") ? (
+                {can(session, "catalog.manage") ? (
                   <ActionButton
                     variant="ghost"
                     confirm={`Termin "${cycle.label}" löschen?`}

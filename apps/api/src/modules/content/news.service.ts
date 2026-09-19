@@ -6,7 +6,7 @@ import { requireTenantId } from "../../core/tenant-context";
 import { AuditService } from "../../core/audit.service";
 import { NotificationsService } from "../../core/notifications.service";
 import { audienceFilter, displayName, toIso } from "../../core/mappers";
-import { isManaging, type RequestUser } from "../../core/request-user";
+import { can, type RequestUser } from "../../core/request-user";
 
 export interface NewsFilter {
   search?: string;
@@ -46,7 +46,7 @@ export class NewsService {
    * für alle anderen strikt auf veröffentlicht, Zielgruppe und Laufzeit gefiltert.
    */
   async list(user: RequestUser, filter: NewsFilter = {}): Promise<NewsItem[]> {
-    const canSeeDrafts = isManaging(user);
+    const canSeeDrafts = can(user, "news.publish");
     const where: Prisma.NewsPostWhereInput = {
       ...(canSeeDrafts && filter.status && filter.status !== "all"
         ? { status: filter.status as NewsStatus }
@@ -266,7 +266,7 @@ export class NewsService {
     user: RequestUser,
     post: { status: string; audienceScopes: string[]; expiresAt: Date | null },
   ): boolean {
-    if (isManaging(user)) {
+    if (can(user, "news.publish")) {
       return true;
     }
     if (post.status !== "published") {

@@ -7,7 +7,7 @@ import { Timeline } from "@/components/timeline";
 import { CommentForm } from "@/components/comment-form";
 import { ActionButton } from "@/components/forms";
 import { ApiError, apiGet } from "@/lib/api";
-import { isManaging, requireModule } from "@/lib/session";
+import { can, requireModule } from "@/lib/session";
 import { orderCommentAction, orderTransitionAction } from "@/lib/actions";
 import { formatDate, formatDateTime } from "@/lib/utils";
 
@@ -30,7 +30,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
     throw error;
   }
 
-  const manage = isManaging(session);
+  const manage = can(session, "orders.viewAll");
   const isOwner = order.employeeUsername === session.username;
   const canCancel = isOwner && ["draft", "submitted", "approved"].includes(order.status);
 

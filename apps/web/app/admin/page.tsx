@@ -3,7 +3,7 @@ import type { DashboardMetric, ModuleState } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
 import { DataGrid, MetricCard, Section } from "@/components/ui";
 import { apiGet } from "@/lib/api";
-import { requireRole } from "@/lib/session";
+import { can, requirePermission } from "@/lib/session";
 
 const ADMIN_LINKS = [
   { href: "/admin/module", label: "Module", detail: "Fachmodule ein- und ausschalten", adminOnly: true },
@@ -34,14 +34,14 @@ const PLATFORM_LINKS = [
 ];
 
 export default async function AdminPage() {
-  const session = await requireRole("admin", "fachbereichsadmin");
+  const session = await requirePermission("admin.access");
 
   const [summary, modules] = await Promise.all([
     apiGet<{ metrics: DashboardMetric[] }>("/admin/summary"),
     apiGet<ModuleState[]>("/modules"),
   ]);
 
-  const isAdmin = session.roles.includes("admin");
+  const isAdmin = can(session, "modules.manage");
   const activeModules = modules.filter((module) => module.enabled).length;
   const disabled = modules.filter((module) => !module.enabled);
 

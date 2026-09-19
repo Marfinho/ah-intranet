@@ -58,14 +58,21 @@ export async function requireModule(key: string): Promise<SessionUser> {
   return session;
 }
 
-export async function requireRole(...roles: string[]): Promise<SessionUser> {
+/**
+ * Sperrt eine Seite, solange keines der genannten Rechte vorliegt.
+ *
+ * Bewusst Rechte statt Rollen: welche Rolle was darf, entscheidet jedes Haus
+ * selbst. Das ist Bequemlichkeit, keine Sicherheit - durchgesetzt wird in der
+ * API. Die Seite soll nur nicht halbleer erscheinen.
+ */
+export async function requirePermission(...permissions: string[]): Promise<SessionUser> {
   const session = await requireSession();
-  if (!roles.some((role) => session.roles.includes(role as SessionUser["role"]))) {
+  if (!permissions.some((permission) => session.permissions.includes(permission))) {
     redirect("/");
   }
   return session;
 }
 
-export function isManaging(session: SessionUser): boolean {
-  return session.roles.includes("admin") || session.roles.includes("fachbereichsadmin");
+export function can(session: SessionUser, permission: string): boolean {
+  return session.permissions.includes(permission);
 }

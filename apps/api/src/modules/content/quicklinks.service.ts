@@ -3,7 +3,7 @@ import type { QuickLink } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
 import { AuditService } from "../../core/audit.service";
 import { audienceFilter } from "../../core/mappers";
-import { isManaging, type RequestUser } from "../../core/request-user";
+import { can, type RequestUser } from "../../core/request-user";
 
 export interface QuickLinkInput {
   label: string;
@@ -24,7 +24,7 @@ export class QuickLinksService {
 
   async list(user: RequestUser, includeInactive = false): Promise<QuickLink[]> {
     const rows = await this.prisma.quickLink.findMany({
-      where: includeInactive && isManaging(user) ? {} : { isActive: true, ...audienceFilter(user) },
+      where: includeInactive && can(user, "quicklinks.manage") ? {} : { isActive: true, ...audienceFilter(user) },
       orderBy: [{ sortOrder: "asc" }, { label: "asc" }],
     });
 

@@ -2,12 +2,12 @@ import Link from "next/link";
 import { getModule } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, Section } from "@/components/ui";
-import { requireSession } from "@/lib/session";
+import { can, requireSession } from "@/lib/session";
 
 export default async function ModuleDisabledPage({ searchParams }: { searchParams: { m?: string } }) {
   const session = await requireSession();
   const module = searchParams.m ? getModule(searchParams.m) : undefined;
-  const isAdmin = session.roles.includes("admin");
+  const isAdmin = can(session, "modules.manage");
 
   return (
     <AppShell title="Modul deaktiviert" subtitle="Dieser Bereich steht derzeit nicht zur Verfügung">

@@ -485,6 +485,27 @@ export async function setRolePermissionsAction(roleId: string, permissions: stri
   return run(() => apiSend("PATCH", `/roles/${roleId}/permissions`, { permissions }), ["/admin/rollen"]);
 }
 
+export async function createRoleAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const payload = {
+    name: String(formData.get("name") ?? ""),
+    description: String(formData.get("description") ?? ""),
+    rank: Number(formData.get("rank") ?? 0),
+    permissions: formData.getAll("permissions").map(String),
+  };
+  return run(() => apiSend("POST", "/roles", payload), ["/admin/rollen", "/admin/benutzer"], "Rolle angelegt.");
+}
+
+export async function updateRoleAction(
+  roleId: string,
+  input: { name?: string; description?: string; rank?: number },
+): Promise<ActionState> {
+  return run(() => apiSend("PATCH", `/roles/${roleId}`, input), ["/admin/rollen", "/admin/benutzer"]);
+}
+
+export async function deleteRoleAction(roleId: string): Promise<ActionState> {
+  return run(() => apiSend("DELETE", `/roles/${roleId}`), ["/admin/rollen", "/admin/benutzer"]);
+}
+
 export async function upsertCycleAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
   const payload = {
     id: String(formData.get("id") ?? "") || undefined,

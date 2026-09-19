@@ -4,7 +4,7 @@ import type { CalendarEvent, Room, RoomBooking } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
 import { AuditService } from "../../core/audit.service";
 import { audienceFilter, displayName } from "../../core/mappers";
-import { isManaging, type RequestUser } from "../../core/request-user";
+import { can, type RequestUser } from "../../core/request-user";
 
 const eventInclude = { organizer: { select: { firstName: true, lastName: true } } } as const;
 const roomBookingInclude = {
@@ -29,7 +29,7 @@ export class ResourcesService {
       where: {
         startsAt: { gte: from, lte: to },
         ...(filter.category && filter.category !== "all" ? { category: filter.category as CalendarCategory } : {}),
-        ...(isManaging(user) ? {} : audienceFilter(user)),
+        ...(can(user, "calendar.manage") ? {} : audienceFilter(user)),
       },
       include: eventInclude,
       orderBy: { startsAt: "asc" },
@@ -86,7 +86,7 @@ export class ResourcesService {
     if (!event) {
       throw new NotFoundException("Termin nicht gefunden");
     }
-    if (event.organizerId !== user.id && !isManaging(user)) {
+    if (event.organizerId !== user.id && !can(user, "calendar.manage")) {
       throw new ForbiddenException("Nur die organisierende Person kann diesen Termin löschen.");
     }
 
@@ -180,7 +180,7 @@ export class ResourcesService {
     if (!booking) {
       throw new NotFoundException("Buchung nicht gefunden");
     }
-    if (booking.userId !== user.id && !isManaging(user)) {
+    if (booking.userId !== user.id && !can(user, "calendar.manage")) {
       throw new ForbiddenException("Nur die buchende Person kann stornieren.");
     }
     await this.prisma.roomBooking.delete({ where: { id } });

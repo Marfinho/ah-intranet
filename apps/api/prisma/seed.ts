@@ -285,7 +285,13 @@ async function seedTenant(tenantId: string, platformAdmin: boolean) {
 
   /* ------------------------------------------------------ Rollen/Rechte */
 
-  await prisma.permission.createMany({ data: [...PERMISSION_DEFINITIONS] });
+  await prisma.permission.createMany({
+    data: PERMISSION_DEFINITIONS.map((permission) => ({
+      key: permission.key,
+      name: permission.name,
+      description: permission.description,
+    })),
+  });
   const permissions = await prisma.permission.findMany();
   const permissionByKey = new Map(permissions.map((entry) => [entry.key, entry]));
 

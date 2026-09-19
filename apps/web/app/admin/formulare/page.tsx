@@ -3,10 +3,10 @@ import { AppShell } from "@/components/app-shell";
 import { EmptyState, Section, Tag } from "@/components/ui";
 import { FieldDefinitionForm } from "./field-definition-form";
 import { apiGet } from "@/lib/api";
-import { requireRole } from "@/lib/session";
+import { requirePermission } from "@/lib/session";
 
 export default async function FormsAdminPage() {
-  await requireRole("admin", "fachbereichsadmin");
+  await requirePermission("catalog.manage");
   const fields = await apiGet<BusinessCardFieldDefinition[]>("/orders/catalog/business-card-fields");
 
   return (
