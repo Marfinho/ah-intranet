@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query } from "@ne
 import { IsArray, IsIn, IsOptional, IsString, MinLength } from "class-validator";
 import type { CalendarCategory } from "@prisma/client";
 import { ResourcesService } from "./resources.service";
-import { CurrentUser, Feature, Roles } from "../../core/decorators";
+import { CurrentUser, Feature, Permission } from "../../core/decorators";
 import type { RequestUser } from "../../core/request-user";
 
 class EventDto {
@@ -38,7 +38,7 @@ export class CalendarController {
   }
 
   @Post()
-  @Roles("admin", "fachbereichsadmin", "fuehrungskraft")
+  @Permission("calendar.manage")
   create(@CurrentUser() user: RequestUser, @Body() dto: EventDto) {
     return this.resources.createEvent(user, dto);
   }

@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma, type OrderStatus, type OrderType } from "@prisma/client";
+import { permissionName } from "@ah-intranet/shared";
 import type {
   ApprovalTask,
   BusinessCardFieldDefinition,
@@ -15,7 +16,7 @@ import { requireTenantId } from "../../core/tenant-context";
 import { AuditService } from "../../core/audit.service";
 import { NotificationsService } from "../../core/notifications.service";
 import { buildNumber, displayName, scopeLabel, toIso } from "../../core/mappers";
-import { isManaging, type RequestUser } from "../../core/request-user";
+import { can, type RequestUser } from "../../core/request-user";
 
 const requesterSelect = {
   id: true,
@@ -76,7 +77,7 @@ export class OrdersService {
 
   async list(user: RequestUser, filter: { mine?: boolean; status?: string; search?: string } = {}) {
     const where: Prisma.OrderWhereInput = {
-      ...(filter.mine || !isManaging(user) ? { requesterId: user.id } : {}),
+      ...(filter.mine || !can(user, "orders.viewAll") ? { requesterId: user.id } : {}),
       ...(filter.status && filter.status !== "all" ? { status: filter.status as OrderStatus } : {}),
       ...(filter.search
         ? {
@@ -104,7 +105,7 @@ export class OrdersService {
     if (!order) {
       throw new NotFoundException("Bestellung nicht gefunden");
     }
-    if (order.requesterId !== user.id && !isManaging(user)) {
+    if (order.requesterId !== user.id && !can(user, "orders.viewAll")) {
       throw new ForbiddenException("Diese Bestellung gehört nicht zu Ihrem Zuständigkeitsbereich.");
     }
     return this.toDetail(order);
@@ -297,7 +298,7 @@ export class OrdersService {
     if (!order) {
       throw new NotFoundException("Bestellung nicht gefunden");
     }
-    if (order.requesterId !== user.id && !isManaging(user)) {
+    if (order.requesterId !== user.id && !can(user, "orders.viewAll")) {
       throw new ForbiddenException("Kein Zugriff auf diese Bestellung.");
     }
 
@@ -318,8 +319,10 @@ export class OrdersService {
   /* ---------------------------------------------------------- Freigaben */
 
   async approvals(user: RequestUser, filter: { status?: string; search?: string } = {}): Promise<ApprovalTask[]> {
-    if (!isManaging(user)) {
-      throw new ForbiddenException("Freigaben sind Fachbereichs- und Administrationsrollen vorbehalten.");
+    if (!can(user, "orders.approve")) {
+      throw new ForbiddenException(
+        `Für die Freigabeliste fehlt die Berechtigung "${permissionName("orders.approve")}".`,
+      );
     }
 
     const orders = await this.prisma.order.findMany({
@@ -375,8 +378,20 @@ export class OrdersService {
     }
 
     const selfCancel = target === "cancelled" && order.requesterId === user.id;
-    if (!isManaging(user) && !selfCancel) {
-      throw new ForbiddenException("Für diese Aktion fehlen die erforderlichen Rechte.");
+    if (!can(user, "orders.viewAll") && !selfCancel) {
+      throw new ForbiddenException("Fremde Bestellungen dürfen Sie nicht steuern.");
+    }
+    // Die Freigabeentscheidung hängt am Recht, nicht nur an der Rolle. Sie
+    // gehört in den Dienst und nicht an die Route: dieselbe Route trägt auch
+    // die Stornierung durch die antragstellende Person, die kein Recht braucht.
+    if (
+      !selfCancel &&
+      (target === "approved" || target === "rejected") &&
+      !user.permissions.includes("orders.approve")
+    ) {
+      throw new ForbiddenException(
+        `Für Freigabeentscheidungen fehlt die Berechtigung "${permissionName("orders.approve")}".`,
+      );
     }
     if (!ALLOWED_TRANSITIONS[order.status].includes(target)) {
       throw new BadRequestException(

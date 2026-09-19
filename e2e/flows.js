@@ -190,7 +190,28 @@ async function login(page, username) {
     );
     check("Audit-Log enthält Bestellfreigabe", auditBody.includes("order."));
 
-    // 19. Mandantentrennung im Browser
+    // 19. Eigene Rolle im Browser anlegen und zuweisen
+    await page.goto(`${BASE}/admin/rollen`, { waitUntil: "networkidle" });
+    await page.fill('input[name="name"]', "Werkstattleitung");
+    await page.fill('input[name="description"]', "Leitet die Werkstatt");
+    await page.fill('input[name="rank"]', "15");
+    await page.check('input[name="permissions"][value="tickets.manage"]');
+    await page.check('input[name="permissions"][value="absences.approve"]');
+    // Formularbezogen klicken: die Kopfzeile trägt eine eigene Suchschaltfläche.
+    await page.click('form:has(input[name="name"]) button[type="submit"]');
+    await page.waitForTimeout(2500);
+    await page.goto(`${BASE}/admin/rollen`, { waitUntil: "networkidle" });
+    const rollenBody = await page.textContent("body");
+    check("Eigene Rolle angelegt", rollenBody.includes("Werkstattleitung"));
+    check("Eigene Rolle trägt keinen Systemvermerk", !/Werkstattleitung[\s\S]{0,400}Grundausstattung/.test(rollenBody));
+
+    await page.goto(`${BASE}/admin/benutzer`, { waitUntil: "networkidle" });
+    check(
+      "Eigene Rolle steht in der Benutzerverwaltung zur Auswahl",
+      (await page.textContent("body")).includes("Werkstattleitung"),
+    );
+
+    // 20. Mandantentrennung im Browser
     await page.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
     check("Kopfzeile nennt das angemeldete Haus", (await page.textContent("header")).includes("Müller"));
     check(

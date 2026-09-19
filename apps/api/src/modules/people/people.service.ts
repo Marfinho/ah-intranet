@@ -1,6 +1,13 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
+import {
+  PERMISSION_DEFINITIONS,
+  UNVERZICHTBARE_RECHTE,
+  isPermissionKey,
+  istSystemrolle,
+  permissionName,
+} from "@ah-intranet/shared";
 import type {
   AppRole,
   EmployeeDirectoryEntry,
@@ -11,8 +18,8 @@ import type {
 } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
 import { AuditService } from "../../core/audit.service";
-import { PRESENCE_LABELS, PRESENCE_VALUES, buildScopes, displayName, primaryRole } from "../../core/mappers";
-import { isManaging, type RequestUser } from "../../core/request-user";
+import { PRESENCE_LABELS, PRESENCE_VALUES, buildScopes, displayName, sortiereRollen } from "../../core/mappers";
+import type { RequestUser } from "../../core/request-user";
 
 const directorySelect = {
   id: true,
@@ -29,7 +36,7 @@ const directorySelect = {
   location: { select: { name: true, code: true } },
   department: { select: { name: true, code: true } },
   specialtyArea: { select: { name: true, code: true } },
-  roles: { select: { role: { select: { key: true } } } },
+  roles: { select: { role: { select: { key: true, name: true, rank: true } } } },
 } as const;
 
 export interface UserInput {
@@ -285,7 +292,7 @@ export class PeopleService {
         permissions: { include: { permission: { select: { key: true } } } },
         _count: { select: { users: true } },
       },
-      orderBy: { rank: "desc" },
+      orderBy: [{ rank: "desc" }, { name: "asc" }],
     });
 
     return roles.map((role) => ({
@@ -293,55 +300,267 @@ export class PeopleService {
       key: role.key as AppRole,
       name: role.name,
       description: role.description,
+      rank: role.rank,
       permissions: role.permissions.map((entry) => entry.permission.key),
       userCount: role._count.users,
+      isSystem: istSystemrolle(role.key),
     }));
   }
 
   async permissions(): Promise<PermissionSummary[]> {
-    const permissions = await this.prisma.permission.findMany({ orderBy: { key: "asc" } });
-    return permissions.map((permission) => ({
-      id: permission.id,
-      key: permission.key,
-      name: permission.name,
-      description: permission.description,
-    }));
+    const permissions = await this.prisma.permission.findMany();
+    // Reihenfolge und Bereich kommen aus der Registry, nicht aus der Datenbank:
+    // dort steht die fachliche Gliederung, die Tabelle kennt nur Zeilen.
+    return PERMISSION_DEFINITIONS.flatMap((definition) => {
+      const row = permissions.find((entry) => entry.key === definition.key);
+      return row
+        ? [
+            {
+              id: row.id,
+              key: definition.key,
+              name: definition.name,
+              description: definition.description,
+              bereich: definition.bereich,
+            },
+          ]
+        : [];
+    });
   }
 
-  async setRolePermissions(actor: RequestUser, roleId: string, permissionKeys: string[]): Promise<RoleSummary[]> {
-    const role = await this.prisma.role.findUnique({ where: { id: roleId } });
-    if (!role) {
-      throw new NotFoundException("Rolle nicht gefunden");
-    }
+  /**
+   * Legt eine eigene Rolle an.
+   *
+   * Der Schlüssel wird aus dem Namen abgeleitet und ist danach fest - er steht
+   * im Audit-Log und in Verweisen. Umbenennen ändert nur den Anzeigenamen.
+   */
+  async createRole(
+    actor: RequestUser,
+    input: { name: string; description: string; rank?: number; permissions: string[] },
+  ): Promise<RoleSummary[]> {
+    const key = await this.freierRollenschluessel(input.name);
+    const permissions = await this.gueltigeRechte(input.permissions);
 
-    const permissions = await this.prisma.permission.findMany({ where: { key: { in: permissionKeys } } });
-
-    await this.prisma.$transaction([
-      this.prisma.rolePermission.deleteMany({ where: { roleId } }),
-      this.prisma.rolePermission.createMany({
-        data: permissions.map((permission) => ({ roleId, permissionId: permission.id })),
-        skipDuplicates: true,
-      }),
-    ]);
+    const role = await this.prisma.role.create({
+      data: {
+        key,
+        name: input.name.trim(),
+        description: input.description.trim(),
+        rank: this.gueltigerRang(input.rank),
+        permissions: { create: permissions.map((permission) => ({ permissionId: permission.id })) },
+      },
+    });
 
     await this.audit.log({
       actor,
-      action: "role.permissions_changed",
+      action: "role.created",
       entityType: "role",
-      entityId: roleId,
-      detail: `Rechte der Rolle "${role.name}" auf ${permissions.length} Berechtigung(en) gesetzt`,
+      entityId: role.id,
+      detail: `Rolle "${role.name}" angelegt mit ${permissions.length} Recht(en)`,
+      metadata: { schluessel: key, rechte: permissions.map((permission) => permission.key) },
     });
 
     return this.roles();
   }
 
+  /** Ändert Name, Beschreibung, Rangfolge und Rechte einer Rolle. */
+  async updateRole(
+    actor: RequestUser,
+    roleId: string,
+    input: { name?: string; description?: string; rank?: number; permissions?: string[] },
+  ): Promise<RoleSummary[]> {
+    const role = await this.prisma.role.findUnique({ where: { id: roleId } });
+    if (!role) {
+      throw new NotFoundException("Rolle nicht gefunden");
+    }
+
+    const permissions = input.permissions ? await this.gueltigeRechte(input.permissions) : null;
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.role.update({
+        where: { id: roleId },
+        data: {
+          ...(input.name !== undefined ? { name: input.name.trim() } : {}),
+          ...(input.description !== undefined ? { description: input.description.trim() } : {}),
+          ...(input.rank !== undefined ? { rank: this.gueltigerRang(input.rank) } : {}),
+        },
+      });
+
+      if (permissions) {
+        await tx.rolePermission.deleteMany({ where: { roleId } });
+        await tx.rolePermission.createMany({
+          data: permissions.map((permission) => ({ roleId, permissionId: permission.id })),
+          skipDuplicates: true,
+        });
+        await this.beendeSitzungen(tx, roleId);
+      }
+
+      await this.assertVerwaltungErreichbar(tx);
+    });
+
+    await this.audit.log({
+      actor,
+      action: "role.updated",
+      entityType: "role",
+      entityId: roleId,
+      detail: `Rolle "${input.name?.trim() ?? role.name}" geändert`,
+      metadata: permissions ? { rechte: permissions.map((permission) => permission.key) } : {},
+    });
+
+    return this.roles();
+  }
+
+  /**
+   * Löscht eine eigene Rolle.
+   *
+   * Rollen der Grundausstattung bleiben: Seed und Einrichtung neuer Häuser
+   * setzen auf ihnen auf. Eine Rolle mit Konten wird nicht gelöscht, sondern
+   * erst geleert - sonst verlören Menschen still ihre Rechte.
+   */
+  async deleteRole(actor: RequestUser, roleId: string): Promise<RoleSummary[]> {
+    const role = await this.prisma.role.findUnique({
+      where: { id: roleId },
+      include: { _count: { select: { users: true } } },
+    });
+    if (!role) {
+      throw new NotFoundException("Rolle nicht gefunden");
+    }
+    if (istSystemrolle(role.key)) {
+      throw new BadRequestException(
+        `"${role.name}" gehört zur Grundausstattung und lässt sich nicht löschen. Ihre Rechte können Sie ändern.`,
+      );
+    }
+    if (role._count.users > 0) {
+      throw new BadRequestException(
+        `"${role.name}" ist noch ${role._count.users} Konto(en) zugewiesen. Nehmen Sie die Rolle dort zuerst weg.`,
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.role.delete({ where: { id: roleId } });
+      await this.assertVerwaltungErreichbar(tx);
+    });
+
+    await this.audit.log({
+      actor,
+      action: "role.deleted",
+      entityType: "role",
+      entityId: roleId,
+      detail: `Rolle "${role.name}" gelöscht`,
+    });
+
+    return this.roles();
+  }
+
+  async setRolePermissions(actor: RequestUser, roleId: string, permissionKeys: string[]): Promise<RoleSummary[]> {
+    return this.updateRole(actor, roleId, { permissions: permissionKeys });
+  }
+
+  /**
+   * Verhindert, dass ein Haus sich selbst aussperrt.
+   *
+   * `roles.manage` und `users.manage` sind unverzichtbar: Ohne das erste kommt
+   * niemand mehr an den Rechte-Editor, ohne das zweite entsteht kein neues
+   * Konto mit Verwaltungsrechten. Beides ist nicht rückgängig zu machen.
+   *
+   * Geprüft wird **nach** der Änderung, innerhalb derselben Transaktion: der
+   * tatsächliche Zustand statt einer nachgebauten Vorhersage. Ein Wurf rollt
+   * die Änderung zurück. Entscheidend ist nicht, ob irgendeine Rolle das Recht
+   * trägt, sondern ob ein **aktives Konto** es über eine ihrer Rollen hat -
+   * ein Recht in einer leeren Rolle rettet niemanden.
+   */
+  private async assertVerwaltungErreichbar(tx: Prisma.TransactionClient): Promise<void> {
+    for (const recht of UNVERZICHTBARE_RECHTE) {
+      const traeger = await tx.userRole.count({
+        where: { role: { permissions: { some: { permission: { key: recht } } } }, user: { status: "active" } },
+      });
+      if (traeger === 0) {
+        throw new BadRequestException(
+          `Nach dieser Änderung hätte niemand mehr das Recht "${permissionName(recht)}". ` +
+            "Das Haus könnte seine Verwaltung nicht mehr erreichen und die Entscheidung nicht zurücknehmen.",
+        );
+      }
+    }
+  }
+
+  /**
+   * Beendet die Sitzungen aller Konten einer Rolle.
+   *
+   * Wessen Rechte sich ändern, muss es sofort merken - nicht erst, wenn das
+   * Token in bis zu zwölf Stunden abläuft. Ein entzogenes Recht, das noch einen
+   * halben Tag wirkt, ist kein entzogenes Recht.
+   */
+  private async beendeSitzungen(tx: Prisma.TransactionClient, roleId: string): Promise<number> {
+    const betroffene = await tx.userRole.findMany({ where: { roleId }, select: { userId: true } });
+    if (betroffene.length === 0) {
+      return 0;
+    }
+    await tx.user.updateMany({
+      where: { id: { in: betroffene.map((eintrag) => eintrag.userId) } },
+      data: { tokenVersion: { increment: 1 } },
+    });
+    return betroffene.length;
+  }
+
+  /** Rechte aus der Registry nachschlagen; unbekannte Schlüssel fliegen auf. */
+  private async gueltigeRechte(keys: string[]): Promise<{ id: string; key: string }[]> {
+    const unbekannt = keys.filter((key) => !isPermissionKey(key));
+    if (unbekannt.length > 0) {
+      throw new BadRequestException(`Unbekannte Berechtigung: ${unbekannt.join(", ")}`);
+    }
+    return this.prisma.permission.findMany({ where: { key: { in: keys } }, select: { id: true, key: true } });
+  }
+
+  private gueltigerRang(rank?: number): number {
+    if (rank === undefined) {
+      return 0;
+    }
+    if (!Number.isInteger(rank) || rank < 0 || rank > 99) {
+      throw new BadRequestException("Die Rangfolge muss zwischen 0 und 99 liegen.");
+    }
+    return rank;
+  }
+
+  /** Schlüssel aus dem Namen, bei Kollision mit Zähler dahinter. */
+  private async freierRollenschluessel(name: string): Promise<string> {
+    const basis =
+      name
+        .trim()
+        .toLowerCase()
+        .replace(/ä/g, "ae")
+        .replace(/ö/g, "oe")
+        .replace(/ü/g, "ue")
+        .replace(/ß/g, "ss")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 40) || "rolle";
+
+    const belegt = new Set((await this.prisma.role.findMany({ select: { key: true } })).map((row) => row.key));
+    if (!belegt.has(basis) && !istSystemrolle(basis)) {
+      return basis;
+    }
+    for (let i = 2; i < 100; i += 1) {
+      const kandidat = `${basis}-${i}`;
+      if (!belegt.has(kandidat)) {
+        return kandidat;
+      }
+    }
+    throw new BadRequestException("Für diesen Namen ist kein freier Rollenschlüssel mehr zu finden.");
+  }
+
   /* ---------------------------------------------------------- Helfer */
 
+  /**
+   * Rollen des Hauses nachschlagen.
+   *
+   * Unbekannte Schlüssel werden benannt und nicht stillschweigend verworfen -
+   * sonst bekäme ein Konto weniger Rollen als angefordert, ohne dass es auffällt.
+   */
   private async roleConnections(roles: AppRole[]) {
-    const unique = [...new Set(roles.length ? roles : (["mitarbeiter"] as AppRole[]))];
-    const rows = await this.prisma.role.findMany({ where: { key: { in: unique } }, select: { id: true } });
-    if (rows.length === 0) {
-      throw new BadRequestException("Keine gültige Rolle angegeben.");
+    const unique = [...new Set(roles.length ? roles : ["mitarbeiter"])];
+    const rows = await this.prisma.role.findMany({ where: { key: { in: unique } }, select: { id: true, key: true } });
+    const unbekannt = unique.filter((key) => !rows.some((row) => row.key === key));
+    if (unbekannt.length > 0) {
+      throw new BadRequestException(`Unbekannte Rolle: ${unbekannt.join(", ")}`);
     }
     return rows.map((row) => ({ roleId: row.id }));
   }
@@ -377,13 +596,14 @@ export class PeopleService {
   }
 
   private toDirectoryEntry(user: Prisma.UserGetPayload<{ select: typeof directorySelect }>): EmployeeDirectoryEntry {
-    const roles = user.roles.map((entry) => entry.role.key as AppRole);
+    const rollen = sortiereRollen(user.roles.map((entry) => entry.role));
     return {
       id: user.id,
       username: user.username,
       displayName: displayName(user),
       jobTitle: user.jobTitle,
-      role: primaryRole(roles.length ? roles : ["mitarbeiter"]),
+      role: rollen[0]?.name ?? "Mitarbeitende",
+      roleKeys: rollen.map((rolle) => rolle.key),
       location: user.location?.name ?? null,
       department: user.department?.name ?? null,
       specialtyArea: user.specialtyArea?.name ?? null,
@@ -396,20 +616,27 @@ export class PeopleService {
     };
   }
 
-  /** Vorgesetzte Person, an die Abwesenheitsanträge gehen. Fällt auf Admins zurück. */
+  /**
+   * Vorgesetzte Person, an die Abwesenheitsanträge gehen.
+   *
+   * Ohne Vorgesetzte fällt der Antrag an alle, die das Haus zur Freigabe
+   * berechtigt hat. Bewusst über das Recht und nicht über einen Rollenschlüssel:
+   * ein Haus kann die Freigabe einer eigenen Rolle geben, die "admin" nicht heißt.
+   */
   async approversFor(userId: string): Promise<string[]> {
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { managerId: true } });
     if (user?.managerId) {
       return [user.managerId];
     }
-    const admins = await this.prisma.userRole.findMany({
-      where: { role: { key: "admin" }, user: { status: "active" } },
-      select: { userId: true },
-    });
-    return admins.map((entry) => entry.userId);
+    return this.usersWithPermission("absences.approve");
   }
 
-  canManage(user: RequestUser): boolean {
-    return isManaging(user);
+  /** Aktive Konten, deren Rollen das genannte Recht tragen. */
+  async usersWithPermission(permission: string): Promise<string[]> {
+    const traeger = await this.prisma.userRole.findMany({
+      where: { role: { permissions: { some: { permission: { key: permission } } } }, user: { status: "active" } },
+      select: { userId: true },
+    });
+    return [...new Set(traeger.map((entry) => entry.userId))];
   }
 }

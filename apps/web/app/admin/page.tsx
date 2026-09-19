@@ -3,28 +3,30 @@ import type { DashboardMetric, ModuleState } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
 import { DataGrid, MetricCard, Section } from "@/components/ui";
 import { apiGet } from "@/lib/api";
-import { requireRole } from "@/lib/session";
+import { can, requirePermission } from "@/lib/session";
 
+/** Jede Kachel nennt das Recht, das ihre Seite verlangt - nicht eine Rolle. */
 const ADMIN_LINKS = [
-  { href: "/admin/module", label: "Module", detail: "Fachmodule ein- und ausschalten", adminOnly: true },
-  { href: "/admin/benutzer", label: "Benutzer", detail: "Konten anlegen und pflegen", adminOnly: true },
-  { href: "/admin/rollen", label: "Rollen & Rechte", detail: "Berechtigungen je Rolle", adminOnly: true },
-  { href: "/admin/news", label: "News", detail: "Beiträge verfassen und steuern", adminOnly: false },
-  { href: "/admin/dokumente", label: "Dokumente", detail: "Vorlagen und Richtlinien", adminOnly: false },
-  { href: "/admin/katalog", label: "Arbeitskleidung", detail: "Artikel und Größen", adminOnly: false },
-  { href: "/admin/formulare", label: "Visitenkartenformular", detail: "Felder konfigurieren", adminOnly: false },
+  { href: "/admin/module", label: "Module", detail: "Fachmodule ein- und ausschalten", recht: "modules.manage" },
+  { href: "/admin/benutzer", label: "Benutzer", detail: "Konten anlegen und pflegen", recht: "users.manage" },
+  { href: "/admin/rollen", label: "Rollen & Rechte", detail: "Eigene Rollen anlegen", recht: "roles.manage" },
+  { href: "/admin/anmeldung", label: "Anmeldung", detail: "Anmeldearten des Hauses", recht: "auth.manage" },
+  { href: "/admin/news", label: "News", detail: "Beiträge verfassen und steuern", recht: "news.publish" },
+  { href: "/admin/dokumente", label: "Dokumente", detail: "Vorlagen und Richtlinien", recht: "documents.manage" },
+  { href: "/admin/katalog", label: "Arbeitskleidung", detail: "Artikel und Größen", recht: "catalog.manage" },
+  { href: "/admin/formulare", label: "Visitenkartenformular", detail: "Felder konfigurieren", recht: "catalog.manage" },
   {
     href: "/admin/bestelltermine",
     label: "Bestelltermine",
     detail: "Stichtage der Sammelbestellungen",
-    adminOnly: false,
+    recht: "catalog.manage",
   },
-  { href: "/admin/audit", label: "Audit-Log", detail: "Protokoll aller Aktionen", adminOnly: true },
+  { href: "/admin/audit", label: "Audit-Log", detail: "Protokoll aller Aktionen", recht: "audit.read" },
   {
     href: "/admin/datenschutz",
     label: "Datenschutz",
     detail: "Auskunft, Löschung, Aufbewahrungsfristen",
-    adminOnly: true,
+    recht: "privacy.manage",
   },
 ];
 
@@ -34,14 +36,14 @@ const PLATFORM_LINKS = [
 ];
 
 export default async function AdminPage() {
-  const session = await requireRole("admin", "fachbereichsadmin");
+  const session = await requirePermission("admin.access");
 
   const [summary, modules] = await Promise.all([
     apiGet<{ metrics: DashboardMetric[] }>("/admin/summary"),
     apiGet<ModuleState[]>("/modules"),
   ]);
 
-  const isAdmin = session.roles.includes("admin");
+  const isAdmin = can(session, "modules.manage");
   const activeModules = modules.filter((module) => module.enabled).length;
   const disabled = modules.filter((module) => !module.enabled);
 
@@ -102,7 +104,7 @@ export default async function AdminPage() {
 
       <Section title="Verwaltungsbereiche" subtitle="Alle Pflegemasken im Überblick">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {ADMIN_LINKS.filter((link) => !link.adminOnly || isAdmin).map((link) => (
+          {ADMIN_LINKS.filter((link) => can(session, link.recht)).map((link) => (
             <Link
               key={link.href}
               href={link.href}

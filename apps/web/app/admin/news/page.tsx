@@ -4,12 +4,12 @@ import { ActionButton } from "@/components/forms";
 import { EmptyState, PriorityBadge, Section, StatusBadge } from "@/components/ui";
 import { NewsComposer } from "./news-composer";
 import { apiGet } from "@/lib/api";
-import { requireRole } from "@/lib/session";
+import { can, requirePermission } from "@/lib/session";
 import { deleteNewsAction, setNewsStatusAction } from "@/lib/actions";
 import { formatDate } from "@/lib/utils";
 
 export default async function NewsAdminPage() {
-  const session = await requireRole("admin", "fachbereichsadmin");
+  const session = await requirePermission("news.publish");
   const items = await apiGet<NewsItem[]>("/news?status=all");
 
   return (
@@ -54,7 +54,7 @@ export default async function NewsAdminPage() {
                       </ActionButton>
                     )}
 
-                    {session.roles.includes("admin") ? (
+                    {can(session, "news.publish") ? (
                       <ActionButton
                         variant="danger"
                         confirm={`Beitrag "${item.title}" endgültig löschen?`}

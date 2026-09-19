@@ -5,7 +5,7 @@ import { EmptyState, PriorityBadge, Section, StatusBadge } from "@/components/ui
 import { TicketComposer } from "./ticket-composer";
 import { TicketRow } from "./ticket-row";
 import { apiGet, apiGetSafe } from "@/lib/api";
-import { isManaging, requireModule } from "@/lib/session";
+import { can, requireModule } from "@/lib/session";
 
 interface TicketsResponse {
   items: TicketSummary[];
@@ -35,7 +35,7 @@ export default async function TicketsPage({
   const data = await apiGet<TicketsResponse>(`/tickets?${query.toString()}`);
 
   // Zuweisung ist nur für Verwaltende relevant; sonst sparen wir uns die Abfrage.
-  const assignees = isManaging(session)
+  const assignees = can(session, "tickets.manage")
     ? await apiGetSafe<EmployeeDirectoryEntry[]>("/users", []).then((users) =>
         users.map((user) => ({ id: user.id, name: user.displayName })),
       )

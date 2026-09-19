@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Post } from "@nestjs/co
 import { IsBoolean, IsOptional, IsString, MinLength } from "class-validator";
 import { RETENTION_RULES } from "@ah-intranet/shared";
 import { PrivacyService } from "./privacy.service";
-import { CurrentUser, Roles } from "../../core/decorators";
+import { CurrentUser, Permission } from "../../core/decorators";
 import type { RequestUser } from "../../core/request-user";
 
 class LoeschungDto {
@@ -26,7 +26,7 @@ class LoeschungDto {
  * Pflichten. Ein Schalter, der sie entfernt, wäre ein Fehler im Entwurf.
  */
 @Controller("datenschutz")
-@Roles("admin")
+@Permission("privacy.manage")
 export class PrivacyController {
   constructor(private readonly privacy: PrivacyService) {}
 

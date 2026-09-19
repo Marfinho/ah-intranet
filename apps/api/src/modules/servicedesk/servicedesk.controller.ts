@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common
 import { ArrayNotEmpty, IsArray, IsIn, IsOptional, IsString, MinLength } from "class-validator";
 import type { IdeaStatus, Priority, TicketCategory, TicketStatus } from "@prisma/client";
 import { ServiceDeskService } from "./servicedesk.service";
-import { CurrentUser, Feature, Roles } from "../../core/decorators";
+import { CurrentUser, Feature, Permission } from "../../core/decorators";
 import type { RequestUser } from "../../core/request-user";
 
 class TicketDto {
@@ -71,7 +71,7 @@ export class TicketsController {
   }
 
   @Patch(":id")
-  @Roles("admin", "fachbereichsadmin")
+  @Permission("tickets.manage")
   update(@CurrentUser() user: RequestUser, @Param("id") id: string, @Body() dto: TicketPatchDto) {
     return this.desk.updateTicket(user, id, dto);
   }
@@ -103,7 +103,7 @@ export class IdeasController {
   }
 
   @Patch(":id/status")
-  @Roles("admin", "fachbereichsadmin")
+  @Permission("ideas.manage")
   setStatus(@CurrentUser() user: RequestUser, @Param("id") id: string, @Body() dto: IdeaStatusDto) {
     return this.desk.setIdeaStatus(user, id, dto.status, dto.decisionNote);
   }
@@ -120,7 +120,7 @@ export class PollsController {
   }
 
   @Post()
-  @Roles("admin", "fachbereichsadmin")
+  @Permission("ideas.manage")
   create(@CurrentUser() user: RequestUser, @Body() dto: PollDto) {
     return this.desk.createPoll(user, dto);
   }
@@ -131,7 +131,7 @@ export class PollsController {
   }
 
   @Post(":id/close")
-  @Roles("admin", "fachbereichsadmin")
+  @Permission("ideas.manage")
   close(@CurrentUser() user: RequestUser, @Param("id") id: string) {
     return this.desk.closePoll(user, id);
   }

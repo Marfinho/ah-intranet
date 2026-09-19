@@ -47,7 +47,19 @@ export class PrivacyService {
       throw new NotFoundException("Person nicht gefunden");
     }
 
-    const [orders, absences, tickets, ticketComments, roomBookings, notifications, auditLogs] = await Promise.all([
+    const [
+      orders,
+      absences,
+      tickets,
+      ticketComments,
+      roomBookings,
+      notifications,
+      auditLogs,
+      shifts,
+      shiftSwaps,
+      custody,
+      mealOrders,
+    ] = await Promise.all([
       this.prisma.order.findMany({
         where: { requesterId: userId },
         select: { id: true, orderNumber: true, type: true, status: true, netAmount: true, createdAt: true },
@@ -83,6 +95,34 @@ export class PrivacyService {
         select: { id: true, action: true, entityType: true, detail: true, createdAt: true },
         orderBy: { createdAt: "desc" },
       }),
+      this.prisma.shift.findMany({
+        where: { assigneeId: userId },
+        select: { id: true, label: true, startsAt: true, endsAt: true, note: true },
+        orderBy: { startsAt: "desc" },
+      }),
+      this.prisma.shiftSwap.findMany({
+        where: { OR: [{ requesterId: userId }, { targetId: userId }] },
+        select: { id: true, status: true, note: true, decisionNote: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+      }),
+      // Beide Seiten: wer etwas bekommen hat und wer es gebucht hat.
+      this.prisma.custodyEvent.findMany({
+        where: { OR: [{ personId: userId }, { actorId: userId }] },
+        select: { id: true, kind: true, note: true, createdAt: true, item: { select: { title: true, kind: true } } },
+        orderBy: { createdAt: "desc" },
+      }),
+      this.prisma.mealOrder.findMany({
+        where: { userId },
+        select: {
+          id: true,
+          quantity: true,
+          note: true,
+          createdAt: true,
+          option: { select: { name: true } },
+          offer: { select: { date: true, provider: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
     ]);
 
     return {
@@ -115,6 +155,10 @@ export class PrivacyService {
         raumbuchungen: roomBookings,
         benachrichtigungen: notifications,
         protokollierteAktionen: auditLogs,
+        schichten: shifts,
+        diensttausch: shiftSwaps,
+        verwahrung: custody,
+        essensbestellungen: mealOrders,
       },
       nichtMaschinellErfassbar: {
         hinweis:
@@ -273,6 +317,19 @@ export class PrivacyService {
         return (await this.prisma.ticket.deleteMany({ where: { createdAt: { lt: cutoff }, status: "geloest" } })).count;
       case "absence":
         return (await this.prisma.absence.deleteMany({ where: { endDate: { lt: cutoff } } })).count;
+      case "shift":
+        // Die Tauschvorgänge hängen am Fremdschlüssel und gehen mit.
+        return (await this.prisma.shift.deleteMany({ where: { endsAt: { lt: cutoff } } })).count;
+      case "custody":
+        // Nur abgeschlossene Vorgänge: ein noch ausgegebener Schlüssel bleibt,
+        // egal wie alt die Ausgabe ist - sonst verlöre das Haus die Spur.
+        return (
+          await this.prisma.custodyItem.deleteMany({
+            where: { updatedAt: { lt: cutoff }, status: { in: ["abgeholt", "entsorgt"] } },
+          })
+        ).count;
+      case "meal_order":
+        return (await this.prisma.mealOrder.deleteMany({ where: { createdAt: { lt: cutoff } } })).count;
       default:
         // Erreichbar nur, wenn eine neue Regel mit `mode: "delete"` angelegt,
         // aber hier nicht umgesetzt wurde.
@@ -294,6 +351,14 @@ export class PrivacyService {
         return this.prisma.ticket.count({ where: { createdAt: { lt: cutoff }, status: "geloest" } });
       case "absence":
         return this.prisma.absence.count({ where: { endDate: { lt: cutoff } } });
+      case "shift":
+        return this.prisma.shift.count({ where: { endsAt: { lt: cutoff } } });
+      case "custody":
+        return this.prisma.custodyItem.count({
+          where: { updatedAt: { lt: cutoff }, status: { in: ["abgeholt", "entsorgt"] } },
+        });
+      case "meal_order":
+        return this.prisma.mealOrder.count({ where: { createdAt: { lt: cutoff } } });
       default:
         throw new Error(`Für die Frist "${rule.key}" ist kein Löschweg hinterlegt.`);
     }

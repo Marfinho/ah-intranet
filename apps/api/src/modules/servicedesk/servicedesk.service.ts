@@ -6,7 +6,7 @@ import { requireTenantId } from "../../core/tenant-context";
 import { AuditService } from "../../core/audit.service";
 import { NotificationsService } from "../../core/notifications.service";
 import { buildNumber, displayName } from "../../core/mappers";
-import { isManaging, type RequestUser } from "../../core/request-user";
+import { can, type RequestUser } from "../../core/request-user";
 
 const ticketInclude = {
   requester: { select: { id: true, username: true, firstName: true, lastName: true } },
@@ -42,7 +42,7 @@ export class ServiceDeskService {
     user: RequestUser,
     filter: { scope?: "mine" | "all"; status?: string; category?: string; search?: string } = {},
   ) {
-    const scope = filter.scope ?? (isManaging(user) ? "all" : "mine");
+    const scope = filter.scope ?? (can(user, "tickets.manage") ? "all" : "mine");
     // Zwei Bedingungen mit je einem OR gehören in ein AND. Als zwei Schlüssel
     // im selben Objekt gewönne der zweite - und die Suche hätte die Beschränkung
     // auf eigene Vorgänge aufgehoben.
@@ -50,7 +50,9 @@ export class ServiceDeskService {
       ...(filter.status && filter.status !== "all" ? { status: filter.status as TicketStatus } : {}),
       ...(filter.category && filter.category !== "all" ? { category: filter.category as TicketCategory } : {}),
       AND: [
-        ...(scope === "mine" || !isManaging(user) ? [{ OR: [{ requesterId: user.id }, { assigneeId: user.id }] }] : []),
+        ...(scope === "mine" || !can(user, "tickets.manage")
+          ? [{ OR: [{ requesterId: user.id }, { assigneeId: user.id }] }]
+          : []),
         ...(filter.search
           ? [
               {
@@ -72,7 +74,7 @@ export class ServiceDeskService {
       take: 200,
     });
 
-    return { items: tickets.map((ticket) => this.toTicket(ticket, false)), canManage: isManaging(user) };
+    return { items: tickets.map((ticket) => this.toTicket(ticket, false)), canManage: can(user, "tickets.manage") };
   }
 
   async ticketDetail(user: RequestUser, id: string): Promise<TicketSummary> {
@@ -80,7 +82,7 @@ export class ServiceDeskService {
     if (!ticket) {
       throw new NotFoundException("Ticket nicht gefunden");
     }
-    if (ticket.requesterId !== user.id && ticket.assigneeId !== user.id && !isManaging(user)) {
+    if (ticket.requesterId !== user.id && ticket.assigneeId !== user.id && !can(user, "tickets.manage")) {
       throw new ForbiddenException("Kein Zugriff auf dieses Ticket.");
     }
     return this.toTicket(ticket, true);
@@ -137,7 +139,7 @@ export class ServiceDeskService {
     if (!ticket) {
       throw new NotFoundException("Ticket nicht gefunden");
     }
-    if (!isManaging(user)) {
+    if (!can(user, "tickets.manage")) {
       throw new ForbiddenException("Tickets werden vom Fachbereich bearbeitet.");
     }
 
@@ -191,7 +193,7 @@ export class ServiceDeskService {
     if (!ticket) {
       throw new NotFoundException("Ticket nicht gefunden");
     }
-    if (ticket.requesterId !== user.id && ticket.assigneeId !== user.id && !isManaging(user)) {
+    if (ticket.requesterId !== user.id && ticket.assigneeId !== user.id && !can(user, "tickets.manage")) {
       throw new ForbiddenException("Kein Zugriff auf dieses Ticket.");
     }
 
@@ -228,7 +230,7 @@ export class ServiceDeskService {
 
     return {
       items: ideas.map((idea) => this.toIdea(idea, idea.votes.length > 0)),
-      canManage: isManaging(user),
+      canManage: can(user, "tickets.manage"),
     };
   }
 
@@ -267,7 +269,7 @@ export class ServiceDeskService {
   }
 
   async setIdeaStatus(user: RequestUser, id: string, status: IdeaStatus, decisionNote?: string): Promise<Idea> {
-    if (!isManaging(user)) {
+    if (!can(user, "tickets.manage")) {
       throw new ForbiddenException("Nur der Fachbereich entscheidet über Ideen.");
     }
 
@@ -306,7 +308,7 @@ export class ServiceDeskService {
 
     return {
       items: polls.map((poll) => this.toPoll(poll, poll.votes[0]?.optionId ?? null)),
-      canManage: isManaging(user),
+      canManage: can(user, "tickets.manage"),
     };
   }
 
@@ -368,7 +370,7 @@ export class ServiceDeskService {
   }
 
   async closePoll(user: RequestUser, id: string): Promise<Poll> {
-    if (!isManaging(user)) {
+    if (!can(user, "tickets.manage")) {
       throw new ForbiddenException("Nur der Fachbereich kann Umfragen schließen.");
     }
     const poll = await this.prisma.poll.update({ where: { id }, data: { isActive: false }, include: pollInclude });

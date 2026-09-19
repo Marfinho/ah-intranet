@@ -4,7 +4,7 @@ import type { DocumentFileType, DocumentItem, WikiArticle } from "@ah-intranet/s
 import { PrismaService } from "../../core/prisma.service";
 import { AuditService } from "../../core/audit.service";
 import { audienceFilter, displayName } from "../../core/mappers";
-import { isManaging, type RequestUser } from "../../core/request-user";
+import { can, type RequestUser } from "../../core/request-user";
 
 export interface DocumentInput {
   title: string;
@@ -33,7 +33,7 @@ export class DocumentsService {
 
   async list(user: RequestUser, filter: { search?: string; category?: string } = {}) {
     const where: Prisma.DocumentWhereInput = {
-      ...(isManaging(user) ? {} : { isActive: true, ...audienceFilter(user) }),
+      ...(can(user, "documents.manage") ? {} : { isActive: true, ...audienceFilter(user) }),
       ...(filter.category && filter.category !== "all" ? { category: filter.category } : {}),
       ...(filter.search
         ? {
@@ -52,7 +52,7 @@ export class DocumentsService {
         orderBy: [{ category: "asc" }, { title: "asc" }],
       }),
       this.prisma.document.findMany({
-        where: isManaging(user) ? {} : { isActive: true, ...audienceFilter(user) },
+        where: can(user, "documents.manage") ? {} : { isActive: true, ...audienceFilter(user) },
         distinct: ["category"],
         select: { category: true },
         orderBy: { category: "asc" },
@@ -134,7 +134,7 @@ export class DocumentsService {
 
   async listWiki(user: RequestUser, filter: { search?: string; category?: string } = {}) {
     const where: Prisma.WikiArticleWhereInput = {
-      ...(isManaging(user) ? {} : { isPublished: true }),
+      ...(can(user, "wiki.manage") ? {} : { isPublished: true }),
       ...(filter.category && filter.category !== "all" ? { category: filter.category } : {}),
       ...(filter.search
         ? {
@@ -154,7 +154,7 @@ export class DocumentsService {
         orderBy: { updatedAt: "desc" },
       }),
       this.prisma.wikiArticle.findMany({
-        where: isManaging(user) ? {} : { isPublished: true },
+        where: can(user, "wiki.manage") ? {} : { isPublished: true },
         distinct: ["category"],
         select: { category: true },
         orderBy: { category: "asc" },

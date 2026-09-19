@@ -1,22 +1,28 @@
 import { ExecutionContext, SetMetadata, createParamDecorator } from "@nestjs/common";
-import type { AppRole } from "@ah-intranet/shared";
 import type { RequestUser } from "./request-user";
 
 export const PUBLIC_KEY = "auth:public";
-export const ROLES_KEY = "auth:roles";
+export const PERMISSION_KEY = "auth:permission";
 export const FEATURE_KEY = "feature:module";
 export const PLATFORM_ADMIN_KEY = "auth:platform-admin";
 
 /** Hebt die global aktive JWT-Prüfung für einzelne Routen auf (Login, Health). */
 export const Public = () => SetMetadata(PUBLIC_KEY, true);
 
-/** Beschränkt eine Route auf die angegebenen Rollen. */
-export const Roles = (...roles: AppRole[]) => SetMetadata(ROLES_KEY, roles);
+/**
+ * Verlangt ein benanntes Recht aus `packages/shared/src/rbac.ts`.
+ *
+ * Das einzige Merkmal, das eine Route absichert. Rollenschlüssel taugen dafür
+ * nicht: welche Rolle was darf, entscheidet jedes Haus selbst, und eigene
+ * Rollen kennt der Code gar nicht. Eine Route, die kein Recht trägt, steht
+ * jedem angemeldeten Konto offen - das ist eine Aussage, keine Lücke.
+ */
+export const Permission = (permission: string) => SetMetadata(PERMISSION_KEY, permission);
 
 /**
  * Beschränkt eine Route auf die Plattformverwaltung.
  *
- * Bewusst getrennt von der Rolle `admin`: die verwaltet das eigene Haus. Wer
+ * Bewusst getrennt von den Rechten des Hauses: die verwalten das eigene Haus. Wer
  * Mandanten anlegen oder abschalten darf, ist eine Entscheidung des Betreibers
  * und darf nicht aus dem Haus heraus vergeben werden können.
  */

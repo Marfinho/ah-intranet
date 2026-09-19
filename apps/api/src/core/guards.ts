@@ -10,8 +10,8 @@ import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import type { Request } from "express";
 import type { AppRole } from "@ah-intranet/shared";
-import { getModule } from "@ah-intranet/shared";
-import { FEATURE_KEY, PLATFORM_ADMIN_KEY, PUBLIC_KEY, ROLES_KEY } from "./decorators";
+import { getModule, permissionName } from "@ah-intranet/shared";
+import { FEATURE_KEY, PERMISSION_KEY, PLATFORM_ADMIN_KEY, PUBLIC_KEY } from "./decorators";
 import { ModuleRegistryService } from "./module-registry.service";
 import { PrismaService } from "./prisma.service";
 import type { RequestUser } from "./request-user";
@@ -118,17 +118,22 @@ export function extractToken(request: Request): string | undefined {
   return header?.startsWith("Bearer ") ? header.slice(7) : undefined;
 }
 
-/** Wertet `@Roles(...)` aus. Die Rollen stammen aus dem Token, nicht aus dem Request-Body. */
+/**
+ * Wertet `@Permission(...)` und `@PlatformAdmin()` aus.
+ *
+ * Die Rechte stammen aus dem Token, nicht aus den Anfragedaten. Sie stehen dort
+ * aufgelöst - welche Rolle sie trägt, ist zur Prüfzeit ohne Belang.
+ */
 @Injectable()
-export class RolesGuard implements CanActivate {
+export class PermissionGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
     const targets = [context.getHandler(), context.getClass()];
-    const required = this.reflector.getAllAndOverride<AppRole[]>(ROLES_KEY, targets);
     const platformOnly = this.reflector.getAllAndOverride<boolean>(PLATFORM_ADMIN_KEY, targets);
+    const permission = this.reflector.getAllAndOverride<string>(PERMISSION_KEY, targets);
 
-    if (!required?.length && !platformOnly) {
+    if (!platformOnly && !permission) {
       return true;
     }
 
@@ -139,8 +144,8 @@ export class RolesGuard implements CanActivate {
     if (platformOnly && !user.isPlatformAdmin) {
       throw new ForbiddenException("Diese Aktion ist der Plattformverwaltung vorbehalten");
     }
-    if (required?.length && !required.some((role) => user.roles.includes(role))) {
-      throw new ForbiddenException("Für diese Aktion fehlen die erforderlichen Rechte");
+    if (permission && !user.permissions.includes(permission)) {
+      throw new ForbiddenException(`Für diese Aktion fehlt die Berechtigung "${permissionName(permission)}".`);
     }
     return true;
   }

@@ -2,6 +2,8 @@ import { Module } from "@nestjs/common";
 import { AdminController, AuditController, DashboardController, SearchController } from "./platform.controller";
 import { ModulesController } from "./modules.controller";
 import { TenantsController } from "./tenants.controller";
+import { AuthProvidersController } from "./auth-providers.controller";
+import { AuthProvidersService } from "./auth-providers.service";
 import { PlatformService } from "./platform.service";
 import { ContentModule } from "../content/content.module";
 import { OrdersModule } from "../orders/orders.module";
@@ -18,7 +20,8 @@ import { PeopleModule } from "../people/people.module";
     AuditController,
     ModulesController,
     TenantsController,
+    AuthProvidersController,
   ],
-  providers: [PlatformService],
+  providers: [PlatformService, AuthProvidersService],
 })
 export class PlatformModule {}

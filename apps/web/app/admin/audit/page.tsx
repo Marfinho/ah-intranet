@@ -3,12 +3,12 @@ import { AppShell } from "@/components/app-shell";
 import { FilterBar } from "@/components/filter-bar";
 import { EmptyState, Section } from "@/components/ui";
 import { apiGet } from "@/lib/api";
-import { requireModule, requireRole } from "@/lib/session";
+import { requireModule, requirePermission } from "@/lib/session";
 import { formatDateTime } from "@/lib/utils";
 
 export default async function AuditPage({ searchParams }: { searchParams: { search?: string; action?: string } }) {
   await requireModule("audit");
-  await requireRole("admin");
+  await requirePermission("audit.read");
 
   const query = new URLSearchParams();
   if (searchParams.search) query.set("search", searchParams.search);

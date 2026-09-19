@@ -17,7 +17,7 @@ import {
 } from "class-validator";
 import type { OrderStatus, OrderType } from "@prisma/client";
 import { OrdersService } from "./orders.service";
-import { CurrentUser, Feature, Roles } from "../../core/decorators";
+import { CurrentUser, Feature, Permission } from "../../core/decorators";
 import type { RequestUser } from "../../core/request-user";
 
 class BusinessCardOrderDto {
@@ -126,37 +126,37 @@ export class OrdersController {
   }
 
   @Post("cycles")
-  @Roles("admin", "fachbereichsadmin")
+  @Permission("catalog.manage")
   upsertCycle(@CurrentUser() user: RequestUser, @Body() dto: CycleDto) {
     return this.orders.upsertCycle(user, dto);
   }
 
   @Delete("cycles/:id")
-  @Roles("admin")
+  @Permission("catalog.manage")
   removeCycle(@CurrentUser() user: RequestUser, @Param("id") id: string) {
     return this.orders.removeCycle(user, id);
   }
 
   @Get("catalog/workwear")
-  @Roles("admin", "fachbereichsadmin")
+  @Permission("catalog.manage")
   catalog() {
     return this.orders.catalog();
   }
 
   @Post("catalog/workwear")
-  @Roles("admin", "fachbereichsadmin")
+  @Permission("catalog.manage")
   upsertCatalogItem(@CurrentUser() user: RequestUser, @Body() dto: CatalogItemDto) {
     return this.orders.upsertCatalogItem(user, dto);
   }
 
   @Get("catalog/business-card-fields")
-  @Roles("admin", "fachbereichsadmin")
+  @Permission("catalog.manage")
   fieldDefinitions() {
     return this.orders.fieldDefinitions();
   }
 
   @Post("catalog/business-card-fields")
-  @Roles("admin", "fachbereichsadmin")
+  @Permission("catalog.manage")
   upsertFieldDefinition(@CurrentUser() user: RequestUser, @Body() dto: FieldDefinitionDto) {
     return this.orders.upsertFieldDefinition(user, dto);
   }
@@ -186,13 +186,13 @@ export class ApprovalsController {
   constructor(private readonly orders: OrdersService) {}
 
   @Get()
-  @Roles("admin", "fachbereichsadmin")
+  @Permission("orders.approve")
   list(@CurrentUser() user: RequestUser, @Query("status") status?: string, @Query("search") search?: string) {
     return this.orders.approvals(user, { status, search });
   }
 
   @Post("bulk/:type")
-  @Roles("admin", "fachbereichsadmin")
+  @Permission("orders.bulk")
   bulk(@CurrentUser() user: RequestUser, @Param("type") type: OrderType) {
     return this.orders.bulkOrder(user, type);
   }

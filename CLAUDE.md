@@ -62,8 +62,25 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
   wirken ohne Migration in API und Oberfläche – und gelten für jedes Haus gleich.
 - **Serverseitige Durchsetzung.** Rollen kommen aus dem JWT, nie aus
   Anfragedaten. Prüfungen im Browser sind Komfort, nicht Sicherheit.
-- **Guards in fester Reihenfolge:** Authentifizierung → Rollen →
+- **Guards in fester Reihenfolge:** Authentifizierung → Recht →
   Modulaktivierung. Ein abgeschaltetes Modul antwortet mit 404, nicht 403.
+- **Nur Rechte schützen, nie Rollenschlüssel.** Der Code prüft ausschließlich
+  `@Permission(...)` bzw. `can(user, …)`. Ein Rollenschlüssel im Code wäre genau
+  die Sperre, die eigene Rollen des Hauses aussperrt – sie kämen an ihr nicht
+  vorbei. Eine Route ohne Recht steht jedem angemeldeten Konto offen; das ist
+  eine Aussage, keine Lücke. Ein Unit-Test hält Code und Registry zusammen:
+  kein unbekannter Rechteschlüssel, kein Recht ohne prüfende Stelle, keine
+  Rollenschranke.
+- **Rechte gehören dem Code, Rollen dem Haus.** Der Rechtekatalog steht in
+  `rbac.ts` und wächst nur mit neuen Funktionen. Rollen sind Daten: jedes Haus
+  legt eigene an, benennt sie, vergibt Rechte und eine Rangfolge. Die vier
+  Rollen der Grundausstattung sind änderbar, aber nicht löschbar. Entzogene
+  Rechte greifen sofort – die Sitzungen der betroffenen Konten enden beim
+  Speichern.
+- **Aussperrsperre als Invariante, nicht als Sonderfall.** Nach jeder Änderung
+  an Rollen wird in derselben Transaktion geprüft, ob noch ein **aktives Konto**
+  `roles.manage` und `users.manage` trägt. Nein heißt Rückabwicklung. Ein Recht
+  in einer leeren Rolle rettet niemanden.
 - **Zielgruppen als flache Scope-Tokens** (`location:HB`, `department:SRV`)
   mit GIN-Index statt Join-Ketten.
 - **Ehrlichkeit über erfundene Funktionalität.** Wo eine Spezifikation fehlt
@@ -72,11 +89,24 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
 
 ## Stand der Module
 
-19 Fachmodule, einzeln abschaltbar. Jedes trägt einen Reifegrad: `stabil` oder
+22 Fachmodule, einzeln abschaltbar. Jedes trägt einen Reifegrad: `stabil` oder
 `beta`. Ein Beta-Modul ist aus und darf **nur von der Plattformverwaltung**
 eingeschaltet werden – ein Haus soll sich unfertige Software nicht selbst
 zuschalten – und trägt in der Oberfläche ein sichtbares Kennzeichen. Der Weg zum
 Erproben steht in [`docs/entwicklung.md`](docs/entwicklung.md).
+
+**Neu und in Erprobung:** Schichtplan mit Diensttausch, Fundsachen & Schlüssel,
+Essensbestellung. Alle drei sind `beta` – aus ab Werk, einschaltbar nur durch
+die Plattformverwaltung. Drei Regeln darin sind bewusst hart:
+
+- Ein **Diensttausch** braucht zwei Zustimmungen: die der angefragten Person und
+  die Freigabe. Eine einzige würde jemandem eine Schicht aufdrücken oder die
+  Besetzung an der Leitung vorbei ändern.
+- Eine **Übergabe** geht an ein Konto des Hauses _oder_ an einen freien Namen –
+  eine Kundin, die ihr Handy abholt, hat kein Konto. Ohne den zweiten Weg würde
+  die Übergabe gar nicht erst festgehalten.
+- Der **Bestellschluss** wird serverseitig geprüft, nicht nur angezeigt. Wer
+  nach der Abholfahrt bestellt, bekommt nichts.
 
 **Entfernt:** Schnittstellen zu Fremdsystemen, Fahrzeugbestand und Fuhrpark –
 samt Oberflächen, API-Modulen, Datenmodellen und Tabellen. AHOI betrachtet den
@@ -114,8 +144,26 @@ Erfolg des Restores.
 - Kommentare erklären das **Warum**, nicht das Was.
 - Serverseitige Validierung mit `class-validator`, `forbidNonWhitelisted` aktiv.
 - Jede fachlich relevante Aktion landet im Audit-Log.
+- Regeln, die sich vollständig aus ihren Eingaben ergeben, gehören in eine reine
+  Funktion mit Test (`modules/alltag/regeln.ts`) – zwischen Datenbankabfragen
+  versteckt sind sie nur mit laufender Datenbank prüfbar und verrutschen still.
 - Geheimnisse gehören nie in die Antwort der API und nie unverschlüsselt in die
   Datenbank.
+
+## Anmeldung
+
+- **Passwort ist der Grundweg** und nicht abschaltbar: ein Haus soll ohne
+  IT-Termin starten können, und der Zugang vom Telefon in der Halle darf nicht
+  an der Domäne des Kunden hängen.
+- Zusätzliche Anmeldearten je Haus in `TenantAuthProvider`, Katalog in
+  `packages/shared/src/types.ts` (`AUTH_PROVIDER_DEFINITIONS`).
+- **Entra ID ist vorbereitet, nicht in Betrieb.** Zugangsdaten lassen sich
+  hinterlegen, freischalten nicht – solange der Austausch fehlt, wäre ein Knopf
+  im Anmeldeformular eine Lüge. Der Schalter weist das mit Begründung ab.
+- Geheimnisse verschlüsselt (`core/geheimnis.ts`, AES-256-GCM, `SECRET_KEY`).
+  Ohne Schlüssel wird nichts gespeichert – lieber eine Absage als Klartext.
+- **Kerberos/SPNEGO bleibt draußen:** nur auf domänenbeigetretenen Rechnern,
+  kein zweiter Faktor, je Haus eigene Einrichtung.
 
 ## Datenschutz
 

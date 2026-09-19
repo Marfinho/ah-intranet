@@ -5,7 +5,7 @@ import { PrismaService } from "../../core/prisma.service";
 import { AuditService } from "../../core/audit.service";
 import { NotificationsService } from "../../core/notifications.service";
 import { displayName, toIso, workingDaysBetween } from "../../core/mappers";
-import { hasRole, isManaging, type RequestUser } from "../../core/request-user";
+import { can, type RequestUser } from "../../core/request-user";
 import { PeopleService } from "./people.service";
 
 const absenceInclude = {
@@ -30,17 +30,19 @@ export class AbsencesService {
     private readonly people: PeopleService,
   ) {}
 
-  /** Eigene Anträge, plus die des Teams für Führungskräfte und Admins. */
+  /**
+   * Eigene Anträge, plus die des Teams für alle mit Freigaberecht.
+   *
+   * Zwei Rechte, weil es zwei Fälle sind: die Führungskraft entscheidet über
+   * ihr Team, die Verwaltung sieht das ganze Haus.
+   */
   async list(user: RequestUser, filter: { scope?: "mine" | "team"; status?: string } = {}) {
-    const canSeeTeam = isManaging(user) || hasRole(user, "fuehrungskraft");
+    const darfAlle = can(user, "absences.viewAll");
+    const canSeeTeam = darfAlle || can(user, "absences.approve");
     const scope = filter.scope ?? "mine";
 
     const where: Prisma.AbsenceWhereInput = {
-      ...(scope === "team" && canSeeTeam
-        ? isManaging(user)
-          ? {}
-          : { user: { managerId: user.id } }
-        : { userId: user.id }),
+      ...(scope === "team" && canSeeTeam ? (darfAlle ? {} : { user: { managerId: user.id } }) : { userId: user.id }),
       ...(filter.status && filter.status !== "all" ? { status: filter.status as AbsenceStatus } : {}),
     };
 
@@ -154,7 +156,7 @@ export class AbsencesService {
     }
 
     const approvers = await this.people.approversFor(absence.userId);
-    if (!isManaging(user) && !approvers.includes(user.id)) {
+    if (!can(user, "absences.viewAll") && !approvers.includes(user.id)) {
       throw new ForbiddenException("Sie sind für diesen Antrag nicht freigabeberechtigt.");
     }
 
@@ -192,7 +194,7 @@ export class AbsencesService {
     if (!absence) {
       throw new NotFoundException("Antrag nicht gefunden");
     }
-    if (absence.userId !== user.id && !isManaging(user)) {
+    if (absence.userId !== user.id && !can(user, "absences.viewAll")) {
       throw new ForbiddenException("Nur die antragstellende Person kann stornieren.");
     }
     if (absence.status === "cancelled") {

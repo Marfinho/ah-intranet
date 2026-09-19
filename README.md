@@ -172,14 +172,49 @@ Verarbeitungsverzeichnis, Mitbestimmung nach § 87 BetrVG und die offenen Punkte
 
 ## Rollen und Rechte
 
-Vier Rollen mit aufsteigendem Rang: `mitarbeiter`, `fuehrungskraft`,
-`fachbereichsadmin`, `admin`. Rollen tragen feingranulare Berechtigungen, die im
-Adminbereich pflegbar sind. Die Rollenprüfung erfolgt serverseitig aus dem JWT –
-nicht aus Anfragedaten.
+**Rechte gehören dem Code, Rollen dem Haus.** Der Katalog der 21 Berechtigungen
+steht in `packages/shared/src/rbac.ts`; jede entspricht einer Prüfung im Code
+und wächst nur mit neuen Funktionen. Geprüft wird ausschließlich das Recht,
+serverseitig aus dem JWT – nie ein Rollenschlüssel. Ein Rollenschlüssel im Code
+wäre genau die Sperre, an der eigene Rollen eines Hauses scheitern.
+
+**Rollen sind Daten.** Unter _Administration → Rollen & Rechte_ legt ein Haus
+eigene Rollen an: Name, Beschreibung, Rangfolge, Rechte anklicken. Die vier
+Rollen der Grundausstattung (`mitarbeiter`, `fuehrungskraft`,
+`fachbereichsadmin`, `admin`) lassen sich in allem ändern außer im Löschen;
+eigene Rollen werden gelöscht, sobald kein Konto sie mehr trägt.
+
+Wird einer Rolle ein Recht entzogen, **enden die Sitzungen** der betroffenen
+Konten sofort. Nach jeder Änderung prüft dieselbe Transaktion, ob noch ein
+aktives Konto `roles.manage` und `users.manage` trägt – sonst wird die Änderung
+zurückgerollt. Ein Recht in einer leeren Rolle zählt dabei nicht.
 
 **Zielgruppen** werden als flache Tokens abgebildet (`global`, `location:HB`,
 `department:SRV`, `specialty:EMOB`). Eine einzige Array-Überlappungsabfrage auf
 einem GIN-Index ersetzt mehrere Joins; Benutzer tragen ihre Tokens am Datensatz.
+
+## Anmeldung
+
+**Passwort ist der Grundweg** und nicht abschaltbar. Jedes Haus startet damit
+ohne Vorbedingung, und der Zugang funktioniert auf jedem Gerät – auch vom
+privaten Telefon in der Halle.
+
+Unter _Administration → Anmeldung_ hinterlegt ein Haus **zusätzliche**
+Anmeldearten. Vorbereitet ist **Microsoft Entra ID** (OpenID Connect): auf
+Entra-beigetretenen Rechnern läuft die Anmeldung ohne Eingabe durch, sonst über
+das Microsoft-Anmeldefenster.
+
+**Ehrlich benannt:** Der Austausch mit Entra ist in dieser Fassung _nicht
+gebaut_. Die Zugangsdaten lassen sich hinterlegen – der Clientschlüssel
+verschlüsselt (AES-256-GCM, Schlüssel aus `SECRET_KEY`) und ohne Rückgabe durch
+die API –, freischalten lässt sich die Anmeldeart aber nicht. Ein Knopf im
+Anmeldeformular, der ins Leere führt, wäre schlimmer als keiner. Gebaut wird
+der Austausch, wenn das erste Haus danach fragt.
+
+**Kerberos/SPNEGO bleibt draußen.** Es funktioniert nur auf domänenbeigetretenen
+Rechnern, deckt den Monteur mit dem eigenen Telefon also gerade nicht ab, kennt
+protokollbedingt keinen zweiten Faktor und braucht je Haus Dienstkonto, SPN und
+Browser-Richtlinie.
 
 ## Sicherheit
 
@@ -187,7 +222,7 @@ einem GIN-Index ersetzt mehrere Joins; Benutzer tragen ihre Tokens am Datensatz.
   unbekanntem Benutzernamen gegen einen Dummy-Hash, damit die Antwortzeit keine
   Konten verrät.
 - JWT im httpOnly-Cookie, `sameSite=lax`, `secure` in Produktion.
-- Global aktive Guards: Authentifizierung → Rollen → Modulaktivierung.
+- Global aktive Guards: Authentifizierung → Recht → Modulaktivierung.
 - CORS strikt auf `FRONTEND_URL` beschränkt, Cookies nur dorthin.
 - Eingaben werden serverseitig validiert (`class-validator`,
   `forbidNonWhitelisted`); die Prüfung im Browser ist reiner Komfort.

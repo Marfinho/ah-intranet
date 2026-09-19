@@ -6,7 +6,7 @@ import { requireTenantId } from "../../core/tenant-context";
 import { AuditService } from "../../core/audit.service";
 import { NotificationsService } from "../../core/notifications.service";
 import { displayName, toIso } from "../../core/mappers";
-import { isManaging, type RequestUser } from "../../core/request-user";
+import { can, type RequestUser } from "../../core/request-user";
 
 const templateInclude = {
   steps: { orderBy: { sortOrder: "asc" } },
@@ -30,12 +30,12 @@ export class OnboardingService {
   async overview(user: RequestUser) {
     const [templates, assignments] = await Promise.all([
       this.prisma.onboardingTemplate.findMany({
-        where: isManaging(user) ? {} : { isActive: true },
+        where: can(user, "onboarding.manage") ? {} : { isActive: true },
         include: templateInclude,
         orderBy: { name: "asc" },
       }),
       this.prisma.onboardingAssignment.findMany({
-        where: isManaging(user) ? {} : { userId: user.id },
+        where: can(user, "onboarding.manage") ? {} : { userId: user.id },
         include: assignmentInclude,
         orderBy: { startDate: "desc" },
       }),
@@ -44,7 +44,7 @@ export class OnboardingService {
     return {
       templates: templates.map((template) => this.toTemplate(template)),
       assignments: assignments.map((assignment) => this.toAssignment(assignment)),
-      canManage: isManaging(user),
+      canManage: can(user, "onboarding.manage"),
     };
   }
 
@@ -156,7 +156,7 @@ export class OnboardingService {
     if (!item) {
       throw new NotFoundException("Checklistenpunkt nicht gefunden");
     }
-    if (item.assignment.userId !== user.id && !isManaging(user)) {
+    if (item.assignment.userId !== user.id && !can(user, "onboarding.manage")) {
       throw new ForbiddenException("Dieser Einarbeitungsplan gehört zu einer anderen Person.");
     }
 

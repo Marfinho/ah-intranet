@@ -2,16 +2,14 @@ import type { ModuleStage } from "./modules";
 
 /** Gemeinsame Vertragstypen zwischen API und Frontend. */
 
-export type AppRole = "mitarbeiter" | "fuehrungskraft" | "fachbereichsadmin" | "admin";
-
-export const APP_ROLES: AppRole[] = ["mitarbeiter", "fuehrungskraft", "fachbereichsadmin", "admin"];
-
-export const ROLE_LABELS: Record<AppRole, string> = {
-  mitarbeiter: "Mitarbeitende",
-  fuehrungskraft: "Führungskraft",
-  fachbereichsadmin: "Fachbereichsadmin",
-  admin: "Administration",
-};
+/**
+ * Schlüssel einer Rolle.
+ *
+ * Bewusst kein fester Aufzählungstyp: Rollen sind Daten des Hauses, nicht des
+ * Codes. Die Grundausstattung steht in `ROLE_DEFINITIONS`, jedes Haus kann
+ * eigene Rollen anlegen. Was der Code prüft, sind Rechte - nie Rollenschlüssel.
+ */
+export type AppRole = string;
 
 /**
  * Zielgruppen werden als flache Tokens abgebildet: `global`, `location:<code>`,
@@ -59,6 +57,8 @@ export interface SessionUser {
   email?: string | null;
   role: AppRole;
   roles: AppRole[];
+  /** Klartextnamen der Rollen, höchster Rang zuerst - Rollen sind Hausdaten. */
+  roleLabels: string[];
   jobTitle?: string | null;
   location?: string | null;
   department?: string | null;
@@ -277,7 +277,10 @@ export interface EmployeeDirectoryEntry {
   username: string;
   displayName: string;
   jobTitle: string;
-  role: AppRole;
+  /** Klartextname der höchsten Rolle - zur Anzeige. */
+  role: string;
+  /** Schlüssel aller Rollen - für Auswahlfelder. */
+  roleKeys: AppRole[];
   location?: string | null;
   department?: string | null;
   specialtyArea?: string | null;
@@ -300,8 +303,12 @@ export interface RoleSummary {
   key: AppRole;
   name: string;
   description: string;
+  /** Höherer Rang gewinnt, wenn eine Person mehrere Rollen hat. */
+  rank: number;
   permissions: string[];
   userCount: number;
+  /** Rollen der Grundausstattung lassen sich ändern, aber nicht löschen. */
+  isSystem: boolean;
 }
 
 export interface PermissionSummary {
@@ -309,6 +316,8 @@ export interface PermissionSummary {
   key: string;
   name: string;
   description: string;
+  /** Überschrift, unter der das Recht in der Auswahl steht. */
+  bereich: string;
 }
 
 /* ------------------------------------------------------------ Prozesse */
@@ -514,4 +523,188 @@ export interface Paginated<T> {
   total: number;
   page: number;
   pageSize: number;
+}
+
+/* ------------------------------------------------------- Anmeldeverfahren */
+
+/**
+ * Zusätzliche Anmeldeart eines Hauses. Das Passwort ist immer da und steht
+ * deshalb nicht in dieser Liste.
+ */
+export type AuthProviderKind = "entra";
+
+export interface AuthProviderSummary {
+  id: string;
+  kind: AuthProviderKind;
+  label: string;
+  /** Verzeichnis beim Anbieter - bei Entra die Verzeichnis-ID des Hauses. */
+  directory: string;
+  clientId: string;
+  /** Ob ein Clientschlüssel hinterlegt ist. Der Schlüssel selbst verlässt die API nie. */
+  hasSecret: boolean;
+  isActive: boolean;
+  updatedAt: string;
+}
+
+/** Beschreibung einer Anmeldeart für die Verwaltungsoberfläche. */
+export interface AuthProviderDefinition {
+  kind: AuthProviderKind;
+  name: string;
+  description: string;
+  /**
+   * Ob die Anmeldeart in dieser Fassung tatsächlich benutzt werden kann.
+   * Ist sie es nicht, lässt sie sich hinterlegen, aber nicht einschalten.
+   */
+  inBetrieb: boolean;
+  /** Was das Haus bereitstellen muss, bevor es losgeht. */
+  voraussetzungen: string[];
+}
+
+export const AUTH_PROVIDER_DEFINITIONS: readonly AuthProviderDefinition[] = [
+  {
+    kind: "entra",
+    name: "Microsoft Entra ID",
+    description:
+      "Anmeldung mit dem Firmenkonto über OpenID Connect. Auf Entra-beigetretenen Rechnern läuft sie ohne Eingabe " +
+      "durch, auf allen anderen Geräten über das Microsoft-Anmeldefenster.",
+    inBetrieb: false,
+    voraussetzungen: [
+      "Verzeichnis-ID des Hauses aus dem Entra-Portal",
+      "App-Registrierung mit Umleitungs-URI auf diese Installation",
+      "Clientschlüssel der App-Registrierung",
+      "Zuordnung der Konten: die Kennung im Intranet muss zum Konto im Verzeichnis passen",
+    ],
+  },
+];
+
+export function getAuthProvider(kind: string): AuthProviderDefinition | undefined {
+  return AUTH_PROVIDER_DEFINITIONS.find((eintrag) => eintrag.kind === kind);
+}
+
+/* ------------------------------------------------------------ Schichtplan */
+
+export type ShiftSwapStatus = "offen" | "angenommen" | "freigegeben" | "abgelehnt" | "zurueckgezogen";
+
+export const SHIFT_SWAP_LABELS: Record<ShiftSwapStatus, string> = {
+  offen: "Wartet auf Antwort",
+  angenommen: "Wartet auf Freigabe",
+  freigegeben: "Getauscht",
+  abgelehnt: "Abgelehnt",
+  zurueckgezogen: "Zurückgezogen",
+};
+
+export interface ShiftItem {
+  id: string;
+  label: string;
+  startsAt: string;
+  endsAt: string;
+  location?: string | null;
+  department?: string | null;
+  assignee?: string | null;
+  assigneeUsername?: string | null;
+  note?: string | null;
+  /** Ob die angemeldete Person selbst eingeteilt ist. */
+  mine: boolean;
+  /** Ein laufender Tauschvorgang blockiert weitere Anfragen zur selben Schicht. */
+  openSwap: boolean;
+}
+
+export interface ShiftSwapItem {
+  id: string;
+  status: ShiftSwapStatus;
+  shift: { id: string; label: string; startsAt: string; endsAt: string };
+  requester: string;
+  requesterUsername: string;
+  target: string;
+  targetUsername: string;
+  note?: string | null;
+  decidedBy?: string | null;
+  decisionNote?: string | null;
+  createdAt: string;
+  /** Was die angemeldete Person hier tun kann. */
+  canRespond: boolean;
+  canDecide: boolean;
+  canWithdraw: boolean;
+}
+
+/* ------------------------------------------------- Fundsachen und Schlüssel */
+
+export type CustodyKind = "fundsache" | "schluessel";
+export type CustodyStatus = "verwahrt" | "ausgegeben" | "abgeholt" | "entsorgt";
+export type CustodyEventKind = "aufgenommen" | "ausgegeben" | "zurueckgenommen" | "abgeholt" | "entsorgt";
+
+export const CUSTODY_KIND_LABELS: Record<CustodyKind, string> = {
+  fundsache: "Fundsache",
+  schluessel: "Schlüssel",
+};
+
+export const CUSTODY_STATUS_LABELS: Record<CustodyStatus, string> = {
+  verwahrt: "Verwahrt",
+  ausgegeben: "Ausgegeben",
+  abgeholt: "Abgeholt",
+  entsorgt: "Entsorgt",
+};
+
+export const CUSTODY_EVENT_LABELS: Record<CustodyEventKind, string> = {
+  aufgenommen: "Aufgenommen",
+  ausgegeben: "Ausgegeben",
+  zurueckgenommen: "Zurückgenommen",
+  abgeholt: "Abgeholt",
+  entsorgt: "Entsorgt",
+};
+
+export interface CustodyEventItem {
+  id: string;
+  kind: CustodyEventKind;
+  person?: string | null;
+  note?: string | null;
+  actor: string;
+  createdAt: string;
+}
+
+export interface CustodyItemSummary {
+  id: string;
+  kind: CustodyKind;
+  title: string;
+  description?: string | null;
+  storagePlace?: string | null;
+  location?: string | null;
+  status: CustodyStatus;
+  holder?: string | null;
+  foundAt?: string | null;
+  foundPlace?: string | null;
+  createdAt: string;
+  events: CustodyEventItem[];
+}
+
+/* --------------------------------------------------------- Essensbestellung */
+
+export interface MealOptionItem {
+  id: string;
+  name: string;
+  description?: string | null;
+  priceCents: number;
+  /** Wie oft diese Wahl im Haus bestellt wurde. */
+  count: number;
+}
+
+export interface MealOfferItem {
+  id: string;
+  date: string;
+  provider: string;
+  orderDeadline: string;
+  location?: string | null;
+  note?: string | null;
+  options: MealOptionItem[];
+  /** Ob der Stichtag schon vorbei ist. */
+  closed: boolean;
+  /** Die eigene Bestellung, falls vorhanden. */
+  myOrder?: { id: string; optionId: string; quantity: number; note?: string | null } | null;
+}
+
+/** Sammelliste für die Abholung: je Wahl die Menge und die Namen dahinter. */
+export interface MealRoundup {
+  offer: { id: string; date: string; provider: string; orderDeadline: string; location?: string | null };
+  lines: { option: string; priceCents: number; quantity: number; people: string[] }[];
+  totalCents: number;
 }

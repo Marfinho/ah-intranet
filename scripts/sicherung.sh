@@ -9,10 +9,11 @@
 #
 # Erwartet DATABASE_URL in der Umgebung oder in apps/api/.env.
 #
-# WICHTIG: Ein Dump allein genügt nicht. Die Zugangsdaten zu Fremdsystemen sind
-# mit INTEGRATION_SECRET_KEY verschlüsselt; ohne diesen Schlüssel sind sie nach
-# einer Wiederherstellung unlesbar. Der Schlüssel gehört getrennt gesichert -
-# getrennt deshalb, weil ein gestohlenes Backup sonst alles enthält.
+# WICHTIG: Ein Dump allein genügt nicht. Hinterlegte Geheimnisse - etwa der
+# Clientschlüssel des Identitätsanbieters - sind mit SECRET_KEY verschlüsselt;
+# ohne diesen Schlüssel sind sie nach einer Wiederherstellung unlesbar. Der
+# Schlüssel gehört getrennt gesichert - getrennt deshalb, weil ein gestohlenes
+# Backup sonst alles enthält.
 
 set -euo pipefail
 

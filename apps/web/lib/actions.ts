@@ -485,6 +485,47 @@ export async function setRolePermissionsAction(roleId: string, permissions: stri
   return run(() => apiSend("PATCH", `/roles/${roleId}/permissions`, { permissions }), ["/admin/rollen"]);
 }
 
+export async function saveAuthProviderAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const payload = {
+    kind: String(formData.get("kind") ?? "entra"),
+    label: String(formData.get("label") ?? ""),
+    directory: String(formData.get("directory") ?? ""),
+    clientId: String(formData.get("clientId") ?? ""),
+    // Leeres Feld heißt: den hinterlegten Schlüssel behalten.
+    clientSecret: String(formData.get("clientSecret") ?? "") || undefined,
+  };
+  return run(() => apiSend("POST", "/anmeldeverfahren", payload), ["/admin/anmeldung"], "Zugangsdaten gespeichert.");
+}
+
+export async function setAuthProviderActiveAction(kind: string, isActive: boolean): Promise<ActionState> {
+  return run(() => apiSend("PATCH", `/anmeldeverfahren/${kind}/aktiv`, { isActive }), ["/admin/anmeldung"]);
+}
+
+export async function removeAuthProviderAction(kind: string): Promise<ActionState> {
+  return run(() => apiSend("DELETE", `/anmeldeverfahren/${kind}`), ["/admin/anmeldung"]);
+}
+
+export async function createRoleAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const payload = {
+    name: String(formData.get("name") ?? ""),
+    description: String(formData.get("description") ?? ""),
+    rank: Number(formData.get("rank") ?? 0),
+    permissions: formData.getAll("permissions").map(String),
+  };
+  return run(() => apiSend("POST", "/roles", payload), ["/admin/rollen", "/admin/benutzer"], "Rolle angelegt.");
+}
+
+export async function updateRoleAction(
+  roleId: string,
+  input: { name?: string; description?: string; rank?: number },
+): Promise<ActionState> {
+  return run(() => apiSend("PATCH", `/roles/${roleId}`, input), ["/admin/rollen", "/admin/benutzer"]);
+}
+
+export async function deleteRoleAction(roleId: string): Promise<ActionState> {
+  return run(() => apiSend("DELETE", `/roles/${roleId}`), ["/admin/rollen", "/admin/benutzer"]);
+}
+
 export async function upsertCycleAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
   const payload = {
     id: String(formData.get("id") ?? "") || undefined,
@@ -588,70 +629,109 @@ export async function deleteQuickLinkAction(id: string): Promise<ActionState> {
   return run(() => apiSend("DELETE", `/quicklinks/${id}`), ["/schnellzugriffe", "/"]);
 }
 
-/* ------------------------------------------------------- Schnittstellen */
+/* ------------------------------------------------------------ Schichtplan */
 
-export async function saveConnectorAction(
-  key: string,
-  _previous: ActionState,
-  formData: FormData,
+export async function createShiftAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const payload = {
+    label: String(formData.get("label") ?? ""),
+    startsAt: new Date(String(formData.get("startsAt") ?? "")).toISOString(),
+    endsAt: new Date(String(formData.get("endsAt") ?? "")).toISOString(),
+    locationId: String(formData.get("locationId") ?? "") || undefined,
+    departmentId: String(formData.get("departmentId") ?? "") || undefined,
+    assigneeId: String(formData.get("assigneeId") ?? "") || undefined,
+    note: String(formData.get("note") ?? "") || undefined,
+  };
+  return run(() => apiSend("POST", "/schichtplan", payload), ["/schichtplan", "/"], "Schicht angelegt.");
+}
+
+export async function deleteShiftAction(id: string): Promise<ActionState> {
+  return run(() => apiSend("DELETE", `/schichtplan/${id}`), ["/schichtplan"]);
+}
+
+export async function requestSwapAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const payload = {
+    shiftId: String(formData.get("shiftId") ?? ""),
+    targetId: String(formData.get("targetId") ?? ""),
+    note: String(formData.get("note") ?? "") || undefined,
+  };
+  return run(() => apiSend("POST", "/diensttausch", payload), ["/schichtplan"], "Anfrage ist raus.");
+}
+
+export async function respondSwapAction(id: string, accept: boolean): Promise<ActionState> {
+  return run(() => apiSend("POST", `/diensttausch/${id}/antwort`, { accept }), ["/schichtplan", "/"]);
+}
+
+export async function decideSwapAction(id: string, approve: boolean, note?: string): Promise<ActionState> {
+  return run(() => apiSend("POST", `/diensttausch/${id}/freigabe`, { approve, note }), ["/schichtplan", "/"]);
+}
+
+export async function withdrawSwapAction(id: string): Promise<ActionState> {
+  return run(() => apiSend("POST", `/diensttausch/${id}/zurueckziehen`), ["/schichtplan"]);
+}
+
+/* --------------------------------------------------- Fundsachen und Schlüssel */
+
+export async function createCustodyAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const foundAt = String(formData.get("foundAt") ?? "");
+  const payload = {
+    kind: String(formData.get("kind") ?? "fundsache"),
+    title: String(formData.get("title") ?? ""),
+    description: String(formData.get("description") ?? "") || undefined,
+    storagePlace: String(formData.get("storagePlace") ?? "") || undefined,
+    locationId: String(formData.get("locationId") ?? "") || undefined,
+    foundAt: foundAt ? new Date(foundAt).toISOString() : undefined,
+    foundPlace: String(formData.get("foundPlace") ?? "") || undefined,
+  };
+  return run(() => apiSend("POST", "/verwahrung", payload), ["/verwahrung"], "Eintrag aufgenommen.");
+}
+
+export async function handOutCustodyAction(
+  id: string,
+  input: { personId?: string; personName?: string; note?: string },
 ): Promise<ActionState> {
-  const settings: Record<string, string> = {};
-  const secrets: Record<string, string> = {};
-
-  for (const [field, value] of formData.entries()) {
-    if (field.startsWith("setting:")) {
-      settings[field.slice(8)] = String(value);
-    } else if (field.startsWith("secret:")) {
-      // Leer gelassene Geheimfelder bleiben unangetastet; nur ausdrückliches
-      // Leeren über das Löschkästchen entfernt einen hinterlegten Wert.
-      const raw = String(value);
-      if (raw.length > 0) {
-        secrets[field.slice(7)] = raw;
-      }
-    } else if (field.startsWith("clear:")) {
-      secrets[field.slice(6)] = "";
-    }
-  }
-
-  return run(
-    () => apiSend("PUT", `/integrations/connectors/${key}`, { settings, secrets }),
-    ["/admin/schnittstellen", `/admin/schnittstellen/${key}`],
-    "Konfiguration gespeichert.",
-  );
+  return run(() => apiSend("POST", `/verwahrung/${id}/ausgabe`, input), ["/verwahrung"]);
 }
 
-export async function checkConnectorAction(key: string): Promise<ActionState> {
-  try {
-    const result = await apiSend<{ ok: boolean; message: string }>("POST", `/integrations/connectors/${key}/check`);
-    revalidatePath("/admin/schnittstellen");
-    revalidatePath(`/admin/schnittstellen/${key}`);
-    return result.ok ? { ok: true, detail: result.message } : { ok: false, message: result.message };
-  } catch (error) {
-    return { ok: false, message: error instanceof ApiError ? error.message : "Verbindungstest fehlgeschlagen." };
-  }
+export async function takeBackCustodyAction(id: string, note?: string): Promise<ActionState> {
+  return run(() => apiSend("POST", `/verwahrung/${id}/ruecknahme`, { note }), ["/verwahrung"]);
 }
 
-export async function runConnectorAction(key: string, capability: string): Promise<ActionState> {
-  try {
-    const result = await apiSend<{ status: string; message?: string }>(
-      "POST",
-      `/integrations/connectors/${key}/run/${capability}`,
-    );
-    revalidatePath("/admin/schnittstellen");
-    revalidatePath(`/admin/schnittstellen/${key}`);
-    revalidatePath("/fahrzeugbestand");
-
-    return result.status === "succeeded"
-      ? { ok: true, detail: result.message ?? "Abgleich abgeschlossen." }
-      : { ok: false, message: result.message ?? "Abgleich fehlgeschlagen." };
-  } catch (error) {
-    return { ok: false, message: error instanceof ApiError ? error.message : "Abgleich fehlgeschlagen." };
-  }
+export async function discardCustodyAction(id: string, note?: string): Promise<ActionState> {
+  return run(() => apiSend("POST", `/verwahrung/${id}/entsorgung`, { note }), ["/verwahrung"]);
 }
 
-export async function setConnectorEnabledAction(key: string, enabled: boolean): Promise<ActionState> {
-  return run(
-    () => apiSend("PUT", `/integrations/connectors/${key}/enabled`, { enabled }),
-    ["/admin/schnittstellen", `/admin/schnittstellen/${key}`],
-  );
+/* ----------------------------------------------------------- Essensbestellung */
+
+export async function createMealOfferAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  // Die Wahlmöglichkeiten kommen als parallele Felder aus dem Formular.
+  const namen = formData.getAll("optionName").map(String);
+  const preise = formData.getAll("optionPrice").map(String);
+  const options = namen
+    .map((name, index) => ({
+      name: name.trim(),
+      priceCents: Math.round(Number(String(preise[index] ?? "0").replace(",", ".")) * 100),
+    }))
+    .filter((option) => option.name.length > 0);
+
+  const payload = {
+    date: new Date(String(formData.get("date") ?? "")).toISOString(),
+    provider: String(formData.get("provider") ?? ""),
+    orderDeadline: new Date(String(formData.get("orderDeadline") ?? "")).toISOString(),
+    locationId: String(formData.get("locationId") ?? "") || undefined,
+    note: String(formData.get("note") ?? "") || undefined,
+    options,
+  };
+  return run(() => apiSend("POST", "/essen/angebote", payload), ["/essen", "/"], "Angebot steht.");
+}
+
+export async function deleteMealOfferAction(id: string): Promise<ActionState> {
+  return run(() => apiSend("DELETE", `/essen/angebote/${id}`), ["/essen"]);
+}
+
+export async function orderMealAction(offerId: string, optionId: string, quantity = 1): Promise<ActionState> {
+  return run(() => apiSend("POST", `/essen/angebote/${offerId}/bestellung`, { optionId, quantity }), ["/essen", "/"]);
+}
+
+export async function cancelMealAction(offerId: string): Promise<ActionState> {
+  return run(() => apiSend("DELETE", `/essen/angebote/${offerId}/bestellung`), ["/essen", "/"]);
 }

@@ -5,13 +5,13 @@ import { FilterBar } from "@/components/filter-bar";
 import { ActionButton } from "@/components/forms";
 import { EmptyState, Section, StatusBadge, statusLabel } from "@/components/ui";
 import { apiGet } from "@/lib/api";
-import { requireModule, requireRole } from "@/lib/session";
+import { requireModule, requirePermission } from "@/lib/session";
 import { bulkOrderAction, orderTransitionAction } from "@/lib/actions";
 import { formatDate } from "@/lib/utils";
 
 export default async function ApprovalsPage({ searchParams }: { searchParams: { status?: string; search?: string } }) {
   await requireModule("approvals");
-  await requireRole("admin", "fachbereichsadmin");
+  await requirePermission("orders.approve");
 
   const query = new URLSearchParams();
   if (searchParams.status) query.set("status", searchParams.status);

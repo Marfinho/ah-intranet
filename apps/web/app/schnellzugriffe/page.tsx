@@ -4,12 +4,12 @@ import { ActionButton } from "@/components/forms";
 import { EmptyState, Section } from "@/components/ui";
 import { QuickLinkComposer } from "./quicklink-composer";
 import { apiGet } from "@/lib/api";
-import { requireModule } from "@/lib/session";
+import { can, requireModule } from "@/lib/session";
 import { deleteQuickLinkAction } from "@/lib/actions";
 
 export default async function QuickLinksPage() {
   const session = await requireModule("quicklinks");
-  const isAdmin = session.roles.includes("admin");
+  const isAdmin = can(session, "quicklinks.manage");
   const links = await apiGet<QuickLink[]>(`/quicklinks${isAdmin ? "?all=true" : ""}`);
 
   return (

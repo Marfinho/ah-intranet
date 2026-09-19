@@ -12,7 +12,7 @@ Erster vollständiger Stand. Lauffähig, aber in keinem Haus im Einsatz.
 
 ### Funktionen
 
-- **19 Fachmodule**, je Haus einzeln ein- und ausschaltbar, jedes mit einem
+- **22 Fachmodule**, je Haus einzeln ein- und ausschaltbar, jedes mit einem
   Reifegrad. Erprobungen schaltet nur die Plattformverwaltung frei und sind in
   der Oberfläche als solche erkennbar. Abhängige Module
   gehen beim Abschalten mit; ein abgeschaltetes Modul verhält sich nach außen,
@@ -23,8 +23,27 @@ Erster vollständiger Stand. Lauffähig, aber in keinem Haus im Einsatz.
 - **Mandantenfähigkeit:** mehrere Autohäuser auf einer Installation mit
   vollständig getrennten Daten. Ein neues Haus entsteht samt Rollen, Rechten und
   erstem Administrationskonto in einem Schritt.
-- **Rollen und Rechte** serverseitig durchgesetzt, vier Rollen mit feingranularen
-  Berechtigungen.
+- **Rollen und Rechte** serverseitig durchgesetzt. 21 Berechtigungen im Code,
+  Rollen als Daten des Hauses: eigene Rollen lassen sich in der Oberfläche
+  anlegen, benennen und mit Rechten versehen. Wird einer Rolle ein Recht
+  entzogen, endet die Sitzung der betroffenen Konten sofort. Eine Änderung, nach
+  der kein aktives Konto mehr an die Rollen- oder Benutzerverwaltung käme, wird
+  zurückgerollt.
+- **Schichtplan mit Diensttausch** (Erprobung): Besetzung je Standort und
+  Abteilung, Doppelbelegungen werden beim Speichern abgewiesen. Ein Tausch
+  braucht die Zustimmung der angefragten Person _und_ die Freigabe der
+  Führungskraft; erst dann wechselt die Besetzung.
+- **Fundsachen & Schlüssel** (Erprobung): Verzeichnis mit Aufnahme, Ausgabe,
+  Rücknahme und Abholung. Jede Bewegung mit handelnder Person und Zeitstempel –
+  der Zustand beantwortet „wer hat den Schlüssel", der Verlauf „wer hatte ihn im
+  März". Empfänger können Konten des Hauses oder freie Namen sein.
+- **Essensbestellung** (Erprobung): Tagesangebot je Standort mit Stichtag,
+  eine Bestellung je Person und Tag, Sammelliste mit Namen und Summe für die
+  Abholung.
+- **Anmeldung:** Passwort als Grundweg, zusätzliche Anmeldearten je Haus
+  hinterlegbar (Microsoft Entra ID vorbereitet). Clientschlüssel verschlüsselt
+  gespeichert und nie von der API zurückgegeben. Der Austausch mit dem Anbieter
+  ist noch nicht gebaut; freischalten lässt sich die Anmeldeart deshalb nicht.
 - **Datenschutz:** Auskunft nach Art. 15 als Datei, Löschung nach Art. 17 als
   Anonymisierung, acht Aufbewahrungsfristen mit nächtlichem Aufräumlauf.
 - **Erscheinungsbild AHOI** aus einer Quelle für Anwendung und Präsentation.

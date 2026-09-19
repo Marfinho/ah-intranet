@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from "@nestjs/common";
 import { Type } from "class-transformer";
 import {
   ArrayNotEmpty,
@@ -20,7 +20,7 @@ import { PeopleService } from "./people.service";
 import { AbsencesService } from "./absences.service";
 import { OnboardingService } from "./onboarding.service";
 import { NotificationsService } from "../../core/notifications.service";
-import { CurrentUser, Feature, Roles } from "../../core/decorators";
+import { CurrentUser, Feature, Permission } from "../../core/decorators";
 import type { RequestUser } from "../../core/request-user";
 
 /* ------------------------------------------------------------------ DTOs */
@@ -44,9 +44,11 @@ class UserBodyDto {
   @IsOptional() @IsString() departmentId?: string;
   @IsOptional() @IsString() specialtyAreaId?: string;
   @IsOptional() @IsString() managerId?: string;
+  // Keine feste Liste: welche Rollen es gibt, weiß nur die Datenbank des
+  // Hauses. Geprüft wird im Dienst gegen die tatsächlich vorhandenen Rollen.
   @IsArray()
   @ArrayNotEmpty()
-  @IsIn(["mitarbeiter", "fuehrungskraft", "fachbereichsadmin", "admin"], { each: true })
+  @IsString({ each: true })
   roles!: AppRole[];
   @IsOptional() @IsArray() @IsString({ each: true }) responsibilities?: string[];
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(60) annualLeaveDays?: number;
@@ -64,10 +66,7 @@ class UserPatchDto {
   @IsOptional() @IsString() departmentId?: string;
   @IsOptional() @IsString() specialtyAreaId?: string;
   @IsOptional() @IsString() managerId?: string;
-  @IsOptional()
-  @IsArray()
-  @IsIn(["mitarbeiter", "fuehrungskraft", "fachbereichsadmin", "admin"], { each: true })
-  roles?: AppRole[];
+  @IsOptional() @IsArray() @IsString({ each: true }) roles?: AppRole[];
   @IsOptional() @IsArray() @IsString({ each: true }) responsibilities?: string[];
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(60) annualLeaveDays?: number;
   @IsOptional() @IsIn(["active", "inactive"]) status?: "active" | "inactive";
@@ -75,6 +74,20 @@ class UserPatchDto {
 
 class RolePermissionsDto {
   @IsArray() @IsString({ each: true }) permissions!: string[];
+}
+
+class RoleCreateDto {
+  @IsString() @MinLength(2) name!: string;
+  @IsString() description!: string;
+  @IsOptional() @IsInt() @Min(0) @Max(99) rank?: number;
+  @IsArray() @IsString({ each: true }) permissions!: string[];
+}
+
+class RoleUpdateDto {
+  @IsOptional() @IsString() @MinLength(2) name?: string;
+  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsInt() @Min(0) @Max(99) rank?: number;
+  @IsOptional() @IsArray() @IsString({ each: true }) permissions?: string[];
 }
 
 class AbsenceDto {
@@ -146,31 +159,31 @@ export class UsersController {
   constructor(private readonly people: PeopleService) {}
 
   @Get()
-  @Roles("admin", "fachbereichsadmin")
+  @Permission("users.read")
   list(@Query("search") search?: string, @Query("status") status?: string) {
     return this.people.listUsers({ search, status });
   }
 
   @Get("organisation")
-  @Roles("admin", "fachbereichsadmin")
+  @Permission("users.read")
   organisation() {
     return this.people.organisation();
   }
 
   @Post()
-  @Roles("admin")
+  @Permission("users.manage")
   create(@CurrentUser() user: RequestUser, @Body() dto: UserBodyDto) {
     return this.people.createUser(user, dto);
   }
 
   @Patch(":id")
-  @Roles("admin")
+  @Permission("users.manage")
   update(@CurrentUser() user: RequestUser, @Param("id") id: string, @Body() dto: UserPatchDto) {
     return this.people.updateUser(user, id, dto);
   }
 
   @Post(":id/reset-password")
-  @Roles("admin")
+  @Permission("users.manage")
   resetPassword(@CurrentUser() user: RequestUser, @Param("id") id: string) {
     return this.people.resetPassword(user, id);
   }
@@ -181,21 +194,39 @@ export class RolesController {
   constructor(private readonly people: PeopleService) {}
 
   @Get()
-  @Roles("admin", "fachbereichsadmin")
+  @Permission("users.read")
   list() {
     return this.people.roles();
   }
 
   @Get("permissions")
-  @Roles("admin")
+  @Permission("roles.manage")
   permissions() {
     return this.people.permissions();
   }
 
   @Patch(":id/permissions")
-  @Roles("admin")
+  @Permission("roles.manage")
   setPermissions(@CurrentUser() user: RequestUser, @Param("id") id: string, @Body() dto: RolePermissionsDto) {
     return this.people.setRolePermissions(user, id, dto.permissions);
+  }
+
+  @Post()
+  @Permission("roles.manage")
+  create(@CurrentUser() user: RequestUser, @Body() dto: RoleCreateDto) {
+    return this.people.createRole(user, dto);
+  }
+
+  @Patch(":id")
+  @Permission("roles.manage")
+  update(@CurrentUser() user: RequestUser, @Param("id") id: string, @Body() dto: RoleUpdateDto) {
+    return this.people.updateRole(user, id, dto);
+  }
+
+  @Delete(":id")
+  @Permission("roles.manage")
+  remove(@CurrentUser() user: RequestUser, @Param("id") id: string) {
+    return this.people.deleteRole(user, id);
   }
 }
 
@@ -220,6 +251,7 @@ export class AbsencesController {
   }
 
   @Post(":id/decision")
+  @Permission("absences.approve")
   decide(@CurrentUser() user: RequestUser, @Param("id") id: string, @Body() dto: DecisionDto) {
     return this.absences.decide(user, id, dto.approve, dto.note);
   }
@@ -241,13 +273,13 @@ export class OnboardingController {
   }
 
   @Post("templates")
-  @Roles("admin", "fachbereichsadmin")
+  @Permission("onboarding.manage")
   upsertTemplate(@CurrentUser() user: RequestUser, @Body() dto: OnboardingTemplateDto) {
     return this.onboarding.upsertTemplate(user, dto);
   }
 
   @Post("assignments")
-  @Roles("admin", "fachbereichsadmin")
+  @Permission("onboarding.manage")
   assign(@CurrentUser() user: RequestUser, @Body() dto: AssignDto) {
     return this.onboarding.assign(user, dto.templateId, dto.userId, dto.startDate);
   }

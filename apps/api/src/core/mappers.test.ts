@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { buildNumber, buildScopes, displayName, primaryRole, scopeLabel, workingDaysBetween } from "./mappers";
+import {
+  buildNumber,
+  buildScopes,
+  displayName,
+  primaryRole,
+  scopeLabel,
+  sortiereRollen,
+  workingDaysBetween,
+} from "./mappers";
 
 /**
  * Diese Funktionen entscheiden über Urlaubskonten, Sichtbarkeit von Inhalten und
@@ -66,14 +74,24 @@ describe("buildScopes", () => {
   });
 });
 
-describe("primaryRole", () => {
-  it("wählt die höchste Rolle nach Rangfolge", () => {
-    expect(primaryRole(["mitarbeiter", "admin", "fuehrungskraft"])).toBe("admin");
-    expect(primaryRole(["mitarbeiter", "fuehrungskraft"])).toBe("fuehrungskraft");
-    expect(primaryRole(["fachbereichsadmin", "mitarbeiter"])).toBe("fachbereichsadmin");
+describe("sortiereRollen", () => {
+  const rolle = (key: string, rank: number) => ({ key, name: key, rank });
+
+  it("sortiert nach Rangfolge, höchste zuerst", () => {
+    const sortiert = sortiereRollen([rolle("mitarbeiter", 0), rolle("admin", 30), rolle("fuehrungskraft", 10)]);
+    expect(sortiert.map((eintrag) => eintrag.key)).toEqual(["admin", "fuehrungskraft", "mitarbeiter"]);
   });
 
-  it("fällt ohne Rollen auf die Standardrolle zurück", () => {
+  it("nimmt bei gleichem Rang den Namen, damit die Reihenfolge stabil bleibt", () => {
+    const sortiert = sortiereRollen([rolle("werkstatt", 5), rolle("disposition", 5)]);
+    expect(sortiert.map((eintrag) => eintrag.key)).toEqual(["disposition", "werkstatt"]);
+  });
+
+  it("kennt eigene Rollen des Hauses, ohne sie im Code zu führen", () => {
+    expect(primaryRole([rolle("mitarbeiter", 0), rolle("werkstattleitung", 25)])).toBe("werkstattleitung");
+  });
+
+  it("fällt ohne Rolle auf Mitarbeitende zurück", () => {
     expect(primaryRole([])).toBe("mitarbeiter");
   });
 });
