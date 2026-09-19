@@ -6,13 +6,20 @@ import { createTicketAction, type ActionState } from "@/lib/actions";
 
 const initialState: ActionState = { ok: true };
 
-export function TicketComposer() {
+export function TicketComposer({ vorgabe }: { vorgabe?: { titel?: string; beschreibung?: string } }) {
   const [state, formAction] = useFormState(createTicketAction, initialState);
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
       <Field label="Betreff *" wide>
-        <input name="title" required minLength={3} className={inputClass} placeholder="Kurz und aussagekräftig" />
+        <input
+          name="title"
+          required
+          minLength={3}
+          defaultValue={vorgabe?.titel}
+          className={inputClass}
+          placeholder="Kurz und aussagekräftig"
+        />
       </Field>
 
       <Field label="Kategorie *">
@@ -21,7 +28,6 @@ export function TicketComposer() {
           <option value="facility">Facility</option>
           <option value="hr">Personal</option>
           <option value="marketing">Marketing</option>
-          <option value="fuhrpark">Fuhrpark</option>
         </select>
       </Field>
 
@@ -34,12 +40,15 @@ export function TicketComposer() {
         </select>
       </Field>
 
-      <Field
-        label="Beschreibung *"
-        wide
-        hint="Was ist passiert, seit wann, welcher Arbeitsplatz oder welches Fahrzeug?"
-      >
-        <textarea name="description" rows={4} required minLength={5} className={inputClass} />
+      <Field label="Beschreibung *" wide hint="Was ist passiert, seit wann, an welchem Arbeitsplatz?">
+        <textarea
+          name="description"
+          rows={4}
+          required
+          minLength={5}
+          defaultValue={vorgabe?.beschreibung}
+          className={inputClass}
+        />
       </Field>
 
       <div className="md:col-span-2">

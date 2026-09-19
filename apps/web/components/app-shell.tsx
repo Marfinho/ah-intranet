@@ -3,6 +3,7 @@ import { Bell, LogOut, UserCircle2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { MODULE_GROUP_LABELS, type ModuleGroup } from "@ah-intranet/shared";
 import { getModules, getUnreadCount, requireSession } from "@/lib/session";
+import { FeedbackButton } from "@/components/feedback-button";
 import { Logo } from "@/components/logo";
 import { logoutAction } from "@/lib/actions";
 import { SideNav, type NavGroup } from "./side-nav";
@@ -32,6 +33,9 @@ export async function AppShell({
       return session.roles.includes("admin") || session.roles.includes("fachbereichsadmin");
     return true;
   });
+
+  // Trägt dieses Haus eine Erprobung? Dann braucht es einen Rückkanal.
+  const inErprobung = modules.some((module) => module.stage === "beta" && module.enabled);
 
   const groups: NavGroup[] = (Object.keys(MODULE_GROUP_LABELS) as ModuleGroup[])
     .map((group) => ({
@@ -69,6 +73,9 @@ export async function AppShell({
 
           <div className="flex flex-wrap items-center gap-3">
             {searchEnabled ? <SearchBox /> : null}
+
+            {/* Nur bei laufender Erprobung: sonst ist der Knopf Beiwerk. */}
+            {inErprobung ? <FeedbackButton /> : null}
 
             <Link
               href="/benachrichtigungen"

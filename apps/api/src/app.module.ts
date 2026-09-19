@@ -6,6 +6,7 @@ import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { CoreModule } from "./core/core.module";
 import { TenantMiddleware } from "./core/tenant.middleware";
+import { RequestLogMiddleware } from "./core/request-log.middleware";
 import { JwtAuthGuard, ModuleEnabledGuard, RolesGuard } from "./core/guards";
 import { AuthModule } from "./modules/auth/auth.module";
 import { PlatformModule } from "./modules/platform/platform.module";
@@ -50,6 +51,9 @@ export class AppModule implements NestModule {
    * auf die Datenbank zu und müssen bereits gefiltert arbeiten.
    */
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(TenantMiddleware).forRoutes("*");
+    // Reihenfolge: Das Protokoll läuft zuerst, damit es auch Anfragen erfasst,
+    // die in der Mandantenauflösung scheitern. Den Mandanten liest es erst beim
+    // Abschluss der Antwort aus, da steht er.
+    consumer.apply(RequestLogMiddleware, TenantMiddleware).forRoutes("*");
   }
 }

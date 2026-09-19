@@ -144,6 +144,10 @@ Offen vor dem Produktivbetrieb:
 - **Abzug der Sicherungen auf ein zweites System.** Die Skripte sichern lokal;
   das schützt gegen Bedienfehler, nicht gegen Ausfall der Maschine. Der Weg
   dorthin hängt von der Umgebung des Hauses ab.
-- **Zentrale Protokollauswertung.** Die Anwendung schreibt nach stdout.
+- **Zentrale Protokollauswertung.** Die Anwendung schreibt je Anfrage eine
+  JSON-Zeile mit Haus, Route, Status und Dauer auf die Standardausgabe; das
+  Einsammeln und Durchsuchen ist Sache der Umgebung.
+- **Eine laufende Installation.** Entscheidungsgrundlage in
+  [`docs/ausrollen.md`](docs/ausrollen.md).
 - **Rohabfragen:** `$queryRaw` umgeht die Mandantentrennung (siehe oben).
 - **Auftragsverarbeitungsvertrag** zwischen Betreiber und Haus (Vorlage fehlt).

@@ -29,12 +29,23 @@ Erster vollständiger Stand. Lauffähig, aber in keinem Haus im Einsatz.
   Anonymisierung, acht Aufbewahrungsfristen mit nächtlichem Aufräumlauf.
 - **Erscheinungsbild AHOI** aus einer Quelle für Anwendung und Präsentation.
 
+### Erprobung neuer Funktionen
+
+- Neue Module tragen den Reifegrad `beta`: aus, nur von der Plattformverwaltung
+  freischaltbar, in der Oberfläche als Erprobung erkennbar.
+- **Rückmeldeknopf**, solange ein Haus eine Erprobung eingeschaltet hat. Er legt
+  eine Serviceanfrage an und trägt die Seite gleich ein, aus der er gedrückt
+  wurde.
+- **Kunstfiguren für Erprobungsumgebungen:** ein Lauf, der eine Kopie der
+  Produktion von Personenbezug befreit, ohne sie unbedienbar zu machen.
+
 ### Betrieb
 
 - Sicherung, Wiederherstellung und ein Probelauf, der die zurückgespielte
   Sicherung gegen das Original zählt statt nur „erfolgreich" zu melden.
-- Prüfpipeline bei jedem Push: Formatierung, Lint, Typen, 115 Unit-Tests,
+- Prüfpipeline bei jedem Push: Formatierung, Lint, Typen, 83 Unit-Tests,
   Migrationen gegen eine leere Datenbank, Probelauf der Wiederherstellung.
+- Je Anfrage eine auswertbare Protokollzeile mit Haus, Route, Status und Dauer.
 
 ### Bewusst nicht enthalten
 

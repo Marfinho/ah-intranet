@@ -115,8 +115,8 @@ Zwei Dinge, die dabei ehrlich benannt gehören:
 
 ## Was noch fehlt
 
-- Eine laufende Installation. Ohne sie bleibt alles oberhalb Theorie.
-- Der Rückkanal aus der Anwendung: ein Knopf, der aus einer Erprobung heraus
-  eine Serviceanfrage anlegt.
-- Fehler- und Protokollauswertung. Ohne sie fällt ein Fehler erst auf, wenn
-  jemand anruft.
+- Eine laufende Installation. Ohne sie bleibt alles oberhalb Theorie – die
+  Entscheidungsgrundlage steht in [`ausrollen.md`](ausrollen.md).
+- Das Einsammeln der Protokollzeilen. Die Anwendung schreibt sie auswertbar auf
+  die Standardausgabe; wer sie aufhebt und durchsuchbar macht, hängt davon ab,
+  wo AHOI läuft.

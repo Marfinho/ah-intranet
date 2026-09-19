@@ -95,7 +95,6 @@ enum TicketCategory {
   facility
   hr
   marketing
-  fuhrpark
 }
 
 enum TicketStatus {

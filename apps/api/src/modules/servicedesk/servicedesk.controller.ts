@@ -8,7 +8,7 @@ import type { RequestUser } from "../../core/request-user";
 class TicketDto {
   @IsString() @MinLength(3) title!: string;
   @IsString() @MinLength(5) description!: string;
-  @IsIn(["it", "facility", "hr", "marketing", "fuhrpark"]) category!: TicketCategory;
+  @IsIn(["it", "facility", "hr", "marketing"]) category!: TicketCategory;
   @IsIn(["niedrig", "normal", "hoch", "kritisch"]) priority!: Priority;
 }
 

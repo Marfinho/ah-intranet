@@ -17,13 +17,12 @@ const CATEGORIES = [
   { value: "facility", label: "Facility" },
   { value: "hr", label: "Personal" },
   { value: "marketing", label: "Marketing" },
-  { value: "fuhrpark", label: "Fuhrpark" },
 ];
 
 export default async function TicketsPage({
   searchParams,
 }: {
-  searchParams: { scope?: string; status?: string; category?: string; search?: string };
+  searchParams: { scope?: string; status?: string; category?: string; search?: string; von?: string };
 }) {
   const session = await requireModule("tickets");
 
@@ -45,7 +44,16 @@ export default async function TicketsPage({
   return (
     <AppShell title="Serviceanfragen" subtitle="Interne Tickets an IT, Facility, Personal, Marketing und Fuhrpark">
       <Section title="Neue Anfrage" subtitle="Beschreiben Sie Ihr Anliegen möglichst konkret">
-        <TicketComposer />
+        <TicketComposer
+          vorgabe={
+            searchParams.von
+              ? {
+                  titel: "Rückmeldung aus der Erprobung",
+                  beschreibung: `Seite: ${searchParams.von}\n\nWas ist passiert?\n\nWas hatten Sie erwartet?\n`,
+                }
+              : undefined
+          }
+        />
       </Section>
 
       <Section title={`${data.items.length} Tickets`} subtitle="Nach Status, Kategorie und Stichwort filtern">

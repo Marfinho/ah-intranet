@@ -368,20 +368,6 @@ export async function cancelRoomBookingAction(id: string): Promise<ActionState> 
 
 /* ----------------------------------------------------------- Fuhrpark */
 
-export async function bookVehicleAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
-  const payload = {
-    vehicleId: String(formData.get("vehicleId") ?? ""),
-    purpose: String(formData.get("purpose") ?? ""),
-    startsAt: new Date(String(formData.get("startsAt") ?? "")).toISOString(),
-    endsAt: new Date(String(formData.get("endsAt") ?? "")).toISOString(),
-  };
-  return run(() => apiSend("POST", "/vehicles/bookings", payload), ["/fuhrpark"], "Fahrzeug reserviert.");
-}
-
-export async function setVehicleBookingStatusAction(id: string, status: string): Promise<ActionState> {
-  return run(() => apiSend("PATCH", `/vehicles/bookings/${id}`, { status }), ["/fuhrpark"]);
-}
-
 /* -------------------------------------------------------------- Ideen */
 
 export async function createIdeaAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
