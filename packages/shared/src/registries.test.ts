@@ -4,9 +4,12 @@ import {
   CORE_MODULE_KEYS,
   MODULE_DEFINITIONS,
   MODULE_GROUP_LABELS,
+  MODULE_STAGES,
+  betaModules,
   getConnector,
   getDependentModules,
   getModule,
+  isBeta,
   isConnectorKey,
   isModuleKey,
   isRunnable,
@@ -160,5 +163,30 @@ describe("Konnektorregistry", () => {
   it("weist unbekannte Schlüssel ab", () => {
     expect(isConnectorKey("gibtesnicht")).toBe(false);
     expect(getConnector("gibtesnicht")).toBeUndefined();
+  });
+});
+
+describe("Reifegrad", () => {
+  it("vergibt jedem Modul einen Reifegrad", () => {
+    for (const module of MODULE_DEFINITIONS) {
+      expect(MODULE_STAGES).toContain(module.stage);
+    }
+  });
+
+  it("liefert Erprobungsmodule getrennt aus", () => {
+    const beta = betaModules();
+
+    expect(beta.every((module) => module.stage === "beta")).toBe(true);
+    expect(beta.map((module) => module.key).every(isBeta)).toBe(true);
+  });
+
+  it("erkennt unbekannte Schlüssel nicht als Erprobung", () => {
+    expect(isBeta("gibtesnicht")).toBe(false);
+  });
+
+  it("liefert kein Kernmodul als Erprobung aus", () => {
+    // Ein Kernmodul lässt sich nicht abschalten - als Erprobung wäre es
+    // unentrinnbar.
+    expect(betaModules().some((module) => module.core)).toBe(false);
   });
 });

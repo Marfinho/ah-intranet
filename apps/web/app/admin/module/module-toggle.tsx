@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { Lock } from "lucide-react";
+import { FlaskConical, Lock } from "lucide-react";
 import type { ModuleState } from "@ah-intranet/shared";
 import { setModuleEnabledAction } from "@/lib/actions";
 import { cn, formatDateTime } from "@/lib/utils";
@@ -52,10 +52,22 @@ export function ModuleToggle({ module, allModules }: { module: ModuleState; allM
               Kernmodul
             </span>
           ) : null}
+          {module.stage === "beta" ? (
+            <span className="badge inline-flex items-center gap-1 bg-brand-50 text-brand-700">
+              <FlaskConical className="h-3 w-3" />
+              Erprobung
+            </span>
+          ) : null}
           {!module.enabled ? <span className="badge bg-rose-100 text-rose-800">deaktiviert</span> : null}
         </div>
 
         <p className="mt-1 text-sm text-slate-600">{module.description}</p>
+
+        {module.stage === "beta" && !module.enabled ? (
+          <p className="mt-2 text-xs text-brand-700">
+            Diese Funktion ist in der Erprobung. Freigeschaltet wird sie von uns, nicht im Haus.
+          </p>
+        ) : null}
 
         <p className="mt-2 text-xs text-slate-500">
           Route {module.href}

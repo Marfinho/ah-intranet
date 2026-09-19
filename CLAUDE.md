@@ -72,7 +72,11 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
 
 ## Stand der Module
 
-19 Fachmodule, einzeln abschaltbar.
+19 Fachmodule, einzeln abschaltbar. Jedes trägt einen Reifegrad: `stabil` oder
+`beta`. Ein Beta-Modul ist aus und darf **nur von der Plattformverwaltung**
+eingeschaltet werden – ein Haus soll sich unfertige Software nicht selbst
+zuschalten – und trägt in der Oberfläche ein sichtbares Kennzeichen. Der Weg zum
+Erproben steht in [`docs/entwicklung.md`](docs/entwicklung.md).
 
 **Bewusst nicht mehr Teil des Produkts:** Schnittstellen zu Fremdsystemen
 (`integrations`), Fahrzeugbestand (`stock`) und Fuhrpark (`vehicles`). AHOI

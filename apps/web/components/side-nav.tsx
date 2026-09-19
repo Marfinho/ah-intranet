@@ -59,7 +59,7 @@ const ICONS: Record<string, LucideIcon> = {
 
 export interface NavGroup {
   label: string;
-  items: { href: string; label: string; icon: string }[];
+  items: { href: string; label: string; icon: string; beta?: boolean }[];
 }
 
 export function SideNav({ groups }: { groups: NavGroup[] }) {
@@ -87,6 +87,17 @@ export function SideNav({ groups }: { groups: NavGroup[] }) {
                 >
                   <Icon className="h-4 w-4 shrink-0" />
                   <span className="truncate">{item.label}</span>
+                  {/* Wer eine Erprobung benutzt, soll es jederzeit sehen. */}
+                  {item.beta ? (
+                    <span
+                      className={cn(
+                        "ml-auto shrink-0 rounded px-1.5 py-0.5 font-display text-[9px] font-semibold uppercase tracking-[0.1em]",
+                        active ? "bg-white/20 text-white" : "bg-brand-50 text-brand-700",
+                      )}
+                    >
+                      Beta
+                    </span>
+                  ) : null}
                 </Link>
               );
             })}

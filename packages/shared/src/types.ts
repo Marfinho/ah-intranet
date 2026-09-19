@@ -1,3 +1,5 @@
+import type { ModuleStage } from "./modules";
+
 /** Gemeinsame Vertragstypen zwischen API und Frontend. */
 
 export type AppRole = "mitarbeiter" | "fuehrungskraft" | "fachbereichsadmin" | "admin";
@@ -106,6 +108,8 @@ export interface ModuleState {
   core: boolean;
   dependsOn: string[];
   enabled: boolean;
+  /** `beta`: aus, und nur die Plattformverwaltung darf einschalten. */
+  stage: ModuleStage;
   updatedAt?: string | null;
   updatedBy?: string | null;
   /** Abhängige Module, die beim Abschalten mitgehen. */

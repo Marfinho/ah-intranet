@@ -88,6 +88,7 @@ export class ModuleRegistryService {
         icon: module.icon,
         group: module.group,
         core: module.core,
+        stage: module.stage,
         dependsOn: [...module.dependsOn],
         enabled: module.core ? true : (row?.enabled ?? module.defaultEnabled),
         updatedAt: row?.updatedAt.toISOString() ?? null,
@@ -109,6 +110,15 @@ export class ModuleRegistryService {
     const definition = getModule(key)!;
     if (definition.core) {
       throw new BadRequestException(`${definition.label} ist ein Kernmodul und kann nicht deaktiviert werden.`);
+    }
+
+    // Erprobungsmodule bleiben der Plattformverwaltung vorbehalten. Ein Haus
+    // soll sich unfertige Software nicht selbst zuschalten können; abschalten
+    // darf es sie jederzeit, sonst säße es in einer Funktion fest.
+    if (definition.stage === "beta" && enabled && !actor.isPlatformAdmin) {
+      throw new BadRequestException(
+        `${definition.label} befindet sich in der Erprobung und wird von uns freigeschaltet, nicht im Haus.`,
+      );
     }
 
     const affected = new Map<string, boolean>([[key, enabled]]);

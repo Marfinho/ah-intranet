@@ -77,12 +77,30 @@ Einzelheiten zum Betrieb: [`betrieb.md`](betrieb.md).
 
 ## Neue Funktionen erproben
 
-Noch nicht gebaut, aber der Weg steht fest und die Grundlage ist da:
-
 Die Modulsteuerung schaltet **je Haus**. Eine neue Funktion wird deshalb als
-Modul mit dem Reifegrad `beta` ausgeliefert: standardmäßig aus, freischaltbar nur
-durch die Plattformverwaltung, mit sichtbarem Kennzeichen in der Oberfläche. Ein
-Pilothaus bekommt sie, die anderen merken nichts davon.
+Modul mit dem Reifegrad `beta` ausgeliefert:
+
+```ts
+{ key: "schichtplan", label: "Schichtplan", ..., defaultEnabled: false, stage: "beta" }
+```
+
+Damit gilt automatisch:
+
+- Das Modul ist aus. `defaultEnabled: false` gehört dazu – alles andere wäre
+  ein Widerspruch.
+- **Einschalten darf nur die Plattformverwaltung.** Versucht es ein Admin im
+  Haus, weist die API ihn mit Begründung ab. Abschalten darf er jederzeit, sonst
+  säße das Haus in einer Funktion fest, die es nicht mehr will.
+- Das Modul trägt in Navigation und Modulsteuerung ein sichtbares **Beta**.
+  Niemand soll unbemerkt in einer Erprobung arbeiten.
+
+Ein Pilothaus bekommt die Funktion, die anderen merken nichts davon. Ist sie
+erprobt, wird aus `beta` ein `stabil` und aus `defaultEnabled: false` je nach
+Funktion ein `true` – ein Zweizeiler in der Registry, keine Migration.
+
+Für Änderungen **innerhalb** eines bestehenden Moduls reicht das nicht. Einen
+feineren Schalter gibt es bewusst noch nicht; er entsteht, wenn der erste Fall
+da ist.
 
 Zwei Dinge, die dabei ehrlich benannt gehören:
 
@@ -99,4 +117,3 @@ Zwei Dinge, die dabei ehrlich benannt gehören:
 - Eine laufende Installation. Ohne sie bleibt alles oberhalb Theorie.
 - Fehler- und Protokollauswertung. Ohne sie fällt ein Fehler erst auf, wenn
   jemand anruft.
-- Der Reifegrad `beta` in der Modulregistry.

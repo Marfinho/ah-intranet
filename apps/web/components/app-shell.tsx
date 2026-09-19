@@ -38,7 +38,12 @@ export async function AppShell({
       label: MODULE_GROUP_LABELS[group],
       items: visible
         .filter((module) => module.group === group)
-        .map((module) => ({ href: module.href, label: module.label, icon: module.icon })),
+        .map((module) => ({
+          href: module.href,
+          label: module.label,
+          icon: module.icon,
+          beta: module.stage === "beta",
+        })),
     }))
     .filter((group) => group.items.length > 0);
 

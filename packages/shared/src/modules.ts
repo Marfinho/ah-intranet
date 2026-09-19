@@ -11,6 +11,16 @@
 export const MODULE_GROUPS = ["arbeitsplatz", "kommunikation", "prozesse", "ressourcen", "verwaltung"] as const;
 export type ModuleGroup = (typeof MODULE_GROUPS)[number];
 
+/**
+ * Reifegrad eines Moduls.
+ *
+ * `beta` ist kein Etikett, sondern eine Einschränkung: Das Modul ist aus, und
+ * einschalten darf es nur die Plattformverwaltung. Ein Haus soll sich unfertige
+ * Software nicht selbst zuschalten können - und wer sie bekommt, muss es sehen.
+ */
+export const MODULE_STAGES = ["stabil", "beta"] as const;
+export type ModuleStage = (typeof MODULE_STAGES)[number];
+
 export interface ModuleDefinition {
   key: string;
   label: string;
@@ -25,6 +35,8 @@ export interface ModuleDefinition {
   dependsOn: string[];
   /** Voreinstellung bei der Erstinstallation. */
   defaultEnabled: boolean;
+  /** `beta` heißt: aus, und nur die Plattformverwaltung darf einschalten. */
+  stage: ModuleStage;
 }
 
 export const MODULE_DEFINITIONS = [
@@ -38,6 +50,7 @@ export const MODULE_DEFINITIONS = [
     core: true,
     dependsOn: [],
     defaultEnabled: true,
+    stage: "stabil",
   },
   {
     key: "search",
@@ -49,6 +62,7 @@ export const MODULE_DEFINITIONS = [
     core: false,
     dependsOn: [],
     defaultEnabled: true,
+    stage: "stabil",
   },
   {
     key: "notifications",
@@ -60,6 +74,7 @@ export const MODULE_DEFINITIONS = [
     core: true,
     dependsOn: [],
     defaultEnabled: true,
+    stage: "stabil",
   },
   {
     key: "quicklinks",
@@ -71,6 +86,7 @@ export const MODULE_DEFINITIONS = [
     core: false,
     dependsOn: [],
     defaultEnabled: true,
+    stage: "stabil",
   },
   {
     key: "news",
@@ -82,6 +98,7 @@ export const MODULE_DEFINITIONS = [
     core: false,
     dependsOn: [],
     defaultEnabled: true,
+    stage: "stabil",
   },
   {
     key: "directory",
@@ -93,6 +110,7 @@ export const MODULE_DEFINITIONS = [
     core: false,
     dependsOn: [],
     defaultEnabled: true,
+    stage: "stabil",
   },
   {
     key: "polls",
@@ -104,6 +122,7 @@ export const MODULE_DEFINITIONS = [
     core: false,
     dependsOn: [],
     defaultEnabled: true,
+    stage: "stabil",
   },
   {
     key: "ideas",
@@ -115,6 +134,7 @@ export const MODULE_DEFINITIONS = [
     core: false,
     dependsOn: [],
     defaultEnabled: true,
+    stage: "stabil",
   },
   {
     key: "documents",
@@ -126,6 +146,7 @@ export const MODULE_DEFINITIONS = [
     core: false,
     dependsOn: [],
     defaultEnabled: true,
+    stage: "stabil",
   },
   {
     key: "wiki",
@@ -137,6 +158,7 @@ export const MODULE_DEFINITIONS = [
     core: false,
     dependsOn: [],
     defaultEnabled: true,
+    stage: "stabil",
   },
   {
     key: "orders",
@@ -148,6 +170,7 @@ export const MODULE_DEFINITIONS = [
     core: false,
     dependsOn: [],
     defaultEnabled: true,
+    stage: "stabil",
   },
   {
     key: "approvals",
@@ -159,6 +182,7 @@ export const MODULE_DEFINITIONS = [
     core: false,
     dependsOn: ["orders"],
     defaultEnabled: true,
+    stage: "stabil",
   },
   {
     key: "tickets",
@@ -170,6 +194,7 @@ export const MODULE_DEFINITIONS = [
     core: false,
     dependsOn: [],
     defaultEnabled: true,
+    stage: "stabil",
   },
   {
     key: "onboarding",
@@ -181,6 +206,7 @@ export const MODULE_DEFINITIONS = [
     core: false,
     dependsOn: [],
     defaultEnabled: true,
+    stage: "stabil",
   },
   {
     key: "absences",
@@ -192,6 +218,7 @@ export const MODULE_DEFINITIONS = [
     core: false,
     dependsOn: [],
     defaultEnabled: true,
+    stage: "stabil",
   },
   {
     key: "calendar",
@@ -203,6 +230,7 @@ export const MODULE_DEFINITIONS = [
     core: false,
     dependsOn: [],
     defaultEnabled: true,
+    stage: "stabil",
   },
   {
     key: "rooms",
@@ -214,6 +242,7 @@ export const MODULE_DEFINITIONS = [
     core: false,
     dependsOn: [],
     defaultEnabled: true,
+    stage: "stabil",
   },
   {
     key: "admin",
@@ -225,6 +254,7 @@ export const MODULE_DEFINITIONS = [
     core: true,
     dependsOn: [],
     defaultEnabled: true,
+    stage: "stabil",
   },
   {
     key: "audit",
@@ -236,6 +266,7 @@ export const MODULE_DEFINITIONS = [
     core: false,
     dependsOn: [],
     defaultEnabled: true,
+    stage: "stabil",
   },
 ] as const satisfies readonly ModuleDefinition[];
 
@@ -271,3 +302,22 @@ export const MODULE_GROUP_LABELS: Record<ModuleGroup, string> = {
   ressourcen: "Ressourcen",
   verwaltung: "Verwaltung",
 };
+
+/**
+ * Dieselbe Liste, nur ohne die Verengung auf die heutigen Literalwerte.
+ *
+ * `as const` bindet jeden Reifegrad auf genau den Wert, der gerade dasteht –
+ * solange kein Modul `beta` ist, hielte der Übersetzer jeden Vergleich damit
+ * für einen Fehler. Diese Sicht macht die Abfragen unabhängig davon, was heute
+ * zufällig in der Registry steht.
+ */
+const ALLE: readonly ModuleDefinition[] = MODULE_DEFINITIONS;
+
+/** Module, die als Erprobung ausgeliefert werden. */
+export function betaModules(): ModuleDefinition[] {
+  return ALLE.filter((module) => module.stage === "beta");
+}
+
+export function isBeta(key: string): boolean {
+  return ALLE.some((module) => module.key === key && module.stage === "beta");
+}
