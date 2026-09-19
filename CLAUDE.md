@@ -89,11 +89,24 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
 
 ## Stand der Module
 
-19 Fachmodule, einzeln abschaltbar. Jedes trägt einen Reifegrad: `stabil` oder
+22 Fachmodule, einzeln abschaltbar. Jedes trägt einen Reifegrad: `stabil` oder
 `beta`. Ein Beta-Modul ist aus und darf **nur von der Plattformverwaltung**
 eingeschaltet werden – ein Haus soll sich unfertige Software nicht selbst
 zuschalten – und trägt in der Oberfläche ein sichtbares Kennzeichen. Der Weg zum
 Erproben steht in [`docs/entwicklung.md`](docs/entwicklung.md).
+
+**Neu und in Erprobung:** Schichtplan mit Diensttausch, Fundsachen & Schlüssel,
+Essensbestellung. Alle drei sind `beta` – aus ab Werk, einschaltbar nur durch
+die Plattformverwaltung. Drei Regeln darin sind bewusst hart:
+
+- Ein **Diensttausch** braucht zwei Zustimmungen: die der angefragten Person und
+  die Freigabe. Eine einzige würde jemandem eine Schicht aufdrücken oder die
+  Besetzung an der Leitung vorbei ändern.
+- Eine **Übergabe** geht an ein Konto des Hauses *oder* an einen freien Namen –
+  eine Kundin, die ihr Handy abholt, hat kein Konto. Ohne den zweiten Weg würde
+  die Übergabe gar nicht erst festgehalten.
+- Der **Bestellschluss** wird serverseitig geprüft, nicht nur angezeigt. Wer
+  nach der Abholfahrt bestellt, bekommt nichts.
 
 **Entfernt:** Schnittstellen zu Fremdsystemen, Fahrzeugbestand und Fuhrpark –
 samt Oberflächen, API-Modulen, Datenmodellen und Tabellen. AHOI betrachtet den
@@ -131,6 +144,9 @@ Erfolg des Restores.
 - Kommentare erklären das **Warum**, nicht das Was.
 - Serverseitige Validierung mit `class-validator`, `forbidNonWhitelisted` aktiv.
 - Jede fachlich relevante Aktion landet im Audit-Log.
+- Regeln, die sich vollständig aus ihren Eingaben ergeben, gehören in eine reine
+  Funktion mit Test (`modules/alltag/regeln.ts`) – zwischen Datenbankabfragen
+  versteckt sind sie nur mit laufender Datenbank prüfbar und verrutschen still.
 - Geheimnisse gehören nie in die Antwort der API und nie unverschlüsselt in die
   Datenbank.
 

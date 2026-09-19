@@ -580,3 +580,131 @@ export const AUTH_PROVIDER_DEFINITIONS: readonly AuthProviderDefinition[] = [
 export function getAuthProvider(kind: string): AuthProviderDefinition | undefined {
   return AUTH_PROVIDER_DEFINITIONS.find((eintrag) => eintrag.kind === kind);
 }
+
+/* ------------------------------------------------------------ Schichtplan */
+
+export type ShiftSwapStatus = "offen" | "angenommen" | "freigegeben" | "abgelehnt" | "zurueckgezogen";
+
+export const SHIFT_SWAP_LABELS: Record<ShiftSwapStatus, string> = {
+  offen: "Wartet auf Antwort",
+  angenommen: "Wartet auf Freigabe",
+  freigegeben: "Getauscht",
+  abgelehnt: "Abgelehnt",
+  zurueckgezogen: "Zurückgezogen",
+};
+
+export interface ShiftItem {
+  id: string;
+  label: string;
+  startsAt: string;
+  endsAt: string;
+  location?: string | null;
+  department?: string | null;
+  assignee?: string | null;
+  assigneeUsername?: string | null;
+  note?: string | null;
+  /** Ob die angemeldete Person selbst eingeteilt ist. */
+  mine: boolean;
+  /** Ein laufender Tauschvorgang blockiert weitere Anfragen zur selben Schicht. */
+  openSwap: boolean;
+}
+
+export interface ShiftSwapItem {
+  id: string;
+  status: ShiftSwapStatus;
+  shift: { id: string; label: string; startsAt: string; endsAt: string };
+  requester: string;
+  requesterUsername: string;
+  target: string;
+  targetUsername: string;
+  note?: string | null;
+  decidedBy?: string | null;
+  decisionNote?: string | null;
+  createdAt: string;
+  /** Was die angemeldete Person hier tun kann. */
+  canRespond: boolean;
+  canDecide: boolean;
+  canWithdraw: boolean;
+}
+
+/* ------------------------------------------------- Fundsachen und Schlüssel */
+
+export type CustodyKind = "fundsache" | "schluessel";
+export type CustodyStatus = "verwahrt" | "ausgegeben" | "abgeholt" | "entsorgt";
+export type CustodyEventKind = "aufgenommen" | "ausgegeben" | "zurueckgenommen" | "abgeholt" | "entsorgt";
+
+export const CUSTODY_KIND_LABELS: Record<CustodyKind, string> = {
+  fundsache: "Fundsache",
+  schluessel: "Schlüssel",
+};
+
+export const CUSTODY_STATUS_LABELS: Record<CustodyStatus, string> = {
+  verwahrt: "Verwahrt",
+  ausgegeben: "Ausgegeben",
+  abgeholt: "Abgeholt",
+  entsorgt: "Entsorgt",
+};
+
+export const CUSTODY_EVENT_LABELS: Record<CustodyEventKind, string> = {
+  aufgenommen: "Aufgenommen",
+  ausgegeben: "Ausgegeben",
+  zurueckgenommen: "Zurückgenommen",
+  abgeholt: "Abgeholt",
+  entsorgt: "Entsorgt",
+};
+
+export interface CustodyEventItem {
+  id: string;
+  kind: CustodyEventKind;
+  person?: string | null;
+  note?: string | null;
+  actor: string;
+  createdAt: string;
+}
+
+export interface CustodyItemSummary {
+  id: string;
+  kind: CustodyKind;
+  title: string;
+  description?: string | null;
+  storagePlace?: string | null;
+  location?: string | null;
+  status: CustodyStatus;
+  holder?: string | null;
+  foundAt?: string | null;
+  foundPlace?: string | null;
+  createdAt: string;
+  events: CustodyEventItem[];
+}
+
+/* --------------------------------------------------------- Essensbestellung */
+
+export interface MealOptionItem {
+  id: string;
+  name: string;
+  description?: string | null;
+  priceCents: number;
+  /** Wie oft diese Wahl im Haus bestellt wurde. */
+  count: number;
+}
+
+export interface MealOfferItem {
+  id: string;
+  date: string;
+  provider: string;
+  orderDeadline: string;
+  location?: string | null;
+  note?: string | null;
+  options: MealOptionItem[];
+  /** Ob der Stichtag schon vorbei ist. */
+  closed: boolean;
+  /** Die eigene Bestellung, falls vorhanden. */
+  myOrder?: { id: string; optionId: string; quantity: number; note?: string | null } | null;
+}
+
+/** Sammelliste für die Abholung: je Wahl die Menge und die Namen dahinter. */
+export interface MealRoundup {
+  offer: { id: string; date: string; provider: string; orderDeadline: string; location?: string | null };
+  lines: { option: string; priceCents: number; quantity: number; people: string[] }[];
+  totalCents: number;
+}
