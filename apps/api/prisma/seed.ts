@@ -1209,6 +1209,151 @@ async function seedTenant(tenantId: string, platformAdmin: boolean) {
     ],
   });
 
+  /* ------------------------------------------- Alltag: Schicht, Verwahrung, Essen */
+
+  // Diese drei Module sind Erprobungen und ab Werk aus. Die Daten liegen
+  // trotzdem bereit, sonst steht beim Einschalten eine leere Seite da.
+  const tage = (versatz: number, stunde: number) => {
+    const wert = new Date();
+    wert.setDate(wert.getDate() + versatz);
+    wert.setHours(stunde, 0, 0, 0);
+    return wert;
+  };
+
+  const schichtplan = [
+    { label: "Frühdienst Serviceannahme", tag: 1, von: 7, bis: 15, person: paul, abteilung: "Service & Werkstatt" },
+    { label: "Spätdienst Serviceannahme", tag: 1, von: 12, bis: 19, person: lena, abteilung: "Service & Werkstatt" },
+    { label: "Teiledienst Theke", tag: 1, von: 8, bis: 16, person: dennis, abteilung: "Teile & Zubehör" },
+    { label: "Frühdienst Serviceannahme", tag: 2, von: 7, bis: 15, person: lena, abteilung: "Service & Werkstatt" },
+    { label: "Spätdienst Serviceannahme", tag: 2, von: 12, bis: 19, person: null, abteilung: "Service & Werkstatt" },
+    { label: "Teiledienst Theke", tag: 2, von: 8, bis: 16, person: clara, abteilung: "Teile & Zubehör" },
+    { label: "Frühdienst Serviceannahme", tag: 3, von: 7, bis: 15, person: paul, abteilung: "Service & Werkstatt" },
+    { label: "Samstagsdienst Verkauf", tag: 5, von: 9, bis: 14, person: fatih, abteilung: null },
+  ];
+
+  const angelegteSchichten: { id: string; person: { id: string } | null }[] = [];
+  for (const eintrag of schichtplan) {
+    const abteilung = eintrag.abteilung ? departments.find((d) => d.name === eintrag.abteilung) : null;
+    const shift = await prisma.shift.create({
+      data: {
+        label: eintrag.label,
+        startsAt: tage(eintrag.tag, eintrag.von),
+        endsAt: tage(eintrag.tag, eintrag.bis),
+        locationId: locations[0]?.id ?? null,
+        departmentId: abteilung?.id ?? null,
+        assigneeId: eintrag.person?.id ?? null,
+        createdById: admin.id,
+      },
+    });
+    angelegteSchichten.push({ id: shift.id, person: eintrag.person });
+  }
+
+  // Ein laufender Tauschvorgang, damit die Freigabe nicht erklärt werden muss.
+  const zuTauschen = angelegteSchichten.find((eintrag) => eintrag.person?.id === paul.id);
+  if (zuTauschen) {
+    await prisma.shiftSwap.create({
+      data: {
+        shiftId: zuTauschen.id,
+        requesterId: paul.id,
+        targetId: lena.id,
+        status: "angenommen",
+        note: "Arzttermin am Vormittag, Vertretung ist abgesprochen.",
+        respondedAt: new Date(),
+      },
+    });
+  }
+
+  const verwahrung = [
+    {
+      kind: "schluessel" as const,
+      title: "Vorführwagen HB-AH 1234",
+      storagePlace: "Schlüsselschrank Empfang",
+      status: "ausgegeben" as const,
+      holder: fatih,
+    },
+    {
+      kind: "schluessel" as const,
+      title: "Werkstatttor Nord",
+      storagePlace: "Schlüsselschrank Empfang",
+      status: "verwahrt" as const,
+      holder: null,
+    },
+    {
+      kind: "fundsache" as const,
+      title: "Mobiltelefon, schwarz",
+      storagePlace: "Tresor Empfang",
+      status: "verwahrt" as const,
+      holder: null,
+      foundPlace: "Kundenparkplatz, Reihe 2",
+    },
+    {
+      kind: "fundsache" as const,
+      title: "Lesebrille im roten Etui",
+      storagePlace: "Fundkiste Annahme",
+      status: "verwahrt" as const,
+      holder: null,
+      foundPlace: "Wartebereich Serviceannahme",
+    },
+  ];
+
+  for (const eintrag of verwahrung) {
+    const item = await prisma.custodyItem.create({
+      data: {
+        kind: eintrag.kind,
+        title: eintrag.title,
+        storagePlace: eintrag.storagePlace,
+        locationId: locations[0]?.id ?? null,
+        status: eintrag.status,
+        holderId: eintrag.holder?.id ?? null,
+        foundAt: eintrag.kind === "fundsache" ? tage(-4, 10) : null,
+        foundPlace: eintrag.foundPlace ?? null,
+        createdById: admin.id,
+        events: { create: { kind: "aufgenommen", actorId: admin.id, note: eintrag.storagePlace } },
+      },
+    });
+    if (eintrag.holder) {
+      await prisma.custodyEvent.create({
+        data: {
+          itemId: item.id,
+          kind: "ausgegeben",
+          personId: eintrag.holder.id,
+          note: "Probefahrt mit Kundin",
+          actorId: admin.id,
+        },
+      });
+    }
+  }
+
+  const angebot = await prisma.mealOffer.create({
+    data: {
+      date: tage(1, 0),
+      provider: "Bäckerei Ahrens",
+      orderDeadline: tage(1, 10),
+      locationId: locations[0]?.id ?? null,
+      note: "Abholung 11:45 Uhr durch den Teiledienst.",
+      createdById: admin.id,
+      options: {
+        create: [
+          { name: "Belegtes Brötchen Käse", description: "Gouda, Salat, Remoulade", priceCents: 280 },
+          { name: "Belegtes Brötchen Schinken", description: "Kochschinken, Gurke", priceCents: 300 },
+          { name: "Salatschale", description: "Blattsalat, Ei, Dressing separat", priceCents: 490 },
+          { name: "Suppe des Tages", priceCents: 350 },
+        ],
+      },
+    },
+    include: { options: true },
+  });
+
+  for (const [index, person] of [paul, lena, dennis, clara].entries()) {
+    await prisma.mealOrder.create({
+      data: {
+        offerId: angebot.id,
+        optionId: angebot.options[index % angebot.options.length].id,
+        userId: person.id,
+      },
+    });
+  }
+
   // Modulauswahl je Mandant vorbelegen, damit jedes Haus seinen eigenen
   // Auslieferungszustand hat.
   await prisma.moduleSetting.createMany({
@@ -1226,6 +1371,9 @@ async function seedTenant(tenantId: string, platformAdmin: boolean) {
     News: await prisma.newsPost.count(),
     Bestellungen: await prisma.order.count(),
     Tickets: await prisma.ticket.count(),
+    Schichten: await prisma.shift.count(),
+    Verwahrung: await prisma.custodyItem.count(),
+    Essensbestellungen: await prisma.mealOrder.count(),
   };
 
   await prisma.$disconnect();

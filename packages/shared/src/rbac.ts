@@ -154,6 +154,30 @@ export const PERMISSION_DEFINITIONS: readonly PermissionDefinition[] = [
     bereich: "Organisation",
   },
   {
+    key: "shifts.manage",
+    name: "Schichtplan pflegen",
+    description: "Schichten anlegen, besetzen und ändern",
+    bereich: "Organisation",
+  },
+  {
+    key: "shifts.approve",
+    name: "Diensttausch freigeben",
+    description: "Einen zwischen zwei Personen vereinbarten Tausch bestätigen",
+    bereich: "Organisation",
+  },
+  {
+    key: "custody.manage",
+    name: "Verwahrung buchen",
+    description: "Fundsachen und Schlüssel aufnehmen, ausgeben und zurücknehmen",
+    bereich: "Organisation",
+  },
+  {
+    key: "meals.manage",
+    name: "Essensangebot pflegen",
+    description: "Tagesangebot anlegen und die Sammelliste abrufen",
+    bereich: "Organisation",
+  },
+  {
     key: "onboarding.manage",
     name: "Einarbeitung steuern",
     description: "Vorlagen pflegen und Einarbeitungen zuweisen",
@@ -184,7 +208,7 @@ export const ROLE_DEFINITIONS: readonly RoleDefinition[] = [
     name: "Führungskraft",
     description: "Zusätzlich: Abwesenheiten des Teams freigeben und Termine anlegen.",
     rank: 10,
-    permissions: ["absences.approve", "calendar.manage"],
+    permissions: ["absences.approve", "calendar.manage", "shifts.manage", "shifts.approve"],
   },
   {
     key: "fachbereichsadmin",
@@ -207,6 +231,10 @@ export const ROLE_DEFINITIONS: readonly RoleDefinition[] = [
       "ideas.manage",
       "calendar.manage",
       "onboarding.manage",
+      "shifts.manage",
+      "shifts.approve",
+      "custody.manage",
+      "meals.manage",
     ],
   },
   {

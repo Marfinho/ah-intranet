@@ -95,6 +95,33 @@ export const RETENTION_RULES: readonly RetentionRule[] = [
       "Buchungsrelevante Unterlagen. § 147 AO und § 257 HGB verlangen zehn Jahre Aufbewahrung - eine Löschung auf Wunsch ist hier ausgeschlossen, die Person wird stattdessen anonymisiert.",
   },
   {
+    key: "shift",
+    label: "Schichtplan und Diensttausch",
+    description: "Geplante Besetzung je Standort und Abteilung, samt Tauschvorgängen und Freigaben.",
+    mode: "delete",
+    days: 2 * JAHR,
+    reason:
+      "Der Schichtplan ist eine Planung, kein Arbeitszeitnachweis. Die Frist folgt trotzdem § 16 Abs. 2 ArbZG, weil der Plan im Streitfall über die geleistete Arbeitszeit als Anhaltspunkt dient - danach überwiegt der Personenbezug.",
+  },
+  {
+    key: "custody",
+    label: "Verwahrung von Fundsachen und Schlüsseln",
+    description: "Aufnahme, Ausgabe, Rücknahme und Abholung mit handelnder Person und Zeitstempel.",
+    mode: "delete",
+    days: 3 * JAHR,
+    reason:
+      "Schlüsselübergaben sind sicherheitsrelevant und müssen sich über längere Zeit zurückverfolgen lassen. Für Fundsachen endet das Interesse früher (§§ 965 ff. BGB), die Frist richtet sich deshalb nach dem strengeren Fall.",
+  },
+  {
+    key: "meal_order",
+    label: "Essensbestellungen",
+    description: "Wer an welchem Tag was bestellt hat.",
+    mode: "delete",
+    days: 90,
+    reason:
+      "Nach der Abrechnung des Monats ohne Zweck. Kurze Frist, weil sich aus Essgewohnheiten Rückschlüsse auf Gesundheit und Religion ziehen lassen - das ist mehr Personenbezug, als die Sache wert ist.",
+  },
+  {
     key: "employment",
     label: "Personalstammdaten",
     description: "Name, Kontakt, Standort, Abteilung, Rollen.",

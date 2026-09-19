@@ -12,6 +12,7 @@ import { AuthModule } from "./modules/auth/auth.module";
 import { PlatformModule } from "./modules/platform/platform.module";
 import { ContentModule } from "./modules/content/content.module";
 import { PeopleModule } from "./modules/people/people.module";
+import { AlltagModule } from "./modules/alltag/alltag.module";
 import { OrdersModule } from "./modules/orders/orders.module";
 import { ResourcesModule } from "./modules/resources/resources.module";
 import { ServiceDeskModule } from "./modules/servicedesk/servicedesk.module";
@@ -27,6 +28,7 @@ import { PrivacyModule } from "./modules/privacy/privacy.module";
     AuthModule,
     ContentModule,
     PeopleModule,
+    AlltagModule,
     OrdersModule,
     ResourcesModule,
     ServiceDeskModule,
