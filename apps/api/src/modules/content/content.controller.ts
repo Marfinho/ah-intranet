@@ -15,7 +15,7 @@ import type { DocumentFileType, NewsPriority, NewsStatus } from "@ah-intranet/sh
 import { NewsService } from "./news.service";
 import { DocumentsService } from "./documents.service";
 import { QuickLinksService } from "./quicklinks.service";
-import { CurrentUser, Feature, Roles } from "../../core/decorators";
+import { CurrentUser, Feature, Permission, Roles } from "../../core/decorators";
 import type { RequestUser } from "../../core/request-user";
 
 /* ------------------------------------------------------------------ DTOs */
@@ -129,12 +129,14 @@ export class NewsController {
 
   @Post()
   @Roles("admin", "fachbereichsadmin")
+  @Permission("news.publish")
   create(@CurrentUser() user: RequestUser, @Body() dto: NewsBodyDto) {
     return this.news.create(user, dto);
   }
 
   @Patch(":id")
   @Roles("admin", "fachbereichsadmin")
+  @Permission("news.publish")
   update(@CurrentUser() user: RequestUser, @Param("id") id: string, @Body() dto: NewsPatchDto) {
     return this.news.update(user, id, dto);
   }
@@ -142,6 +144,7 @@ export class NewsController {
   @Delete(":id")
   @Roles("admin")
   @HttpCode(204)
+  @Permission("news.publish")
   remove(@CurrentUser() user: RequestUser, @Param("id") id: string) {
     return this.news.remove(user, id);
   }

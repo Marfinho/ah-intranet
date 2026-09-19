@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
+import { ADMIN_ROLLE, UNVERZICHTBARE_RECHTE, getPermission } from "@ah-intranet/shared";
 import type {
   AppRole,
   EmployeeDirectoryEntry,
@@ -315,12 +316,24 @@ export class PeopleService {
     }
 
     const permissions = await this.prisma.permission.findMany({ where: { key: { in: permissionKeys } } });
+    const kuenftig = new Set(permissions.map((permission) => permission.key));
+
+    await this.assertNichtAusgesperrt(roleId, kuenftig);
+
+    // Wessen Rechte sich ändern, muss es sofort merken - nicht erst, wenn das
+    // Token in bis zu zwölf Stunden abläuft. Ein entzogenes Recht, das noch
+    // einen halben Tag wirkt, ist kein entzogenes Recht.
+    const betroffene = await this.prisma.userRole.findMany({ where: { roleId }, select: { userId: true } });
 
     await this.prisma.$transaction([
       this.prisma.rolePermission.deleteMany({ where: { roleId } }),
       this.prisma.rolePermission.createMany({
         data: permissions.map((permission) => ({ roleId, permissionId: permission.id })),
         skipDuplicates: true,
+      }),
+      this.prisma.user.updateMany({
+        where: { id: { in: betroffene.map((eintrag) => eintrag.userId) } },
+        data: { tokenVersion: { increment: 1 } },
       }),
     ]);
 
@@ -330,9 +343,44 @@ export class PeopleService {
       entityType: "role",
       entityId: roleId,
       detail: `Rechte der Rolle "${role.name}" auf ${permissions.length} Berechtigung(en) gesetzt`,
+      metadata: { rechte: [...kuenftig], sitzungenBeendet: betroffene.length },
     });
 
     return this.roles();
+  }
+
+  /**
+   * Verhindert, dass ein Haus sich selbst aussperrt.
+   *
+   * `roles.manage` und `users.manage` sind unverzichtbar: Ohne das erste kommt
+   * niemand mehr an den Rechte-Editor, ohne das zweite entsteht kein neues
+   * Administrationskonto. Beides ist nicht rückgängig zu machen.
+   *
+   * Entscheidend ist dabei **nicht**, ob irgendeine Rolle das Recht noch trägt,
+   * sondern ob eine Rolle es trägt, die auch durch die Rollenprüfung der
+   * betreffenden Route kommt. Beide Routen verlangen `@Roles("admin")` - ein
+   * Recht bei `fachbereichsadmin` nützt dort nichts. Es aus der
+   * Administrationsrolle zu nehmen, sperrt das Haus also selbst dann aus, wenn
+   * eine andere Rolle es formal besitzt.
+   */
+  private async assertNichtAusgesperrt(roleId: string, kuenftig: Set<string>): Promise<void> {
+    const fehlend = UNVERZICHTBARE_RECHTE.filter((recht) => !kuenftig.has(recht));
+    if (fehlend.length === 0) {
+      return;
+    }
+
+    const rolle = await this.prisma.role.findUnique({ where: { id: roleId }, select: { key: true } });
+    if (rolle?.key !== ADMIN_ROLLE) {
+      // Aus einer anderen Rolle darf das Recht verschwinden: die
+      // Administrationsrolle behält es und kommt durch die Rollenprüfung.
+      return;
+    }
+
+    const namen = fehlend.map((recht) => `"${getPermission(recht)?.name ?? recht}"`).join(" und ");
+    throw new BadRequestException(
+      `${namen} kann der Administration nicht entzogen werden. Nur diese Rolle kommt an die Rechte- und ` +
+        "Benutzerverwaltung - ohne sie könnte niemand die Entscheidung zurücknehmen.",
+    );
   }
 
   /* ---------------------------------------------------------- Helfer */

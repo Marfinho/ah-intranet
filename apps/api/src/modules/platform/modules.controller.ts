@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post, Put } from "@nestjs/common";
 import { IsBoolean } from "class-validator";
 import { ModuleRegistryService } from "../../core/module-registry.service";
-import { CurrentUser, Roles } from "../../core/decorators";
+import { CurrentUser, Permission, Roles } from "../../core/decorators";
 import type { RequestUser } from "../../core/request-user";
 
 class ToggleModuleDto {
@@ -24,12 +24,14 @@ export class ModulesController {
 
   @Put(":key")
   @Roles("admin")
+  @Permission("modules.manage")
   setEnabled(@Param("key") key: string, @Body() dto: ToggleModuleDto, @CurrentUser() user: RequestUser) {
     return this.modules.setEnabled(key, dto.enabled, user);
   }
 
   @Post("reset")
   @Roles("admin")
+  @Permission("modules.manage")
   reset(@CurrentUser() user: RequestUser) {
     return this.modules.resetToDefaults(user);
   }

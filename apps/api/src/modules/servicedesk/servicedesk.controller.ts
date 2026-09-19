@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common
 import { ArrayNotEmpty, IsArray, IsIn, IsOptional, IsString, MinLength } from "class-validator";
 import type { IdeaStatus, Priority, TicketCategory, TicketStatus } from "@prisma/client";
 import { ServiceDeskService } from "./servicedesk.service";
-import { CurrentUser, Feature, Roles } from "../../core/decorators";
+import { CurrentUser, Feature, Permission, Roles } from "../../core/decorators";
 import type { RequestUser } from "../../core/request-user";
 
 class TicketDto {
@@ -72,6 +72,7 @@ export class TicketsController {
 
   @Patch(":id")
   @Roles("admin", "fachbereichsadmin")
+  @Permission("tickets.manage")
   update(@CurrentUser() user: RequestUser, @Param("id") id: string, @Body() dto: TicketPatchDto) {
     return this.desk.updateTicket(user, id, dto);
   }

@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma, type OrderStatus, type OrderType } from "@prisma/client";
+import { getPermission } from "@ah-intranet/shared";
 import type {
   ApprovalTask,
   BusinessCardFieldDefinition,
@@ -377,6 +378,18 @@ export class OrdersService {
     const selfCancel = target === "cancelled" && order.requesterId === user.id;
     if (!isManaging(user) && !selfCancel) {
       throw new ForbiddenException("Für diese Aktion fehlen die erforderlichen Rechte.");
+    }
+    // Die Freigabeentscheidung hängt am Recht, nicht nur an der Rolle. Sie
+    // gehört in den Dienst und nicht an die Route: dieselbe Route trägt auch
+    // die Stornierung durch die antragstellende Person, die kein Recht braucht.
+    if (
+      !selfCancel &&
+      (target === "approved" || target === "rejected") &&
+      !user.permissions.includes("orders.approve")
+    ) {
+      throw new ForbiddenException(
+        `Für Freigabeentscheidungen fehlt die Berechtigung "${getPermission("orders.approve")?.name}".`,
+      );
     }
     if (!ALLOWED_TRANSITIONS[order.status].includes(target)) {
       throw new BadRequestException(
