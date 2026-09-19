@@ -142,7 +142,6 @@ Vor der Einführung in einem Haus mit Betriebsrat zu klären:
   Fehlversuchen, Sitzung im httpOnly-Cookie.
 - Rollenprüfung serverseitig aus dem Token, nie aus Anfragedaten.
 - Mandantentrennung auf Ebene des Datenzugriffs, fail-closed.
-- Zugangsdaten zu Fremdsystemen verschlüsselt (AES-256-GCM), nie in Antworten.
 - Audit-Log über alle fachlich relevanten Aktionen.
 - Sicherung und Wiederherstellung: siehe [`betrieb.md`](betrieb.md).
 

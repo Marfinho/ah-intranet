@@ -128,19 +128,6 @@ enum IdeaStatus {
   abgelehnt
 }
 
-enum VehicleCategory {
-  vorfuehrwagen
-  werkstattersatz
-  poolfahrzeug
-}
-
-enum BookingStatus {
-  reserviert
-  abgeholt
-  zurueckgegeben
-  storniert
-}
-
 enum NotificationChannel {
   in_app
   email
@@ -194,8 +181,6 @@ model Tenant {
   calendarEvents               CalendarEvent[]
   rooms                        Room[]
   roomBookings                 RoomBooking[]
-  vehicles                     Vehicle[]
-  vehicleBookings              VehicleBooking[]
   tickets                      Ticket[]
   ticketComments               TicketComment[]
   onboardingTemplates          OnboardingTemplate[]
@@ -211,10 +196,6 @@ model Tenant {
   quickLinks                   QuickLink[]
   notifications                Notification[]
   auditLogs                    AuditLog[]
-  connectors                   Connector[]
-  syncRuns                     SyncRun[]
-  externalRefs                 ExternalRef[]
-  vehicleListings              VehicleListing[]
 
   @@index([isActive])
 }
@@ -235,7 +216,6 @@ model Location {
   orderCycles         OrderCycle[]
   locationDepartments LocationDepartment[]
   rooms               Room[]
-  vehicles            Vehicle[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, code])
@@ -354,7 +334,6 @@ model User {
   absences          Absence[]              @relation("AbsenceEmployee")
   absenceDecisions  Absence[]              @relation("AbsenceDecider")
   roomBookings      RoomBooking[]
-  vehicleBookings   VehicleBooking[]
   wikiArticles      WikiArticle[]          @relation("WikiAuthor")
   ideas             Idea[]                 @relation("IdeaAuthor")
   ideaVotes         IdeaVote[]
@@ -874,45 +853,6 @@ model RoomBooking {
   @@index([tenantId])
 }
 
-model Vehicle {
-  id         String          @id @default(cuid())
-  tenantId   String          @default("")
-  tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  label      String
-  plate      String
-  category   VehicleCategory @default(poolfahrzeug)
-  locationId String?
-  notes      String?
-  isActive   Boolean         @default(true)
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
-
-  location Location?        @relation(fields: [locationId], references: [id])
-  bookings VehicleBooking[]
-
-  @@unique([tenantId, plate])
-  @@index([tenantId])
-}
-
-model VehicleBooking {
-  id        String        @id @default(cuid())
-  tenantId  String        @default("")
-  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  vehicleId String
-  userId    String
-  purpose   String
-  startsAt  DateTime
-  endsAt    DateTime
-  status    BookingStatus @default(reserviert)
-  createdAt DateTime      @default(now())
-
-  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([vehicleId, startsAt])
-  @@index([tenantId])
-}
-
 // ------------------------------------------------------------ Tickets
 
 model Ticket {
@@ -1203,12 +1143,6 @@ model AuditLog {
 
 // ------------------------------------------------------ Schnittstellen
 
-enum ConnectorStatus {
-  not_configured
-  configured
-  disabled
-}
-
 enum SyncRunStatus {
   running
   succeeded
@@ -1222,101 +1156,10 @@ enum SyncDirection {
 
 /// Laufzeitzustand eines Konnektors. Die fachliche Definition steht in der
 /// Registry in @ah-intranet/shared; hier liegen nur Konfiguration und Status.
-model Connector {
-  key              String
-  tenantId         String          @default("")
-  tenant           Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  status           ConnectorStatus @default(not_configured)
-  /// Nicht-geheime Konfiguration (Endpunkt, Mandant, Verzeichnis ...).
-  settings         Json            @default("{}")
-  /// Geheime Felder, je Feld einzeln mit AES-256-GCM verschlüsselt.
-  secrets          Json            @default("{}")
-  lastCheckAt      DateTime?
-  lastCheckOk      Boolean?
-  lastCheckMessage String?
-  updatedBy        String?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-
-  runs     SyncRun[]
-  listings VehicleListing[]
-  refs     ExternalRef[]
-
-  @@id([tenantId, key])
-  @@index([tenantId])
-}
 
 /// Protokoll jedes Synchronisationslaufs - auch der fehlgeschlagenen.
-model SyncRun {
-  id             String        @id @default(cuid())
-  tenantId       String        @default("")
-  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  connectorKey   String
-  capability     String
-  direction      SyncDirection
-  status         SyncRunStatus @default(running)
-  startedAt      DateTime      @default(now())
-  finishedAt     DateTime?
-  itemsProcessed Int           @default(0)
-  itemsFailed    Int           @default(0)
-  message        String?
-  detailJson     Json?
-  triggeredBy    String?
-
-  connector Connector @relation(fields: [tenantId, connectorKey], references: [tenantId, key], onDelete: Cascade)
-
-  @@index([connectorKey, startedAt])
-  @@index([status])
-  @@index([tenantId])
-}
 
 /// Zuordnung interner Datensätze zu ihren Gegenstücken im Fremdsystem.
-model ExternalRef {
-  id           String   @id @default(cuid())
-  tenantId     String   @default("")
-  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  connectorKey String
-  entityType   String
-  localId      String
-  externalId   String
-  payloadHash  String?
-  syncedAt     DateTime @default(now())
-
-  connector Connector @relation(fields: [tenantId, connectorKey], references: [tenantId, key], onDelete: Cascade)
-
-  @@unique([tenantId, connectorKey, entityType, localId])
-  @@index([connectorKey, entityType, externalId])
-  @@index([tenantId])
-}
 
 /// Aus Fremdsystemen übernommener Fahrzeugbestand. Lesend gepflegt: die
 /// führenden Daten bleiben im DMS bzw. in der Börse.
-model VehicleListing {
-  id                String    @id @default(cuid())
-  tenantId          String    @default("")
-  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  connectorKey      String
-  externalId        String
-  vin               String?
-  make              String
-  model             String
-  title             String
-  price             Decimal?  @db.Decimal(12, 2)
-  currency          String    @default("EUR")
-  mileageKm         Int?
-  firstRegistration DateTime?
-  fuel              String?
-  gearbox           String?
-  powerKw           Int?
-  url               String?
-  imageUrl          String?
-  raw               Json?
-  syncedAt          DateTime  @default(now())
-
-  connector Connector @relation(fields: [tenantId, connectorKey], references: [tenantId, key], onDelete: Cascade)
-
-  @@unique([tenantId, connectorKey, externalId])
-  @@index([make, model])
-  @@index([syncedAt])
-  @@index([tenantId])
-}

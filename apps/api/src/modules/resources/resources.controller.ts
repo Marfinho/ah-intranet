@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query } from "@nestjs/common";
 import { IsArray, IsIn, IsOptional, IsString, MinLength } from "class-validator";
-import type { BookingStatus, CalendarCategory } from "@prisma/client";
+import type { CalendarCategory } from "@prisma/client";
 import { ResourcesService } from "./resources.service";
 import { CurrentUser, Feature, Roles } from "../../core/decorators";
 import type { RequestUser } from "../../core/request-user";
@@ -20,17 +20,6 @@ class RoomBookingDto {
   @IsString() @MinLength(3) title!: string;
   @IsString() startsAt!: string;
   @IsString() endsAt!: string;
-}
-
-class VehicleBookingDto {
-  @IsString() vehicleId!: string;
-  @IsString() @MinLength(3) purpose!: string;
-  @IsString() startsAt!: string;
-  @IsString() endsAt!: string;
-}
-
-class BookingStatusDto {
-  @IsIn(["reserviert", "abgeholt", "zurueckgegeben", "storniert"]) status!: BookingStatus;
 }
 
 @Controller("calendar")
@@ -80,26 +69,5 @@ export class RoomsController {
   @HttpCode(204)
   cancel(@CurrentUser() user: RequestUser, @Param("id") id: string) {
     return this.resources.cancelRoomBooking(user, id);
-  }
-}
-
-@Controller("vehicles")
-@Feature("vehicles")
-export class VehiclesController {
-  constructor(private readonly resources: ResourcesService) {}
-
-  @Get()
-  list(@Query("category") category?: string) {
-    return this.resources.vehicles({ category });
-  }
-
-  @Post("bookings")
-  book(@CurrentUser() user: RequestUser, @Body() dto: VehicleBookingDto) {
-    return this.resources.bookVehicle(user, dto);
-  }
-
-  @Patch("bookings/:id")
-  setStatus(@CurrentUser() user: RequestUser, @Param("id") id: string, @Body() dto: BookingStatusDto) {
-    return this.resources.setVehicleBookingStatus(user, id, dto.status);
   }
 }

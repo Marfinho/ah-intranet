@@ -57,8 +57,8 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
 ## Architekturprinzipien
 
 - **Registries als einzige Quelle der Wahrheit.** Module stehen in
-  `packages/shared/src/modules.ts`, Konnektoren in `connectors.ts`, Rollen und
-  Rechte in `rbac.ts`, Aufbewahrungsfristen in `retention.ts`. Neue Einträge dort
+  `packages/shared/src/modules.ts`, Rollen und Rechte in `rbac.ts`,
+  Aufbewahrungsfristen in `retention.ts`. Neue Einträge dort
   wirken ohne Migration in API und Oberfläche – und gelten für jedes Haus gleich.
 - **Serverseitige Durchsetzung.** Rollen kommen aus dem JWT, nie aus
   Anfragedaten. Prüfungen im Browser sind Komfort, nicht Sicherheit.
@@ -78,13 +78,10 @@ eingeschaltet werden – ein Haus soll sich unfertige Software nicht selbst
 zuschalten – und trägt in der Oberfläche ein sichtbares Kennzeichen. Der Weg zum
 Erproben steht in [`docs/entwicklung.md`](docs/entwicklung.md).
 
-**Bewusst nicht mehr Teil des Produkts:** Schnittstellen zu Fremdsystemen
-(`integrations`), Fahrzeugbestand (`stock`) und Fuhrpark (`vehicles`). AHOI
-betrachtet den Betriebsalltag, nicht das Autogeschäft – dort haben die Häuser
-bereits Software. Die Module sind aus der Registry entfernt, ihre Oberflächen
-gelöscht. API-Module und Datenbanktabellen dazu bestehen noch; ihr Abbau ist ein
-eigener, löschender Schritt. Hintergrund zu den Schnittstellen weiterhin in
-[`docs/schnittstellen.md`](docs/schnittstellen.md).
+**Entfernt:** Schnittstellen zu Fremdsystemen, Fahrzeugbestand und Fuhrpark –
+samt Oberflächen, API-Modulen, Datenmodellen und Tabellen. AHOI betrachtet den
+Betriebsalltag, nicht das Autogeschäft; dort haben die Häuser bereits Software.
+Die Begründungen dazu stehen im Versionsverlauf, nicht mehr im Code.
 
 ## Arbeitsweise im Repository
 

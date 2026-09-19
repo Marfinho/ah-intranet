@@ -14,7 +14,6 @@ import { PeopleModule } from "./modules/people/people.module";
 import { OrdersModule } from "./modules/orders/orders.module";
 import { ResourcesModule } from "./modules/resources/resources.module";
 import { ServiceDeskModule } from "./modules/servicedesk/servicedesk.module";
-import { IntegrationsModule } from "./modules/integrations/integrations.module";
 import { PrivacyModule } from "./modules/privacy/privacy.module";
 
 @Module({
@@ -30,7 +29,6 @@ import { PrivacyModule } from "./modules/privacy/privacy.module";
     OrdersModule,
     ResourcesModule,
     ServiceDeskModule,
-    IntegrationsModule,
     PlatformModule,
     PrivacyModule,
   ],

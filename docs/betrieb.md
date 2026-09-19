@@ -11,22 +11,21 @@ tut.
 | Frontend  | `:3000`, Next.js | `GET /login`             |
 | Datenbank | PostgreSQL 16    | im Healthcheck enthalten |
 
-Der Healthcheck prüft die Datenbankverbindung samt Antwortzeit und ob der
-Schlüssel für die Zugangsdaten gesetzt ist. Er eignet sich als Ziel für einen
-Monitor; ein `ok: false` ist ein Alarm, kein Hinweis.
+Der Healthcheck prüft die Datenbankverbindung samt Antwortzeit und ob die
+nötigen Schlüssel gesetzt sind. Er eignet sich als Ziel für einen Monitor; ein
+`ok: false` ist ein Alarm, kein Hinweis.
 
 ## Umgebungsvariablen
 
-| Variable                 | Bedeutung                                                 | Bei Verlust                                                    |
-| ------------------------ | --------------------------------------------------------- | -------------------------------------------------------------- |
-| `DATABASE_URL`           | Verbindung zur Datenbank                                  | –                                                              |
-| `JWT_SECRET`             | signiert die Sitzungen                                    | alle müssen sich neu anmelden                                  |
-| `INTEGRATION_SECRET_KEY` | verschlüsselt Zugangsdaten zu Fremdsystemen (AES-256-GCM) | **Zugangsdaten sind unwiederbringlich** und neu zu hinterlegen |
-| `FRONTEND_URL`           | erlaubte Herkunft für CORS und Cookies                    | –                                                              |
+| Variable       | Bedeutung                              | Bei Verlust                   |
+| -------------- | -------------------------------------- | ----------------------------- |
+| `DATABASE_URL` | Verbindung zur Datenbank               | –                             |
+| `JWT_SECRET`   | signiert die Sitzungen                 | alle müssen sich neu anmelden |
+| `FRONTEND_URL` | erlaubte Herkunft für CORS und Cookies | –                             |
 
-`INTEGRATION_SECRET_KEY` ist der kritische Wert. Er gehört **getrennt von den
-Sicherungen** aufbewahrt – getrennt deshalb, weil ein gestohlenes Backup sonst
-alles enthält, was es zum Auswerten braucht.
+`JWT_SECRET` ist der einzige Wert, dessen Verlust spürbar ist – und er kostet
+nur eine neue Anmeldung. Ein gestohlenes Backup enthält trotzdem alle
+Personendaten des Hauses; es gehört verschlüsselt abgelegt.
 
 ## Sicherung
 
@@ -67,7 +66,6 @@ zu überlagern – ein Mischzustand wäre später nicht mehr auseinanderzuhalten
 
 Nach der Wiederherstellung:
 
-1. `INTEGRATION_SECRET_KEY` muss derselbe sein wie zum Zeitpunkt der Sicherung.
 2. Anwendungsstand und Migrationsstand müssen zusammenpassen – im Zweifel den
    Code-Stand nehmen, der zum Dump gehört.
 3. Healthcheck aufrufen, dann eine Anmeldung je Haus prüfen.
@@ -108,14 +106,13 @@ die einzige richtige Form.
 
 ## Störungen
 
-| Bild                                              | Ursache                                 | Vorgehen                                                       |
-| ------------------------------------------------- | --------------------------------------- | -------------------------------------------------------------- |
-| `ok: false`, `database` rot                       | Datenbank nicht erreichbar              | Postgres prüfen, Verbindungsgrenze, Plattenplatz               |
-| Anmeldung scheitert überall nach Neustart         | `JWT_SECRET` geändert                   | alte Sitzungen sind ungültig; einmal neu anmelden              |
-| „Zugangsdaten konnten nicht entschlüsselt werden" | `INTEGRATION_SECRET_KEY` weicht ab      | richtigen Schlüssel setzen, sonst Zugangsdaten neu hinterlegen |
-| „Kein Autohaus zugeordnet"                        | mehrere Häuser, keine Kennung angegeben | Kennung im Anmeldeformular oder eigene Domain hinterlegen      |
-| Modul liefert 404                                 | Modul ist deaktiviert                   | Administration → Module                                        |
-| „ohne Mandantenkontext"                           | Zugriff außerhalb einer Anfrage         | Programmfehler: `runWithTenant` fehlt (siehe `CLAUDE.md`)      |
+| Bild                                      | Ursache                                 | Vorgehen                                                  |
+| ----------------------------------------- | --------------------------------------- | --------------------------------------------------------- |
+| `ok: false`, `database` rot               | Datenbank nicht erreichbar              | Postgres prüfen, Verbindungsgrenze, Plattenplatz          |
+| Anmeldung scheitert überall nach Neustart | `JWT_SECRET` geändert                   | alte Sitzungen sind ungültig; einmal neu anmelden         |
+| „Kein Autohaus zugeordnet"                | mehrere Häuser, keine Kennung angegeben | Kennung im Anmeldeformular oder eigene Domain hinterlegen |
+| Modul liefert 404                         | Modul ist deaktiviert                   | Administration → Module                                   |
+| „ohne Mandantenkontext"                   | Zugriff außerhalb einer Anfrage         | Programmfehler: `runWithTenant` fehlt (siehe `CLAUDE.md`) |
 
 Der Fall „ohne Mandantenkontext" ist ein hart erzwungener Abbruch und kein
 Betriebsproblem: er verhindert, dass eine Abfrage über alle Häuser läuft.

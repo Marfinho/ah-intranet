@@ -47,49 +47,43 @@ export class PrivacyService {
       throw new NotFoundException("Person nicht gefunden");
     }
 
-    const [orders, absences, tickets, ticketComments, roomBookings, vehicleBookings, notifications, auditLogs] =
-      await Promise.all([
-        this.prisma.order.findMany({
-          where: { requesterId: userId },
-          select: { id: true, orderNumber: true, type: true, status: true, netAmount: true, createdAt: true },
-          orderBy: { createdAt: "desc" },
-        }),
-        this.prisma.absence.findMany({
-          where: { userId },
-          select: { id: true, type: true, status: true, startDate: true, endDate: true, note: true },
-          orderBy: { startDate: "desc" },
-        }),
-        this.prisma.ticket.findMany({
-          where: { OR: [{ requesterId: userId }, { assigneeId: userId }] },
-          select: { id: true, title: true, description: true, status: true, createdAt: true },
-          orderBy: { createdAt: "desc" },
-        }),
-        this.prisma.ticketComment.findMany({
-          where: { authorId: userId },
-          select: { id: true, message: true, createdAt: true },
-          orderBy: { createdAt: "desc" },
-        }),
-        this.prisma.roomBooking.findMany({
-          where: { userId },
-          select: { id: true, title: true, startsAt: true, endsAt: true },
-          orderBy: { startsAt: "desc" },
-        }),
-        this.prisma.vehicleBooking.findMany({
-          where: { userId },
-          select: { id: true, purpose: true, startsAt: true, endsAt: true },
-          orderBy: { startsAt: "desc" },
-        }),
-        this.prisma.notification.findMany({
-          where: { userId },
-          select: { id: true, title: true, detail: true, createdAt: true, readAt: true },
-          orderBy: { createdAt: "desc" },
-        }),
-        this.prisma.auditLog.findMany({
-          where: { actorId: userId },
-          select: { id: true, action: true, entityType: true, detail: true, createdAt: true },
-          orderBy: { createdAt: "desc" },
-        }),
-      ]);
+    const [orders, absences, tickets, ticketComments, roomBookings, notifications, auditLogs] = await Promise.all([
+      this.prisma.order.findMany({
+        where: { requesterId: userId },
+        select: { id: true, orderNumber: true, type: true, status: true, netAmount: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+      }),
+      this.prisma.absence.findMany({
+        where: { userId },
+        select: { id: true, type: true, status: true, startDate: true, endDate: true, note: true },
+        orderBy: { startDate: "desc" },
+      }),
+      this.prisma.ticket.findMany({
+        where: { OR: [{ requesterId: userId }, { assigneeId: userId }] },
+        select: { id: true, title: true, description: true, status: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+      }),
+      this.prisma.ticketComment.findMany({
+        where: { authorId: userId },
+        select: { id: true, message: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+      }),
+      this.prisma.roomBooking.findMany({
+        where: { userId },
+        select: { id: true, title: true, startsAt: true, endsAt: true },
+        orderBy: { startsAt: "desc" },
+      }),
+      this.prisma.notification.findMany({
+        where: { userId },
+        select: { id: true, title: true, detail: true, createdAt: true, readAt: true },
+        orderBy: { createdAt: "desc" },
+      }),
+      this.prisma.auditLog.findMany({
+        where: { actorId: userId },
+        select: { id: true, action: true, entityType: true, detail: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
 
     return {
       erstelltAm: new Date().toISOString(),
@@ -119,7 +113,6 @@ export class PrivacyService {
         serviceanfragen: tickets,
         kommentareZuServiceanfragen: ticketComments,
         raumbuchungen: roomBookings,
-        fahrzeugbuchungen: vehicleBookings,
         benachrichtigungen: notifications,
         protokollierteAktionen: auditLogs,
       },

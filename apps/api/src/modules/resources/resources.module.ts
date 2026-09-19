@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
-import { CalendarController, RoomsController, VehiclesController } from "./resources.controller";
+import { CalendarController, RoomsController } from "./resources.controller";
 import { ResourcesService } from "./resources.service";
 
 @Module({
-  controllers: [CalendarController, RoomsController, VehiclesController],
+  controllers: [CalendarController, RoomsController],
   providers: [ResourcesService],
   exports: [ResourcesService],
 })

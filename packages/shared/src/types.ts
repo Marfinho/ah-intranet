@@ -47,8 +47,6 @@ export type AbsenceType = "urlaub" | "krank" | "gleitzeit" | "sonderurlaub" | "f
 export type AbsenceStatus = "submitted" | "approved" | "rejected" | "cancelled";
 export type IdeaStatus = "neu" | "in_pruefung" | "angenommen" | "umgesetzt" | "abgelehnt";
 export type CalendarCategory = "schulung" | "aktion" | "wartung" | "meeting" | "bestellung";
-export type VehicleCategory = "vorfuehrwagen" | "werkstattersatz" | "poolfahrzeug";
-export type BookingStatus = "reserviert" | "abgeholt" | "zurueckgegeben" | "storniert";
 export type Presence = "vor Ort" | "mobil" | "abwesend";
 export type DocumentFileType = "pdf" | "docx" | "xlsx" | "link";
 
@@ -435,28 +433,6 @@ export interface RoomBooking {
   organizerUsername: string;
   startsAt: string;
   endsAt: string;
-}
-
-export interface Vehicle {
-  id: string;
-  label: string;
-  plate: string;
-  category: VehicleCategory;
-  location?: string | null;
-  isActive: boolean;
-}
-
-export interface VehicleBooking {
-  id: string;
-  vehicleId: string;
-  vehicleLabel: string;
-  plate: string;
-  purpose: string;
-  driver: string;
-  driverUsername: string;
-  startsAt: string;
-  endsAt: string;
-  status: BookingStatus;
 }
 
 /* ------------------------------------------------------- Beteiligung */

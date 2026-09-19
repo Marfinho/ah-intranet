@@ -12,7 +12,9 @@ Erster vollständiger Stand. Lauffähig, aber in keinem Haus im Einsatz.
 
 ### Funktionen
 
-- **19 Fachmodule**, je Haus einzeln ein- und ausschaltbar. Abhängige Module
+- **19 Fachmodule**, je Haus einzeln ein- und ausschaltbar, jedes mit einem
+  Reifegrad. Erprobungen schaltet nur die Plattformverwaltung frei und sind in
+  der Oberfläche als solche erkennbar. Abhängige Module
   gehen beim Abschalten mit; ein abgeschaltetes Modul verhält sich nach außen,
   als gäbe es die Funktion nicht.
 - **Aushänge, Bestellungen mit Freigabe, Abwesenheitsanträge, Serviceanfragen,
@@ -37,8 +39,8 @@ Erster vollständiger Stand. Lauffähig, aber in keinem Haus im Einsatz.
 ### Bewusst nicht enthalten
 
 - **Schnittstellen zu Fremdsystemen, Fahrzeugbestand und Fuhrpark.** AHOI
-  behandelt den Betriebsalltag, nicht das Autogeschäft. Der Code dazu ist aus der
-  Oberfläche entfernt; API-Module und Tabellen bestehen noch und werden in einem
-  eigenen Schritt abgebaut.
+  behandelt den Betriebsalltag, nicht das Autogeschäft – dort haben die Häuser
+  bereits Software. Vollständig entfernt: Oberflächen, API-Module, Datenmodelle
+  und Tabellen.
 - Abzug der Sicherungen auf ein zweites System, zentrale Protokollauswertung,
   Auftragsverarbeitungsvertrag als Vorlage. Siehe `CLAUDE.md`, Bekannte Lücken.

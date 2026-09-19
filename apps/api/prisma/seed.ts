@@ -217,8 +217,6 @@ async function clearAll() {
     prisma.onboardingStep.deleteMany(),
     prisma.onboardingTemplate.deleteMany(),
     prisma.absence.deleteMany(),
-    prisma.vehicleBooking.deleteMany(),
-    prisma.vehicle.deleteMany(),
     prisma.roomBooking.deleteMany(),
     prisma.room.deleteMany(),
     prisma.ticketComment.deleteMany(),
@@ -932,43 +930,6 @@ async function seedTenant(tenantId: string, platformAdmin: boolean) {
     data: { roomId: raumNord.id, userId: admin.id, title: "Verkaufsmeeting Q1", startsAt: days(3), endsAt: days(3) },
   });
 
-  await prisma.vehicle.createMany({
-    data: [
-      {
-        label: "Vorführwagen Kompakt-SUV",
-        plate: "HB-AH 101",
-        category: "vorfuehrwagen",
-        locationId: bremen.id,
-        notes: "Vollelektrisch",
-      },
-      { label: "Vorführwagen Kombi", plate: "HB-AH 102", category: "vorfuehrwagen", locationId: bremen.id },
-      {
-        label: "Werkstattersatzwagen Kleinwagen",
-        plate: "DEL-AH 201",
-        category: "werkstattersatz",
-        locationId: delmenhorst.id,
-      },
-      {
-        label: "Poolfahrzeug Transporter",
-        plate: "HB-AH 301",
-        category: "poolfahrzeug",
-        locationId: bremen.id,
-        notes: "Für Teiletransporte",
-      },
-    ],
-  });
-
-  const poolTransporter = await prisma.vehicle.findFirstOrThrow({ where: { plate: "HB-AH 301" } });
-  await prisma.vehicleBooking.create({
-    data: {
-      vehicleId: poolTransporter.id,
-      userId: userByUsername.get("a.roth")!.id,
-      purpose: "Teileabholung Zentrallager",
-      startsAt: days(2),
-      endsAt: days(2),
-    },
-  });
-
   /* ------------------------------------------------------------ Tickets */
 
   const ticket1 = await prisma.ticket.create({
@@ -1259,7 +1220,6 @@ async function seedTenant(tenantId: string, platformAdmin: boolean) {
     News: await prisma.newsPost.count(),
     Bestellungen: await prisma.order.count(),
     Tickets: await prisma.ticket.count(),
-    Fahrzeuge: await prisma.vehicle.count(),
   };
 
   await prisma.$disconnect();

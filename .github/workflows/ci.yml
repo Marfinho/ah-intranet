@@ -14,7 +14,6 @@ env:
   # Nur für die Pipeline. Produktive Werte kommen aus den Repository-Secrets.
   DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ah_intranet_ci?schema=public
   JWT_SECRET: ci-schluessel-ohne-bedeutung
-  INTEGRATION_SECRET_KEY: ci-integrationsschluessel-ohne-bedeutung
   FRONTEND_URL: http://localhost:3000
   API_URL: http://localhost:3001/api
   NEXT_PUBLIC_API_URL: http://localhost:3001/api

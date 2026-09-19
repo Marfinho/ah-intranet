@@ -26,9 +26,9 @@ apps/
   api/   -> NestJS API (Prisma, Guards, Fachlogik)
   web/   -> Next.js Intranet-Frontend
 packages/
-  shared/ -> gemeinsame Typen, Modul- und Konnektor-Registry
+  shared/ -> gemeinsame Typen, Modul-, Rollen- und Fristenregistry
 e2e/      -> browserbasierte Abnahmeprüfungen
-docs/     -> Schnittstellendokumentation
+docs/     -> Erscheinungsbild, Entwicklung, Betrieb, Datenschutz
 ```
 
 ## Start lokal
@@ -95,8 +95,8 @@ jeder Request einen zusätzlichen Datenbankzugriff auslöst.
 | Arbeitsplatz  | Dashboard\*, Globale Suche, Benachrichtigungen\*, Schnellzugriffe                                |
 | Kommunikation | Aktuelles (News), Mitarbeiterverzeichnis, Umfragen, Ideenmanagement                              |
 | Prozesse      | Dokumente, Wissensdatenbank, Bestellungen, Freigaben, Serviceanfragen, Onboarding, Abwesenheiten |
-| Ressourcen    | Kalender, Raumbuchung, Fuhrpark, Fahrzeugbestand                                                 |
-| Verwaltung    | Administration\*, Schnittstellen, Audit-Log                                                      |
+| Ressourcen    | Kalender, Raumbuchung                                                                            |
+| Verwaltung    | Administration\*, Audit-Log                                                                      |
 
 \* Kernmodul, nicht abschaltbar.
 
@@ -111,24 +111,20 @@ jeder Request einen zusätzlichen Datenbankzugriff auslöst.
 - **Freigaben** – einstufiger Prozess mit geprüften Statusübergängen
   (`Eingereicht → Genehmigt → Vorgemerkt → Extern bestellt → Abgeschlossen`),
   Ablehnung, Stornierung und Sammelbestellung in einem Zug.
-- **Serviceanfragen** – Tickets an IT, Facility, Personal, Marketing und
-  Fuhrpark mit Zuweisung, Status und Verlauf.
+- **Serviceanfragen** – Tickets an IT, Facility, Personal und Marketing mit
+  Zuweisung, Status und Verlauf.
 - **Abwesenheiten** – Urlaub, Krankmeldung, Gleitzeit, Sonderurlaub und
   Fortbildung; Arbeitstage werden berechnet, Überschneidungen abgewiesen,
   Freigabe durch die Führungskraft, Urlaubskonto inklusive.
 - **Onboarding** – rollenbasierte Vorlagen, Zuweisung an Personen, abhakbare
   Checkliste mit Fortschritt.
-- **Raumbuchung / Fuhrpark** – Reservierungen mit Kollisionsprüfung; beim
-  Fuhrpark zusätzlich Übergabestatus (reserviert, abgeholt, zurückgegeben).
+- **Raumbuchung** – Reservierungen mit Kollisionsprüfung.
 - **Ideen / Umfragen** – Vorschläge mit Zustimmung und Bearbeitungsstand,
   Abstimmungen mit Auswertung in Echtzeit (eine Stimme pro Person, änderbar).
 - **Wissensdatenbank / Dokumente** – durchsuchbare Artikel und verlinkte
   Unterlagen, beide mit Kategorien und Zielgruppen.
 - **Globale Suche** – eine Abfrage über News, Dokumente, Wiki, Personen und
   Tickets; deaktivierte Module werden übersprungen.
-- **Schnittstellen** – Konnektoren zu Konzernsystemen, DMS, Fahrzeugbörsen,
-  Bewertung und Buchhaltung; siehe [`docs/schnittstellen.md`](docs/schnittstellen.md).
-- **Fahrzeugbestand** – aus DMS-Export und mobile.de zusammengeführter Bestand.
 - **Administration** – Benutzer (inkl. generiertem Startpasswort und Sperre),
   Rollen und Rechte, News, Dokumente, Kataloge, Formularfelder, Bestelltermine,
   Modulsteuerung und Audit-Log.
@@ -221,9 +217,7 @@ zurückgespielt wurde, ist eine Vermutung. Er vergleicht je Haus die Zahl der
 Benutzer, Beiträge, Bestellungen, Tickets und Protokolleinträge sowie den
 Migrationsstand und endet bei jeder Abweichung mit Code 1.
 
-`INTEGRATION_SECRET_KEY` gehört getrennt von den Sicherungen aufbewahrt – ohne
-ihn sind die Zugangsdaten zu Fremdsystemen nach einer Wiederherstellung
-unlesbar. Störungsbilder, Cron-Beispiele und der Aktualisierungsweg:
+Störungsbilder, Cron-Beispiele und der Aktualisierungsweg:
 [`docs/betrieb.md`](docs/betrieb.md).
 
 ## Docker Compose
@@ -243,14 +237,13 @@ docker compose exec api npx tsx prisma/seed.ts
 
 **`apps/api/.env`**
 
-| Variable                 | Bedeutung                                             |
-| ------------------------ | ----------------------------------------------------- |
-| `PORT`                   | Port der API (Standard 3001)                          |
-| `DATABASE_URL`           | PostgreSQL-Verbindung                                 |
-| `FRONTEND_URL`           | erlaubte CORS-Herkunft, kommagetrennt möglich         |
-| `JWT_SECRET`             | Sitzungsschlüssel – **in Produktion zwingend setzen** |
-| `JWT_EXPIRES_IN`         | Gültigkeit des Tokens (Standard `12h`)                |
-| `INTEGRATION_SECRET_KEY` | Verschlüsselt Zugangsdaten zu Fremdsystemen           |
+| Variable         | Bedeutung                                             |
+| ---------------- | ----------------------------------------------------- |
+| `PORT`           | Port der API (Standard 3001)                          |
+| `DATABASE_URL`   | PostgreSQL-Verbindung                                 |
+| `FRONTEND_URL`   | erlaubte CORS-Herkunft, kommagetrennt möglich         |
+| `JWT_SECRET`     | Sitzungsschlüssel – **in Produktion zwingend setzen** |
+| `JWT_EXPIRES_IN` | Gültigkeit des Tokens (Standard `12h`)                |
 
 **`apps/web/.env.local`**
 
@@ -258,6 +251,3 @@ docker compose exec api npx tsx prisma/seed.ts
 | --------------------- | ---------------------------------- |
 | `API_URL`             | serverseitig genutzte API-Adresse  |
 | `NEXT_PUBLIC_API_URL` | Fallback, auch im Browser sichtbar |
-
-Ohne `JWT_SECRET` startet die API bewusst nicht. Ohne `INTEGRATION_SECRET_KEY`
-lassen sich keine Zugangsdaten zu Fremdsystemen speichern – ebenfalls Absicht.
