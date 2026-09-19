@@ -19,12 +19,6 @@ const ADMIN_LINKS = [
     detail: "Stichtage der Sammelbestellungen",
     adminOnly: false,
   },
-  {
-    href: "/admin/schnittstellen",
-    label: "Schnittstellen",
-    detail: "DMS, Börsen, Buchhaltung, Konzernsysteme",
-    adminOnly: true,
-  },
   { href: "/admin/audit", label: "Audit-Log", detail: "Protokoll aller Aktionen", adminOnly: true },
   {
     href: "/admin/datenschutz",

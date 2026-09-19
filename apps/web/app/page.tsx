@@ -13,10 +13,13 @@ export default async function DashboardPage() {
 
   return (
     <AppShell title="Dashboard" subtitle="Ihre Übersicht über News, Aufgaben, Termine und Services">
-      <section className="rounded-3xl bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 p-6 text-white shadow-card">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-100">Willkommen zurück</p>
+      {/* Ruhige Fläche, Akzent nur als Markierung – siehe docs/ci.md. */}
+      <section className="rounded-3xl bg-slate-900 p-6 text-white shadow-card">
+        <p className="font-display text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-400">
+          Willkommen zurück
+        </p>
         <h2 className="mt-2 text-3xl font-bold">{session.displayName}</h2>
-        <p className="mt-2 max-w-3xl text-sm text-brand-50">
+        <p className="mt-2 max-w-3xl text-sm text-slate-300">
           {session.jobTitle} · {session.scopeLabel}
         </p>
         {data.quickLinks.length > 0 ? (

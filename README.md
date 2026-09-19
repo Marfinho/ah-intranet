@@ -1,9 +1,16 @@
-# AH Intranet
+# AHOI
 
-Responsives Intranet für Autohäuser mit mehreren Standorten. Vollständig
-lauffähig: echte Anmeldung, Datenhaltung in PostgreSQL, 22 Fachmodule, die
-sich vom Adminbereich einzeln ein- und ausschalten lassen. Eine Installation
-trägt mehrere Autohäuser mit vollständig getrennten Daten.
+**A**uto**h**aus **O**rganisation & **I**nformation.
+
+Responsives Intranet für Autohäuser mit mehreren Standorten. Es behandelt den
+Betriebsalltag – Aushänge, Bestellungen, Freigaben, Anträge, Serviceanfragen,
+Einarbeitung – und ausdrücklich nicht das Autogeschäft.
+
+Vollständig lauffähig: echte Anmeldung, Datenhaltung in PostgreSQL, 19
+Fachmodule, die sich vom Adminbereich einzeln ein- und ausschalten lassen. Eine
+Installation trägt mehrere Autohäuser mit vollständig getrennten Daten.
+
+Erscheinungsbild und Marke: [`docs/ci.md`](docs/ci.md).
 
 ## Architektur
 
@@ -195,9 +202,8 @@ einem GIN-Index ersetzt mehrere Joins; Benutzer tragen ihre Tokens am Datensatz.
 
 ```bash
 pnpm test                 # Unit-Tests (API und Shared)
-node e2e/smoke.js         # alle 37 Seiten laden fehlerfrei
+node e2e/smoke.js         # alle 32 Seiten laden fehlerfrei
 node e2e/flows.js         # 33 Prüfungen der Fachprozesse, inkl. Mandantentrennung
-node e2e/integrations.js  # Prüfungen der Schnittstellen
 ```
 
 Details in [`e2e/README.md`](e2e/README.md).
@@ -255,10 +261,3 @@ docker compose exec api npx tsx prisma/seed.ts
 
 Ohne `JWT_SECRET` startet die API bewusst nicht. Ohne `INTEGRATION_SECRET_KEY`
 lassen sich keine Zugangsdaten zu Fremdsystemen speichern – ebenfalls Absicht.
-
-## Schnittstellen
-
-Anbindung an Konzernsysteme (RW.IL, DMS-Backbone, ElsaPro, ETKA, ODIS, Group
-Retail Portal), DMS, Fahrzeugbörsen, Bewertung und Buchhaltung. Welche
-Schnittstelle offen zugänglich ist und welche einen Partnervertrag braucht,
-steht in [`docs/schnittstellen.md`](docs/schnittstellen.md).

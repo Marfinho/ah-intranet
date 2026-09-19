@@ -51,7 +51,7 @@ async function login(page, username) {
 
     // 3. Navigation enthält Module, aber keine Freigaben für Mitarbeitende
     check("Navigation ohne Freigaben für Mitarbeitende", !(await page.locator('nav a[href="/freigaben"]').count()));
-    check("Navigation enthält Fuhrpark", (await page.locator('nav a[href="/fuhrpark"]').count()) > 0);
+    check("Navigation enthält Raumbuchung", (await page.locator('nav a[href="/raeume"]').count()) > 0);
 
     // 4. Visitenkartenbestellung anlegen
     await page.goto(`${BASE}/bestellungen/visitenkarten`, { waitUntil: "networkidle" });
@@ -115,18 +115,18 @@ async function login(page, username) {
     check("Kernmodul-Schalter ist gesperrt", await coreSwitch.isDisabled());
 
     // Dialoge werden global bestätigt
-    await page.locator('button[role="switch"][aria-label*="Fuhrpark"]').first().click();
+    await page.locator('button[role="switch"][aria-label*="Raumbuchung"]').first().click();
     await page.waitForTimeout(3000);
     check(
-      "Fuhrpark deaktiviert",
-      (await page.locator('button[role="switch"][aria-label="Fuhrpark aktivieren"]').count()) > 0,
+      "Raumbuchung deaktiviert",
+      (await page.locator('button[role="switch"][aria-label="Raumbuchung aktivieren"]').count()) > 0,
     );
 
     // 12. Deaktiviertes Modul ist nicht mehr erreichbar
-    await page.goto(`${BASE}/fuhrpark`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE}/raeume`, { waitUntil: "networkidle" });
     check("Route des Moduls gesperrt", page.url().includes("/modul-deaktiviert"), page.url());
     await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
-    check("Modul aus Navigation entfernt", (await page.locator('nav a[href="/fuhrpark"]').count()) === 0);
+    check("Modul aus Navigation entfernt", (await page.locator('nav a[href="/raeume"]').count()) === 0);
 
     // 13. Abhängigkeit: Bestellungen aus -> Freigaben aus
     await page.goto(`${BASE}/admin/module`, { waitUntil: "networkidle" });

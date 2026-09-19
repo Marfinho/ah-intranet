@@ -1,12 +1,19 @@
-# Projektleitfaden AH Intranet
+# Projektleitfaden AHOI
 
 Kurzanleitung für alle, die an diesem Repository arbeiten – Menschen wie Agenten.
 
 ## Was das Projekt ist
 
-Intranet für ein Autohaus mit mehreren Standorten und Konzernmarken.
+**AHOI** – Autohaus Organisation & Information. Intranet für Autohäuser mit
+mehreren Standorten. Es behandelt ausschließlich den Betriebsalltag: Aushänge,
+Bestellungen, Freigaben, Anträge, Serviceanfragen, Einarbeitung. **Nicht** das
+Autogeschäft – dafür haben die Häuser ihr DMS.
+
 pnpm-Monorepo: NestJS-API (`apps/api`), Next.js-Frontend (`apps/web`),
 gemeinsame Typen und Registries (`packages/shared`).
+
+Erscheinungsbild, Farben, Schrift und Zeichen: [`docs/ci.md`](docs/ci.md). Wer
+dort etwas ändert, ändert es in Anwendung und Präsentation zugleich.
 
 ## Mittelfristiges Ziel
 
@@ -65,10 +72,14 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
 
 ## Stand der Module
 
-22 Fachmodule, einzeln abschaltbar. **Schnittstellen** (`integrations`) und
-**Fahrzeugbestand** (`stock`) sind derzeit **standardmäßig deaktiviert** – die
-Anbindung an Fremdsysteme wurde zurückgestellt. Der Code bleibt vollständig
-erhalten und lässt sich über die Modulsteuerung jederzeit zuschalten; Details in
+19 Fachmodule, einzeln abschaltbar.
+
+**Bewusst nicht mehr Teil des Produkts:** Schnittstellen zu Fremdsystemen
+(`integrations`), Fahrzeugbestand (`stock`) und Fuhrpark (`vehicles`). AHOI
+betrachtet den Betriebsalltag, nicht das Autogeschäft – dort haben die Häuser
+bereits Software. Die Module sind aus der Registry entfernt, ihre Oberflächen
+gelöscht. API-Module und Datenbanktabellen dazu bestehen noch; ihr Abbau ist ein
+eigener, löschender Schritt. Hintergrund zu den Schnittstellen weiterhin in
 [`docs/schnittstellen.md`](docs/schnittstellen.md).
 
 ## Arbeitsweise im Repository

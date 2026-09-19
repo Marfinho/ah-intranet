@@ -2,12 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+/**
+ * Farbtoken des Erscheinungsbildes AHOI. Beschrieben in docs/ci.md.
+ * Tailwind-Klassen greifen darauf über die Skala `brand` zu; alles, was ohne
+ * Utility-Klasse auskommen muss, nimmt diese Variablen.
+ */
 :root {
   color-scheme: light;
+
+  --ahoi-ground: #f1f3f5;
+  --ahoi-surface: #ffffff;
+  --ahoi-ink: #0f1417;
+  --ahoi-ink-2: #4c575e;
+  --ahoi-ink-3: #78848b;
+  --ahoi-line: #d3d9dd;
+  --ahoi-accent: #dc3a14;
+  --ahoi-accent-ink: #a2270c;
+  --ahoi-accent-soft: #fbe3d9;
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  @apply bg-slate-100 text-slate-900 antialiased;
+  font-family: var(--font-body, "Source Sans 3", "Segoe UI", system-ui, sans-serif);
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: -0.018em;
 }
 
 .card {
@@ -20,4 +44,9 @@ body {
 
 .badge {
   @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold;
+}
+
+/* Beschriftungen: klein, gesperrt, leise – wie in der Präsentation. */
+.label {
+  @apply font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500;
 }

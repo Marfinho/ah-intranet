@@ -9,7 +9,6 @@ const ROUTES = [
   "/wissen",
   "/kalender",
   "/raeume",
-  "/fuhrpark",
   "/tickets",
   "/ideen",
   "/umfragen",
@@ -35,10 +34,6 @@ const ROUTES = [
   "/admin/audit",
   "/admin/mandanten",
   "/admin/datenschutz",
-  "/admin/schnittstellen",
-  "/admin/schnittstellen/mobile_de",
-  "/admin/schnittstellen/vw_rwil",
-  "/fahrzeugbestand",
 ];
 (async () => {
   const b = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });

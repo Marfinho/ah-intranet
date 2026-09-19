@@ -276,8 +276,6 @@ export class PrivacyService {
         return (await this.prisma.auditLog.deleteMany({ where: { createdAt: { lt: cutoff } } })).count;
       case "room_booking":
         return (await this.prisma.roomBooking.deleteMany({ where: { endsAt: { lt: cutoff } } })).count;
-      case "vehicle_booking":
-        return (await this.prisma.vehicleBooking.deleteMany({ where: { endsAt: { lt: cutoff } } })).count;
       case "ticket":
         return (await this.prisma.ticket.deleteMany({ where: { createdAt: { lt: cutoff }, status: "geloest" } })).count;
       case "absence":
@@ -299,8 +297,6 @@ export class PrivacyService {
         return this.prisma.auditLog.count({ where: { createdAt: { lt: cutoff } } });
       case "room_booking":
         return this.prisma.roomBooking.count({ where: { endsAt: { lt: cutoff } } });
-      case "vehicle_booking":
-        return this.prisma.vehicleBooking.count({ where: { endsAt: { lt: cutoff } } });
       case "ticket":
         return this.prisma.ticket.count({ where: { createdAt: { lt: cutoff }, status: "geloest" } });
       case "absence":

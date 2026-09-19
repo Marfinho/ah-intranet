@@ -3,6 +3,7 @@ import { Bell, LogOut, UserCircle2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { MODULE_GROUP_LABELS, type ModuleGroup } from "@ah-intranet/shared";
 import { getModules, getUnreadCount, requireSession } from "@/lib/session";
+import { Logo } from "@/components/logo";
 import { logoutAction } from "@/lib/actions";
 import { SideNav, type NavGroup } from "./side-nav";
 import { SearchBox } from "./search-box";
@@ -53,7 +54,10 @@ export async function AppShell({
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 lg:px-8 xl:flex-row xl:items-center xl:justify-between">
           <div className="min-w-0">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">{session.tenant.name}</p>
+            <div className="flex items-center gap-3">
+              <Logo signetClass="h-6 w-6" className="text-slate-900" />
+              <span className="truncate text-sm font-semibold text-slate-500">{session.tenant.name}</span>
+            </div>
             <h1 className="truncate text-xl font-bold text-slate-900">{title}</h1>
             <p className="text-sm text-slate-600">{subtitle}</p>
           </div>

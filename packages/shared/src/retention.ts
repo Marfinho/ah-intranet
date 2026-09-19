@@ -69,14 +69,6 @@ export const RETENTION_RULES: readonly RetentionRule[] = [
     reason: "Nach Ablauf des Geschäftsjahres ohne Nutzen; kein handels- oder steuerrechtlicher Bezug.",
   },
   {
-    key: "vehicle_booking",
-    label: "Fahrzeugbuchungen",
-    description: "Nutzung von Vorführ- und Werkstattersatzwagen.",
-    mode: "delete",
-    days: 3 * JAHR,
-    reason: "Länger als Raumbuchungen, weil Schäden und Verstöße nachvollziehbar bleiben müssen.",
-  },
-  {
     key: "ticket",
     label: "Serviceanfragen",
     description: "Tickets an IT, Haustechnik und Verwaltung samt Verlauf.",
