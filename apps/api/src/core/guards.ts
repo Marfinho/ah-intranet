@@ -10,8 +10,8 @@ import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import type { Request } from "express";
 import type { AppRole } from "@ah-intranet/shared";
-import { getModule } from "@ah-intranet/shared";
-import { FEATURE_KEY, PLATFORM_ADMIN_KEY, PUBLIC_KEY, ROLES_KEY } from "./decorators";
+import { getModule, getPermission } from "@ah-intranet/shared";
+import { FEATURE_KEY, PERMISSION_KEY, PLATFORM_ADMIN_KEY, PUBLIC_KEY, ROLES_KEY } from "./decorators";
 import { ModuleRegistryService } from "./module-registry.service";
 import { PrismaService } from "./prisma.service";
 import type { RequestUser } from "./request-user";
@@ -127,8 +127,9 @@ export class RolesGuard implements CanActivate {
     const targets = [context.getHandler(), context.getClass()];
     const required = this.reflector.getAllAndOverride<AppRole[]>(ROLES_KEY, targets);
     const platformOnly = this.reflector.getAllAndOverride<boolean>(PLATFORM_ADMIN_KEY, targets);
+    const permission = this.reflector.getAllAndOverride<string>(PERMISSION_KEY, targets);
 
-    if (!required?.length && !platformOnly) {
+    if (!required?.length && !platformOnly && !permission) {
       return true;
     }
 
@@ -141,6 +142,13 @@ export class RolesGuard implements CanActivate {
     }
     if (required?.length && !required.some((role) => user.roles.includes(role))) {
       throw new ForbiddenException("Für diese Aktion fehlen die erforderlichen Rechte");
+    }
+    // Das Recht wird nach der Rolle geprüft: Wer den Bereich gar nicht betreten
+    // darf, soll nicht erfahren, welches Recht ihm darin fehlte.
+    if (permission && !user.permissions.includes(permission)) {
+      throw new ForbiddenException(
+        `Für diese Aktion fehlt die Berechtigung "${getPermission(permission)?.name ?? permission}".`,
+      );
     }
     return true;
   }

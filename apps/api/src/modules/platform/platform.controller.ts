@@ -1,6 +1,6 @@
 import { Controller, Get, Query } from "@nestjs/common";
 import { PlatformService } from "./platform.service";
-import { CurrentUser, Feature, Roles } from "../../core/decorators";
+import { CurrentUser, Feature, Permission, Roles } from "../../core/decorators";
 import type { RequestUser } from "../../core/request-user";
 
 @Controller("dashboard")
@@ -42,6 +42,7 @@ export class AuditController {
 
   @Get()
   @Roles("admin")
+  @Permission("audit.read")
   list(@Query("search") search?: string, @Query("action") action?: string) {
     return this.platform.auditLog({ search, action });
   }

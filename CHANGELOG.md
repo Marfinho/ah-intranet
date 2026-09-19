@@ -23,8 +23,10 @@ Erster vollständiger Stand. Lauffähig, aber in keinem Haus im Einsatz.
 - **Mandantenfähigkeit:** mehrere Autohäuser auf einer Installation mit
   vollständig getrennten Daten. Ein neues Haus entsteht samt Rollen, Rechten und
   erstem Administrationskonto in einem Schritt.
-- **Rollen und Rechte** serverseitig durchgesetzt, vier Rollen mit feingranularen
-  Berechtigungen.
+- **Rollen und Rechte** serverseitig durchgesetzt, vier Rollen mit zehn
+  feingranularen Berechtigungen. Wird einer Rolle ein Recht entzogen, endet die
+  Sitzung der betroffenen Konten sofort. Die Rechte für Rollen- und
+  Benutzerverwaltung lassen sich nicht vollständig entfernen.
 - **Datenschutz:** Auskunft nach Art. 15 als Datei, Löschung nach Art. 17 als
   Anonymisierung, acht Aufbewahrungsfristen mit nächtlichem Aufräumlauf.
 - **Erscheinungsbild AHOI** aus einer Quelle für Anwendung und Präsentation.

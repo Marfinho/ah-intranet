@@ -62,8 +62,15 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
   wirken ohne Migration in API und Oberfläche – und gelten für jedes Haus gleich.
 - **Serverseitige Durchsetzung.** Rollen kommen aus dem JWT, nie aus
   Anfragedaten. Prüfungen im Browser sind Komfort, nicht Sicherheit.
-- **Guards in fester Reihenfolge:** Authentifizierung → Rollen →
+- **Guards in fester Reihenfolge:** Authentifizierung → Rollen → Recht →
   Modulaktivierung. Ein abgeschaltetes Modul antwortet mit 404, nicht 403.
+- **Rolle und Recht sind zweierlei.** `@Roles` sagt, wer grundsätzlich in einen
+  Bereich gehört; `@Permission` sagt, was ein Haus der Rolle darin zugesteht.
+  Das Recht wird nach der Rolle geprüft – wer den Bereich nicht betreten darf,
+  soll nicht erfahren, welches Recht ihm darin fehlte. Entzogene Rechte greifen
+  sofort: die Sitzungen der betroffenen Konten enden beim Speichern.
+  `roles.manage` und `users.manage` lassen sich nicht aus der letzten Rolle
+  nehmen, die sie trägt – sonst käme niemand mehr an die Verwaltung.
 - **Zielgruppen als flache Scope-Tokens** (`location:HB`, `department:SRV`)
   mit GIN-Index statt Join-Ketten.
 - **Ehrlichkeit über erfundene Funktionalität.** Wo eine Spezifikation fehlt

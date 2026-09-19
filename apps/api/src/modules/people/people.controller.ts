@@ -20,7 +20,7 @@ import { PeopleService } from "./people.service";
 import { AbsencesService } from "./absences.service";
 import { OnboardingService } from "./onboarding.service";
 import { NotificationsService } from "../../core/notifications.service";
-import { CurrentUser, Feature, Roles } from "../../core/decorators";
+import { CurrentUser, Feature, Permission, Roles } from "../../core/decorators";
 import type { RequestUser } from "../../core/request-user";
 
 /* ------------------------------------------------------------------ DTOs */
@@ -159,12 +159,14 @@ export class UsersController {
 
   @Post()
   @Roles("admin")
+  @Permission("users.manage")
   create(@CurrentUser() user: RequestUser, @Body() dto: UserBodyDto) {
     return this.people.createUser(user, dto);
   }
 
   @Patch(":id")
   @Roles("admin")
+  @Permission("users.manage")
   update(@CurrentUser() user: RequestUser, @Param("id") id: string, @Body() dto: UserPatchDto) {
     return this.people.updateUser(user, id, dto);
   }
@@ -194,6 +196,7 @@ export class RolesController {
 
   @Patch(":id/permissions")
   @Roles("admin")
+  @Permission("roles.manage")
   setPermissions(@CurrentUser() user: RequestUser, @Param("id") id: string, @Body() dto: RolePermissionsDto) {
     return this.people.setRolePermissions(user, id, dto.permissions);
   }

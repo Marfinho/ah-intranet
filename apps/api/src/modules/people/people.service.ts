@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
+import { UNVERZICHTBARE_RECHTE, getPermission } from "@ah-intranet/shared";
 import type {
   AppRole,
   EmployeeDirectoryEntry,
@@ -315,12 +316,24 @@ export class PeopleService {
     }
 
     const permissions = await this.prisma.permission.findMany({ where: { key: { in: permissionKeys } } });
+    const kuenftig = new Set(permissions.map((permission) => permission.key));
+
+    await this.assertNichtAusgesperrt(roleId, kuenftig);
+
+    // Wessen Rechte sich ändern, muss es sofort merken - nicht erst, wenn das
+    // Token in bis zu zwölf Stunden abläuft. Ein entzogenes Recht, das noch
+    // einen halben Tag wirkt, ist kein entzogenes Recht.
+    const betroffene = await this.prisma.userRole.findMany({ where: { roleId }, select: { userId: true } });
 
     await this.prisma.$transaction([
       this.prisma.rolePermission.deleteMany({ where: { roleId } }),
       this.prisma.rolePermission.createMany({
         data: permissions.map((permission) => ({ roleId, permissionId: permission.id })),
         skipDuplicates: true,
+      }),
+      this.prisma.user.updateMany({
+        where: { id: { in: betroffene.map((eintrag) => eintrag.userId) } },
+        data: { tokenVersion: { increment: 1 } },
       }),
     ]);
 
@@ -330,9 +343,40 @@ export class PeopleService {
       entityType: "role",
       entityId: roleId,
       detail: `Rechte der Rolle "${role.name}" auf ${permissions.length} Berechtigung(en) gesetzt`,
+      metadata: { rechte: [...kuenftig], sitzungenBeendet: betroffene.length },
     });
 
     return this.roles();
+  }
+
+  /**
+   * Verhindert, dass ein Haus sich selbst aussperrt.
+   *
+   * Wer `roles.manage` aus der letzten Rolle nimmt, die es trägt, kommt nie
+   * wieder an den Rechte-Editor - und ohne `users.manage` entsteht auch kein
+   * neues Administrationskonto mehr. Beides ist nicht rückgängig zu machen,
+   * also wird es vorher abgewiesen.
+   */
+  private async assertNichtAusgesperrt(roleId: string, kuenftig: Set<string>): Promise<void> {
+    const fehlend = UNVERZICHTBARE_RECHTE.filter((recht) => !kuenftig.has(recht));
+    if (fehlend.length === 0) {
+      return;
+    }
+
+    const andere = await this.prisma.role.findMany({
+      where: { id: { not: roleId } },
+      select: { name: true, permissions: { select: { permission: { select: { key: true } } } } },
+    });
+
+    for (const recht of fehlend) {
+      const traegt = andere.some((rolle) => rolle.permissions.some((eintrag) => eintrag.permission.key === recht));
+      if (!traegt) {
+        throw new BadRequestException(
+          `"${getPermission(recht)?.name ?? recht}" ist das letzte seiner Art. Würde es hier entfernt, ` +
+            "käme niemand mehr an die Rechteverwaltung. Vergeben Sie es zuerst an eine andere Rolle.",
+        );
+      }
+    }
   }
 
   /* ---------------------------------------------------------- Helfer */

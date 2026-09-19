@@ -4,6 +4,7 @@ import type { RequestUser } from "./request-user";
 
 export const PUBLIC_KEY = "auth:public";
 export const ROLES_KEY = "auth:roles";
+export const PERMISSION_KEY = "auth:permission";
 export const FEATURE_KEY = "feature:module";
 export const PLATFORM_ADMIN_KEY = "auth:platform-admin";
 
@@ -12,6 +13,16 @@ export const Public = () => SetMetadata(PUBLIC_KEY, true);
 
 /** Beschränkt eine Route auf die angegebenen Rollen. */
 export const Roles = (...roles: AppRole[]) => SetMetadata(ROLES_KEY, roles);
+
+/**
+ * Verlangt ein benanntes Recht aus `packages/shared/src/rbac.ts`.
+ *
+ * Ergänzt `@Roles` und ersetzt es nicht: Die Rolle sagt, wer grundsätzlich in
+ * diesen Bereich gehört, das Recht sagt, was davon ein Haus der Rolle
+ * tatsächlich zugesteht. Ohne dieses Merkmal wäre der Rechte-Editor Zierde -
+ * er vergäbe Berechtigungen, die niemand prüft.
+ */
+export const Permission = (permission: string) => SetMetadata(PERMISSION_KEY, permission);
 
 /**
  * Beschränkt eine Route auf die Plattformverwaltung.

@@ -4,16 +4,21 @@ import {
   MODULE_DEFINITIONS,
   MODULE_GROUP_LABELS,
   MODULE_STAGES,
+  PERMISSION_KEYS,
+  ROLE_DEFINITIONS,
+  UNVERZICHTBARE_RECHTE,
   betaModules,
   getDependentModules,
   getModule,
+  getPermission,
   isBeta,
   isModuleKey,
+  isPermissionKey,
 } from "./index";
 
 /**
- * Die Registries sind die einzige Quelle der Wahrheit für Module und
- * Konnektoren. Ein Tippfehler dort wirkt sich auf Navigation, Guards und
+ * Die Registries sind die einzige Quelle der Wahrheit für Module, Rollen und
+ * Rechte. Ein Tippfehler dort wirkt sich auf Navigation, Guards und
  * Adminoberfläche gleichzeitig aus - diese Prüfungen fangen das früh ab.
  */
 
@@ -114,5 +119,36 @@ describe("Reifegrad", () => {
     // Ein Kernmodul lässt sich nicht abschalten - als Erprobung wäre es
     // unentrinnbar.
     expect(betaModules().some((module) => module.core)).toBe(false);
+  });
+});
+
+describe("Rechte", () => {
+  it("kennt zu jedem Rechteschlüssel eine Beschreibung", () => {
+    for (const key of PERMISSION_KEYS) {
+      expect(getPermission(key)?.name).toBeTruthy();
+      expect(isPermissionKey(key)).toBe(true);
+    }
+  });
+
+  it("vergibt nur bekannte Rechte an Rollen", () => {
+    for (const role of ROLE_DEFINITIONS) {
+      for (const key of role.permissions) {
+        expect(isPermissionKey(key)).toBe(true);
+      }
+    }
+  });
+
+  it("hält die unverzichtbaren Rechte in der Administrationsrolle", () => {
+    // Ohne diese Zusicherung könnte ein frisch eingerichtetes Haus niemanden
+    // haben, der die Rechteverwaltung erreicht.
+    const admin = ROLE_DEFINITIONS.find((role) => role.key === "admin")!;
+    for (const recht of UNVERZICHTBARE_RECHTE) {
+      expect(admin.permissions).toContain(recht);
+    }
+  });
+
+  it("kennt kein Recht ohne Träger", () => {
+    const vergeben = new Set(ROLE_DEFINITIONS.flatMap((role) => role.permissions));
+    expect([...PERMISSION_KEYS].filter((key) => !vergeben.has(key))).toEqual([]);
   });
 });
