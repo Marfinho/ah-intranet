@@ -102,7 +102,14 @@ export class JwtAuthGuard implements CanActivate {
   }
 }
 
-function extractToken(request: Request): string | undefined {
+/**
+ * Sitzungstoken aus Cookie oder Bearer-Kopfzeile.
+ *
+ * Wird auch von der Mandanten-Middleware gebraucht: Läse die nur das Cookie,
+ * käme eine Anfrage mit Bearer-Token ohne Mandantenkontext bei den Guards an
+ * und scheiterte, obwohl das Token gültig ist.
+ */
+export function extractToken(request: Request): string | undefined {
   const cookieToken = (request.cookies as Record<string, string> | undefined)?.[SESSION_COOKIE];
   if (cookieToken) {
     return cookieToken;

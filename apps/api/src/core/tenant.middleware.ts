@@ -1,7 +1,7 @@
 import { Injectable, NestMiddleware } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import type { NextFunction, Request, Response } from "express";
-import { SESSION_COOKIE, type JwtPayload } from "./guards";
+import { extractToken, type JwtPayload } from "./guards";
 import { TenantService } from "./tenant.service";
 import { runWithTenant } from "./tenant-context";
 
@@ -37,8 +37,9 @@ export class TenantMiddleware implements NestMiddleware {
   }
 
   private async resolve(request: Request) {
-    // 1. Angemeldete Anfragen bringen den Mandanten im geprüften Token mit.
-    const token = (request.cookies as Record<string, string> | undefined)?.[SESSION_COOKIE];
+    // 1. Angemeldete Anfragen bringen den Mandanten im geprüften Token mit -
+    //    aus dem Cookie oder der Bearer-Kopfzeile, genau wie beim Guard.
+    const token = extractToken(request);
     if (token) {
       try {
         const payload = await this.jwt.verifyAsync<JwtPayload>(token);

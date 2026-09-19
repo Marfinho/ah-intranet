@@ -43,19 +43,26 @@ export class ServiceDeskService {
     filter: { scope?: "mine" | "all"; status?: string; category?: string; search?: string } = {},
   ) {
     const scope = filter.scope ?? (isManaging(user) ? "all" : "mine");
+    // Zwei Bedingungen mit je einem OR gehören in ein AND. Als zwei Schlüssel
+    // im selben Objekt gewönne der zweite - und die Suche hätte die Beschränkung
+    // auf eigene Vorgänge aufgehoben.
     const where: Prisma.TicketWhereInput = {
-      ...(scope === "mine" || !isManaging(user) ? { OR: [{ requesterId: user.id }, { assigneeId: user.id }] } : {}),
       ...(filter.status && filter.status !== "all" ? { status: filter.status as TicketStatus } : {}),
       ...(filter.category && filter.category !== "all" ? { category: filter.category as TicketCategory } : {}),
-      ...(filter.search
-        ? {
-            OR: [
-              { number: { contains: filter.search, mode: "insensitive" } },
-              { title: { contains: filter.search, mode: "insensitive" } },
-              { description: { contains: filter.search, mode: "insensitive" } },
-            ],
-          }
-        : {}),
+      AND: [
+        ...(scope === "mine" || !isManaging(user) ? [{ OR: [{ requesterId: user.id }, { assigneeId: user.id }] }] : []),
+        ...(filter.search
+          ? [
+              {
+                OR: [
+                  { number: { contains: filter.search, mode: "insensitive" as const } },
+                  { title: { contains: filter.search, mode: "insensitive" as const } },
+                  { description: { contains: filter.search, mode: "insensitive" as const } },
+                ],
+              },
+            ]
+          : []),
+      ],
     };
 
     const tickets = await this.prisma.ticket.findMany({
@@ -132,6 +139,19 @@ export class ServiceDeskService {
     }
     if (!isManaging(user)) {
       throw new ForbiddenException("Tickets werden vom Fachbereich bearbeitet.");
+    }
+
+    // Dieselbe Falle wie bei der Raumbuchung: Personenkennungen sind über alle
+    // Häuser eindeutig, der Fremdschlüssel nimmt also auch eine fremde an. Der
+    // gefilterte Zugriff findet nur Personen des eigenen Hauses.
+    if (input.assigneeId) {
+      const zustaendig = await this.prisma.user.findFirst({
+        where: { id: input.assigneeId, status: "active" },
+        select: { id: true },
+      });
+      if (!zustaendig) {
+        throw new NotFoundException("Die zuständige Person wurde nicht gefunden.");
+      }
     }
 
     const updated = await this.prisma.ticket.update({

@@ -54,18 +54,25 @@ export class NewsService {
           ? {}
           : { status: "published", publishedAt: { lte: new Date() } }),
       ...(canSeeDrafts ? {} : audienceFilter(user)),
-      ...(canSeeDrafts ? {} : { OR: [{ expiresAt: null }, { expiresAt: { gte: new Date() } }] }),
       ...(filter.priority && filter.priority !== "all" ? { priority: filter.priority as NewsPriority } : {}),
-      ...(filter.search
-        ? {
-            OR: [
-              { title: { contains: filter.search, mode: "insensitive" } },
-              { teaser: { contains: filter.search, mode: "insensitive" } },
-              { content: { contains: filter.search, mode: "insensitive" } },
-            ],
-          }
-        : {}),
       ...(filter.onlyUnread ? { reads: { none: { userId: user.id } } } : {}),
+      // Laufzeit und Suche tragen beide ein OR. Nebeneinander im selben Objekt
+      // gewönne das zweite, und abgelaufene Beiträge kämen über die Suche
+      // zurück - genau am Sichtbarkeitsfenster vorbei.
+      AND: [
+        ...(canSeeDrafts ? [] : [{ OR: [{ expiresAt: null }, { expiresAt: { gte: new Date() } }] }]),
+        ...(filter.search
+          ? [
+              {
+                OR: [
+                  { title: { contains: filter.search, mode: "insensitive" as const } },
+                  { teaser: { contains: filter.search, mode: "insensitive" as const } },
+                  { content: { contains: filter.search, mode: "insensitive" as const } },
+                ],
+              },
+            ]
+          : []),
+      ],
     };
 
     const posts = await this.prisma.newsPost.findMany({

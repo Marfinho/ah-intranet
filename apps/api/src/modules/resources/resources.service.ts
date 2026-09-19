@@ -145,6 +145,18 @@ export class ResourcesService {
       throw new BadRequestException("Buchungen in der Vergangenheit sind nicht möglich.");
     }
 
+    // Die Kennung eines Raums ist über alle Häuser eindeutig, der Fremdschlüssel
+    // nimmt sie also auch aus einem fremden Haus an. Erst dieser Blick über den
+    // gefilterten Zugriff stellt sicher, dass der Raum zum eigenen Haus gehört -
+    // ohne ihn ließe sich eine Buchung in ein fremdes Haus legen.
+    const room = await this.prisma.room.findFirst({
+      where: { id: input.roomId, isActive: true },
+      select: { id: true },
+    });
+    if (!room) {
+      throw new NotFoundException("Raum nicht gefunden");
+    }
+
     await this.assertFree(input.roomId, startsAt, endsAt);
 
     const booking = await this.prisma.roomBooking.create({
