@@ -199,13 +199,13 @@ einem GIN-Index ersetzt mehrere Joins; Benutzer tragen ihre Tokens am Datensatz.
 ohne Vorbedingung, und der Zugang funktioniert auf jedem Gerät – auch vom
 privaten Telefon in der Halle.
 
-Unter *Administration → Anmeldung* hinterlegt ein Haus **zusätzliche**
+Unter _Administration → Anmeldung_ hinterlegt ein Haus **zusätzliche**
 Anmeldearten. Vorbereitet ist **Microsoft Entra ID** (OpenID Connect): auf
 Entra-beigetretenen Rechnern läuft die Anmeldung ohne Eingabe durch, sonst über
 das Microsoft-Anmeldefenster.
 
-**Ehrlich benannt:** Der Austausch mit Entra ist in dieser Fassung *nicht
-gebaut*. Die Zugangsdaten lassen sich hinterlegen – der Clientschlüssel
+**Ehrlich benannt:** Der Austausch mit Entra ist in dieser Fassung _nicht
+gebaut_. Die Zugangsdaten lassen sich hinterlegen – der Clientschlüssel
 verschlüsselt (AES-256-GCM, Schlüssel aus `SECRET_KEY`) und ohne Rückgabe durch
 die API –, freischalten lässt sich die Anmeldeart aber nicht. Ein Knopf im
 Anmeldeformular, der ins Leere führt, wäre schlimmer als keiner. Gebaut wird
