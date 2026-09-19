@@ -97,6 +97,11 @@ typprüft: `pnpm --filter @ah-intranet/shared build`.
 Browserprüfungen liegen in `e2e/` und brauchen laufende Dienste sowie ein
 installiertes Playwright (siehe `e2e/README.md`).
 
+Zweige, Pull Requests, Versionsnummer und die Freigabe an ein Haus:
+[`docs/entwicklung.md`](docs/entwicklung.md). Auf `main` wird nicht direkt
+gearbeitet – die Prüfpipeline ist die einzige Stelle, an der Migrationen gegen
+eine leere Datenbank laufen und die Wiederherstellung geprobt wird.
+
 Sicherung, Wiederherstellung und der Probelauf liegen in `scripts/`; Einzelheiten
 in [`docs/betrieb.md`](docs/betrieb.md). Der Probelauf gehört nach jeder Änderung
 am Schema gelaufen – er vergleicht Bestände und Migrationsstand, nicht nur den
