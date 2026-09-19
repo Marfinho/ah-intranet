@@ -18,6 +18,28 @@ const storage = new AsyncLocalStorage<TenantContext | typeof UNSCOPED>();
 /** Markierung für Abläufe, die bewusst mandantenübergreifend arbeiten. */
 const UNSCOPED = Symbol("unscoped");
 
+/**
+ * Führt einen Abschnitt im Kontext eines Mandanten aus.
+ *
+ * **Vorsicht bei Prisma-Aufrufen.** Ein Aufruf wie `prisma.x.findFirst()` gibt
+ * ein *träges* Promise zurück: die Abfrage geht erst raus, wenn jemand sie
+ * abwartet. Wird sie hier nur zurückgegeben, liegt das Abwarten außerhalb des
+ * Kontexts - der ist dann schon wieder geschlossen, und die Mandantentrennung
+ * weist die Abfrage ab.
+ *
+ * ```ts
+ * // Falsch: das Abwarten passiert draußen.
+ * await runWithTenant(ctx, () => prisma.order.findMany());
+ *
+ * // Richtig: das Abwarten liegt im Rumpf.
+ * await runWithTenant(ctx, async () => {
+ *   return await prisma.order.findMany();
+ * });
+ * ```
+ *
+ * Für einen Aufruf einer eigenen `async`-Methode gilt das nicht - deren Rumpf
+ * läuft sofort los und nimmt den Kontext mit.
+ */
 export function runWithTenant<T>(context: TenantContext, callback: () => T): T {
   return storage.run(context, callback);
 }
@@ -28,6 +50,8 @@ export function runWithTenant<T>(context: TenantContext, callback: () => T): T {
  * Nur für Abläufe, die es fachlich brauchen: Anmeldung (der Mandant steht erst
  * danach fest), Mandantenverwaltung durch die Plattformadministration und
  * Wartungsaufgaben. Jede Verwendung gehört begründet.
+ *
+ * Dieselbe Vorsicht bei trägen Prisma-Promises wie bei `runWithTenant`.
  */
 export function runUnscoped<T>(callback: () => T): T {
   return storage.run(UNSCOPED, callback);

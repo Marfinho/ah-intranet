@@ -35,6 +35,69 @@ async function run(operation: () => Promise<unknown>, paths: string[], detail?: 
 
 /* -------------------------------------------------------------- Auth */
 
+/**
+ * Fordert einen Zurücksetz-Link an.
+ *
+ * Die Antwort ist immer dieselbe - auch bei unbekannter Kennung. Das Formular
+ * soll kein Verzeichnis gültiger Benutzernamen werden.
+ */
+export async function passwortVergessenAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const username = String(formData.get("username") ?? "").trim();
+  const tenant = String(formData.get("tenant") ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (!username) {
+    return { ok: false, message: "Bitte Benutzername eingeben." };
+  }
+
+  try {
+    await fetch(`${apiBaseUrl()}/auth/passwort-vergessen`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, ...(tenant ? { tenant } : {}) }),
+      cache: "no-store",
+    });
+  } catch {
+    return { ok: false, message: "Das Intranet ist gerade nicht erreichbar. Bitte später erneut versuchen." };
+  }
+
+  return {
+    ok: true,
+    detail:
+      "Wenn es zu dieser Kennung ein Konto mit hinterlegter E-Mail-Adresse gibt, ist eine Nachricht unterwegs. " +
+      "Der Link gilt eine Stunde.",
+  };
+}
+
+export async function passwortNeuAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const token = String(formData.get("token") ?? "");
+  const password = String(formData.get("password") ?? "");
+  const wiederholung = String(formData.get("passwordRepeat") ?? "");
+
+  if (password !== wiederholung) {
+    return { ok: false, message: "Die beiden Passwörter stimmen nicht überein." };
+  }
+  if (password.length < 10) {
+    return { ok: false, message: "Das neue Passwort muss mindestens 10 Zeichen lang sein." };
+  }
+
+  const response = await fetch(`${apiBaseUrl()}/auth/passwort-neu`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, password }),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { message?: string | string[] };
+    const meldung = Array.isArray(body.message) ? body.message[0] : body.message;
+    return { ok: false, message: meldung ?? "Das Passwort konnte nicht gesetzt werden." };
+  }
+
+  return { ok: true, detail: "Das Passwort ist gesetzt. Bitte melden Sie sich neu an." };
+}
+
 export async function loginAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
   const username = String(formData.get("username") ?? "").trim();
   const password = String(formData.get("password") ?? "");

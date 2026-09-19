@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useFormState } from "react-dom";
 import { loginAction, type ActionState } from "@/lib/actions";
 import { FormAlert, SubmitButton, inputClass } from "@/components/forms";
@@ -43,6 +44,12 @@ export function LoginForm({ next }: { next: string }) {
       <div className="pt-1">
         <SubmitButton>Anmelden</SubmitButton>
       </div>
+
+      <p className="pt-2 text-sm text-slate-600">
+        <Link href="/passwort-vergessen" className="font-semibold text-brand-700 hover:underline">
+          Passwort vergessen?
+        </Link>
+      </p>
     </form>
   );
 }

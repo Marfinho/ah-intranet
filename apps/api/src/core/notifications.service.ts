@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import type { NotificationItem } from "@ah-intranet/shared";
 import { PrismaService } from "./prisma.service";
+import { MailService } from "./mail.service";
 import { toIso } from "./mappers";
 import type { RequestUser } from "./request-user";
 
@@ -9,6 +10,14 @@ export interface NotifyInput {
   title: string;
   detail: string;
   link?: string;
+  /**
+   * Zusätzlich per E-Mail zustellen.
+   *
+   * Bewusst je Aufruf statt global: nicht jede Meldung rechtfertigt eine Mail.
+   * Ein neuer Aushang nicht, eine Entscheidung über einen Antrag schon - die
+   * erreicht sonst nur, wer zufällig hereinschaut.
+   */
+  auchPerMail?: boolean;
 }
 
 /**
@@ -19,7 +28,10 @@ export interface NotifyInput {
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mail: MailService,
+  ) {}
 
   async notify(input: NotifyInput): Promise<void> {
     const userIds = [...new Set(input.userIds)].filter(Boolean);
@@ -38,6 +50,41 @@ export class NotificationsService {
       });
     } catch (error) {
       this.logger.error(`Benachrichtigung "${input.title}" konnte nicht zugestellt werden`, error as Error);
+      return;
+    }
+
+    if (input.auchPerMail) {
+      await this.perMail(userIds, input);
+    }
+  }
+
+  /**
+   * Schickt die Meldung zusätzlich per E-Mail.
+   *
+   * Läuft nach dem Schreiben in die Datenbank und wirft nicht: die
+   * Benachrichtigung im Intranet steht, ob der Mailserver erreichbar war oder
+   * nicht. Konten ohne Adresse werden übersprungen - eine E-Mail-Adresse ist
+   * im Autohaus nicht selbstverständlich.
+   */
+  private async perMail(userIds: string[], input: NotifyInput): Promise<void> {
+    if (!this.mail.istEingerichtet) {
+      return;
+    }
+
+    const empfaenger = await this.prisma.user.findMany({
+      where: { id: { in: userIds }, status: "active", email: { not: null } },
+      select: { email: true },
+    });
+
+    const basis = process.env.FRONTEND_URL ?? "";
+    const link = input.link && basis ? `\n\nIm Intranet ansehen: ${basis}${input.link}` : "";
+
+    for (const person of empfaenger) {
+      await this.mail.send({
+        to: person.email!,
+        subject: input.title,
+        text: `${input.detail}${link}\n\n--\nAHOI - Autohaus Organisation & Information`,
+      });
     }
   }
 

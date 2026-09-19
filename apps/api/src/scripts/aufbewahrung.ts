@@ -13,7 +13,8 @@ import { NestFactory } from "@nestjs/core";
 import { AppModule } from "../app.module";
 import { PrivacyService } from "../modules/privacy/privacy.service";
 import { TenantService } from "../core/tenant.service";
-import { runWithTenant } from "../core/tenant-context";
+import { PasswortService } from "../modules/auth/passwort.service";
+import { runUnscoped, runWithTenant } from "../core/tenant-context";
 
 async function main() {
   const nurVorschau = process.argv.includes("--vorschau");
@@ -21,10 +22,23 @@ async function main() {
 
   try {
     const privacy = app.get(PrivacyService);
+    const passwort = app.get(PasswortService);
     const tenants = await app.get(TenantService).list();
     let gesamt = 0;
 
     console.log(`${nurVorschau ? "Vorschau" : "Aufbewahrungslauf"} über ${tenants.length} Haus/Häuser\n`);
+
+    // Verbrauchte und abgelaufene Zurücksetz-Token fliegen zuerst raus. Sie
+    // hängen nicht an einer Aufbewahrungsfrist, sondern sind schlicht Abfall:
+    // nach dem Ablauf ohne Wert, vorher ein Zugangsmittel.
+    if (!nurVorschau) {
+      const token = await runUnscoped(async () => {
+        return await passwort.aufraeumen();
+      });
+      if (token > 0) {
+        console.log(`${String(token).padStart(6)}  verbrauchte oder abgelaufene Zurücksetz-Token\n`);
+      }
+    }
 
     for (const tenant of tenants) {
       // Jeder Mandant in seinem eigenen Kontext - die Prisma-Middleware filtert
