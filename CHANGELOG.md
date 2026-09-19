@@ -31,7 +31,7 @@ Erster vollständiger Stand. Lauffähig, aber in keinem Haus im Einsatz.
   zurückgerollt.
 - **Schichtplan mit Diensttausch** (Erprobung): Besetzung je Standort und
   Abteilung, Doppelbelegungen werden beim Speichern abgewiesen. Ein Tausch
-  braucht die Zustimmung der angefragten Person *und* die Freigabe der
+  braucht die Zustimmung der angefragten Person _und_ die Freigabe der
   Führungskraft; erst dann wechselt die Besetzung.
 - **Fundsachen & Schlüssel** (Erprobung): Verzeichnis mit Aufnahme, Ausgabe,
   Rücknahme und Abholung. Jede Bewegung mit handelnder Person und Zeitstempel –

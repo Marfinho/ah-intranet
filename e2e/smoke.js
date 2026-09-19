@@ -54,9 +54,11 @@ const ROUTES = [
     const schalter = p.getByRole("switch", { name: `${label} aktivieren` });
     if (await schalter.count()) {
       await schalter.first().click();
-      await p.waitForResponse((antwort) => antwort.url().includes("/schichtplan") || antwort.request().method() === "POST", {
-        timeout: 5000,
-      }).catch(() => undefined);
+      await p
+        .waitForResponse((antwort) => antwort.url().includes("/schichtplan") || antwort.request().method() === "POST", {
+          timeout: 5000,
+        })
+        .catch(() => undefined);
       await p.waitForTimeout(1200);
     }
   }

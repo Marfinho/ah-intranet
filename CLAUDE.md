@@ -102,7 +102,7 @@ die Plattformverwaltung. Drei Regeln darin sind bewusst hart:
 - Ein **Diensttausch** braucht zwei Zustimmungen: die der angefragten Person und
   die Freigabe. Eine einzige würde jemandem eine Schicht aufdrücken oder die
   Besetzung an der Leitung vorbei ändern.
-- Eine **Übergabe** geht an ein Konto des Hauses *oder* an einen freien Namen –
+- Eine **Übergabe** geht an ein Konto des Hauses _oder_ an einen freien Namen –
   eine Kundin, die ihr Handy abholt, hat kein Konto. Ohne den zweiten Weg würde
   die Übergabe gar nicht erst festgehalten.
 - Der **Bestellschluss** wird serverseitig geprüft, nicht nur angezeigt. Wer
