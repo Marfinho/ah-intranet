@@ -178,7 +178,7 @@ und wächst nur mit neuen Funktionen. Geprüft wird ausschließlich das Recht,
 serverseitig aus dem JWT – nie ein Rollenschlüssel. Ein Rollenschlüssel im Code
 wäre genau die Sperre, an der eigene Rollen eines Hauses scheitern.
 
-**Rollen sind Daten.** Unter *Administration → Rollen & Rechte* legt ein Haus
+**Rollen sind Daten.** Unter _Administration → Rollen & Rechte_ legt ein Haus
 eigene Rollen an: Name, Beschreibung, Rangfolge, Rechte anklicken. Die vier
 Rollen der Grundausstattung (`mitarbeiter`, `fuehrungskraft`,
 `fachbereichsadmin`, `admin`) lassen sich in allem ändern außer im Löschen;
