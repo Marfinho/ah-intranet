@@ -6,8 +6,21 @@
   "scripts": {
     "dev": "pnpm --filter @ah-intranet/shared build && pnpm -r --parallel --filter @ah-intranet/shared --filter api --filter web dev",
     "build": "pnpm -r build",
-    "lint": "pnpm -r lint",
-    "format": "pnpm -r format",
-    "seed": "pnpm --filter api prisma:seed"
+    "lint": "eslint .",
+    "typecheck": "pnpm -r typecheck",
+    "format": "prettier --write .",
+    "seed": "pnpm --filter api prisma:seed",
+    "migrate": "pnpm --filter api prisma:migrate",
+    "e2e": "node e2e/smoke.js && node e2e/flows.js",
+    "lint:fix": "eslint . --fix",
+    "format:check": "prettier --check .",
+    "test": "pnpm -r test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.8",
+    "typescript-eslint": "^8.70.0"
   }
 }

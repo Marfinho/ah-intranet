@@ -5,11 +5,17 @@
     "dev": "pnpm --filter @ah-intranet/shared build && nest start --watch",
     "build": "pnpm --filter @ah-intranet/shared build && nest build",
     "start": "node dist/main",
-    "lint": "echo 'lint placeholder for api'",
-    "format": "prettier --write \"src/**/*.ts\" \"prisma/**/*.ts\" \"prisma/**/*.prisma\"",
+    "format": "prettier --write .",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "tsx prisma/seed.ts"
+    "prisma:seed": "tsx prisma/seed.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "aufbewahrung": "node dist/scripts/aufbewahrung.js",
+    "aufbewahrung:vorschau": "node dist/scripts/aufbewahrung.js --vorschau",
+    "anonymisieren": "node dist/scripts/anonymisieren.js"
   },
   "dependencies": {
     "@ah-intranet/shared": "workspace:*",
@@ -19,11 +25,13 @@
     "@nestjs/jwt": "^10.2.0",
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.4.2",
+    "@nestjs/throttler": "^6.7.0",
     "@prisma/client": "^5.22.0",
-    "bcryptjs": "^2.4.3",
+    "bcryptjs": "^3.0.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "cookie-parser": "^1.4.7",
+    "helmet": "^8.3.0",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
     "reflect-metadata": "^0.2.2",
@@ -36,9 +44,11 @@
     "@types/cookie-parser": "^1.4.8",
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.1",
+    "@vitest/coverage-v8": "^5.0.1",
     "prettier": "^3.4.2",
     "prisma": "^5.22.0",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^5.0.1"
   }
 }

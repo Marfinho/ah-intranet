@@ -1,13 +1,83 @@
-import { documents } from "@ah-intranet/shared";
+import type { DocumentItem } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
-import { DocumentLibraryClient } from "@/components/document-library-client";
-import { Section } from "@/components/ui";
+import { FilterBar } from "@/components/filter-bar";
+import { EmptyState, Section, Tag } from "@/components/ui";
+import { apiGet } from "@/lib/api";
+import { requireModule } from "@/lib/session";
+import { formatDate } from "@/lib/utils";
 
-export default function DokumentePage() {
+interface DocumentsResponse {
+  items: DocumentItem[];
+  categories: string[];
+}
+
+const FILE_LABELS: Record<string, string> = { pdf: "PDF", docx: "Word", xlsx: "Excel", link: "Link" };
+
+export default async function DocumentsPage({
+  searchParams,
+}: {
+  searchParams: { search?: string; category?: string };
+}) {
+  await requireModule("documents");
+
+  const query = new URLSearchParams();
+  if (searchParams.search) query.set("search", searchParams.search);
+  if (searchParams.category) query.set("category", searchParams.category);
+
+  const data = await apiGet<DocumentsResponse>(`/documents?${query.toString()}`);
+
   return (
-    <AppShell title="Dokumente & Vorlagen" subtitle="Zentrale Ablage für Prozesse, CI-Unterlagen, Anleitungen und Pflichtdokumente">
-      <Section title="Dokumentenbibliothek" subtitle="Durchsuchbar nach Titel, Kategorie, Verantwortlichen und Zielgruppen">
-        <DocumentLibraryClient documents={documents} />
+    <AppShell title="Dokumente & Vorlagen" subtitle="Freigegebene Unterlagen, Formulare und Richtlinien">
+      <Section title={`${data.items.length} Dokumente`} subtitle="Nach Kategorie filtern oder Stichwort suchen">
+        <div className="space-y-4">
+          <FilterBar
+            searchPlaceholder="Dokument suchen"
+            selects={[
+              {
+                name: "category",
+                label: "Alle Kategorien",
+                options: data.categories.map((value) => ({ value, label: value })),
+              },
+            ]}
+          />
+
+          {data.items.length === 0 ? (
+            <EmptyState title="Keine Dokumente gefunden" detail="Für diese Auswahl ist nichts hinterlegt." />
+          ) : (
+            <ul className="grid gap-4 md:grid-cols-2">
+              {data.items.map((document) => (
+                <li key={document.id} className="rounded-2xl border border-slate-200 p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-900">{document.title}</p>
+                      <p className="mt-1 text-sm text-slate-600">{document.description}</p>
+                    </div>
+                    <span className="badge shrink-0 bg-brand-50 text-brand-700">
+                      {FILE_LABELS[document.fileType] ?? document.fileType}
+                    </span>
+                  </div>
+
+                  <p className="mt-3 text-xs text-slate-500">
+                    {document.category} · {document.owner} · aktualisiert {formatDate(document.updatedAt)}
+                  </p>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {document.audienceScopes.map((scope) => (
+                      <Tag key={scope}>{scope === "global" ? "Alle" : scope}</Tag>
+                    ))}
+                  </div>
+
+                  <a
+                    href={document.url}
+                    className="mt-4 inline-block rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-brand-100 hover:bg-slate-50"
+                  >
+                    Öffnen
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </Section>
     </AppShell>
   );

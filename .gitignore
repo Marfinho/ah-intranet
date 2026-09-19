@@ -8,3 +8,9 @@ coverage
 !.env.example
 prisma/dev.db
 *.log
+
+# Inkrementelle Build-Zwischenstände - reiner Maschinenzustand
+*.tsbuildinfo
+
+# Lokale Sicherungen gehören nicht ins Repository
+backups/

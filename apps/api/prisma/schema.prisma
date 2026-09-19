@@ -7,9 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ---------------------------------------------------------------- Enums
+
 enum UserStatus {
   active
   inactive
+  /// Auf Verlangen der Person anonymisiert. Das Konto bleibt als Anker für
+  /// aufbewahrungspflichtige Vorgänge bestehen, trägt aber keine Identität mehr.
+  deleted
+}
+
+enum Presence {
+  vor_ort
+  mobil
+  abwesend
 }
 
 enum RoleScopeType {
@@ -25,18 +36,11 @@ enum NewsStatus {
   archived
 }
 
-enum NewsPriority {
+enum Priority {
   niedrig
   normal
   hoch
   kritisch
-}
-
-enum AudienceType {
-  global
-  location
-  department
-  specialty_area
 }
 
 enum OrderType {
@@ -71,345 +75,1090 @@ enum AttachmentType {
   file
 }
 
-model User {
-  id               String      @id @default(cuid())
-  username         String      @unique
-  email            String?     @unique
-  passwordHash     String
-  firstName        String
-  lastName         String
-  status           UserStatus  @default(active)
-  locationId       String?
-  departmentId     String?
-  specialtyAreaId  String?
-  managerId        String?
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
-
-  location         Location?   @relation(fields: [locationId], references: [id])
-  department       Department? @relation(fields: [departmentId], references: [id])
-  specialtyArea    SpecialtyArea? @relation(fields: [specialtyAreaId], references: [id])
-  manager          User?       @relation("ManagerRelation", fields: [managerId], references: [id])
-  reports          User[]      @relation("ManagerRelation")
-  roles            UserRole[]
-  newsPosts        NewsPost[]  @relation("NewsAuthor")
-  orders           Order[]     @relation("OrderRequester")
-  approvalDecisions ApprovalDecision[] @relation("ApprovalActor")
-  auditLogs        AuditLog[]  @relation("AuditActor")
+enum DocumentFileType {
+  pdf
+  docx
+  xlsx
+  link
 }
 
-model Role {
-  id          String           @id @default(cuid())
-  key         String           @unique
-  name        String
-  description String
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  permissions RolePermission[]
-  users       UserRole[]
+enum CalendarCategory {
+  schulung
+  aktion
+  wartung
+  meeting
+  bestellung
 }
 
-model Permission {
-  id          String           @id @default(cuid())
-  key         String           @unique
-  name        String
-  description String
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  roles       RolePermission[]
+enum TicketCategory {
+  it
+  facility
+  hr
+  marketing
 }
 
-model UserRole {
-  id              String        @id @default(cuid())
-  userId          String
-  roleId          String
-  scopeType       RoleScopeType @default(global)
-  scopeLocationId String?
-  scopeDepartmentId String?
-  scopeSpecialtyAreaId String?
-  createdAt       DateTime      @default(now())
-
-  user            User          @relation(fields: [userId], references: [id])
-  role            Role          @relation(fields: [roleId], references: [id])
-
-  @@unique([userId, roleId, scopeType, scopeLocationId, scopeDepartmentId, scopeSpecialtyAreaId])
+enum TicketStatus {
+  offen
+  in_bearbeitung
+  wartet_auf_rueckmeldung
+  geloest
 }
 
-model RolePermission {
-  id           String      @id @default(cuid())
-  roleId       String
-  permissionId String
-  createdAt    DateTime    @default(now())
-
-  role         Role        @relation(fields: [roleId], references: [id])
-  permission   Permission  @relation(fields: [permissionId], references: [id])
-
-  @@unique([roleId, permissionId])
+enum AbsenceType {
+  urlaub
+  krank
+  gleitzeit
+  sonderurlaub
+  fortbildung
 }
+
+enum AbsenceStatus {
+  submitted
+  approved
+  rejected
+  cancelled
+}
+
+enum IdeaStatus {
+  neu
+  in_pruefung
+  angenommen
+  umgesetzt
+  abgelehnt
+}
+
+enum NotificationChannel {
+  in_app
+  email
+}
+
+// ------------------------------------------------------------ Mandanten
+
+/// Ein Autohaus als Mandant. Sämtliche Fachdaten hängen daran; das Löschen
+/// eines Mandanten entfernt über die Kaskade auch seine Daten.
+model Tenant {
+  id        String   @id @default(cuid())
+  /// Kurzkennung, auch als Subdomain verwendbar.
+  slug      String   @unique
+  name      String
+  /// Eigene Domain, falls der Mandant nicht über die Subdomain kommt.
+  domain    String?  @unique
+  isActive  Boolean  @default(true)
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  locations                    Location[]
+  departments                  Department[]
+  specialtyAreas               SpecialtyArea[]
+  locationDepartments          LocationDepartment[]
+  users                        User[]
+  roles                        Role[]
+  permissions                  Permission[]
+  userRoles                    UserRole[]
+  rolePermissions              RolePermission[]
+  moduleSettings               ModuleSetting[]
+  newsPosts                    NewsPost[]
+  newsAttachments              NewsAttachment[]
+  newsComments                 NewsComment[]
+  newsReads                    NewsRead[]
+  orders                       Order[]
+  orderStatusHistorys          OrderStatusHistory[]
+  orderComments                OrderComment[]
+  businessCardFieldDefinitions BusinessCardFieldDefinition[]
+  businessCardOrders           BusinessCardOrder[]
+  businessCardOrderFields      BusinessCardOrderField[]
+  workwearCatalogItems         WorkwearCatalogItem[]
+  workwearItemSizes            WorkwearItemSize[]
+  workwearOrders               WorkwearOrder[]
+  workwearOrderItems           WorkwearOrderItem[]
+  approvalRules                ApprovalRule[]
+  approvalDecisions            ApprovalDecision[]
+  orderCycles                  OrderCycle[]
+  documents                    Document[]
+  wikiArticles                 WikiArticle[]
+  calendarEvents               CalendarEvent[]
+  rooms                        Room[]
+  roomBookings                 RoomBooking[]
+  tickets                      Ticket[]
+  ticketComments               TicketComment[]
+  onboardingTemplates          OnboardingTemplate[]
+  onboardingSteps              OnboardingStep[]
+  onboardingAssignments        OnboardingAssignment[]
+  onboardingItems              OnboardingItem[]
+  absences                     Absence[]
+  ideas                        Idea[]
+  ideaVotes                    IdeaVote[]
+  polls                        Poll[]
+  pollOptions                  PollOption[]
+  pollVotes                    PollVote[]
+  quickLinks                   QuickLink[]
+  notifications                Notification[]
+  auditLogs                    AuditLog[]
+
+  @@index([isActive])
+}
+
+// ------------------------------------------------------- Organisation
 
 model Location {
   id        String   @id @default(cuid())
-  name      String   @unique
-  code      String   @unique
+  tenantId  String   @default("")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  code      String
+  address   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  users     User[]
-  newsAudiences NewsAudience[]
-  orderCycles OrderCycle[]
+
+  users               User[]
+  orderCycles         OrderCycle[]
+  locationDepartments LocationDepartment[]
+  rooms               Room[]
+
+  @@unique([tenantId, name])
+  @@unique([tenantId, code])
+  @@index([tenantId])
 }
 
 model Department {
   id        String   @id @default(cuid())
-  name      String   @unique
-  code      String   @unique
+  tenantId  String   @default("")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  code      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  users     User[]
+
+  users               User[]
   locationDepartments LocationDepartment[]
-  newsAudiences NewsAudience[]
+
+  @@unique([tenantId, name])
+  @@unique([tenantId, code])
+  @@index([tenantId])
 }
 
 model SpecialtyArea {
   id        String   @id @default(cuid())
-  name      String   @unique
-  code      String   @unique
+  tenantId  String   @default("")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  code      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  users     User[]
-  newsAudiences NewsAudience[]
+
+  users User[]
+
+  @@unique([tenantId, name])
+  @@unique([tenantId, code])
+  @@index([tenantId])
 }
 
 model LocationDepartment {
   id           String   @id @default(cuid())
+  tenantId     String   @default("")
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   locationId   String
   departmentId String
   createdAt    DateTime @default(now())
 
-  location     Location   @relation(fields: [locationId], references: [id])
-  department   Department @relation(fields: [departmentId], references: [id])
+  location   Location   @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
 
-  @@unique([locationId, departmentId])
+  @@unique([tenantId, locationId, departmentId])
+  @@index([tenantId])
 }
 
-model NewsPost {
-  id            String         @id @default(cuid())
-  slug          String         @unique
-  title         String
-  teaser        String
-  content       String
-  priority      NewsPriority   @default(normal)
-  status        NewsStatus     @default(draft)
-  publishedAt   DateTime?
-  expiresAt     DateTime?
-  authorId      String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+// -------------------------------------------------- Benutzer & Rechte
 
-  author        User           @relation("NewsAuthor", fields: [authorId], references: [id])
-  attachments   NewsAttachment[]
-  audiences     NewsAudience[]
+model User {
+  id                 String     @id @default(cuid())
+  tenantId           String     @default("")
+  tenant             Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  username           String
+  email              String?
+  passwordHash       String
+  firstName          String
+  lastName           String
+  jobTitle           String     @default("Mitarbeitende:r")
+  phone              String?
+  mobile             String?
+  presence           Presence   @default(vor_ort)
+  responsibilities   String[]   @default([])
+  status             UserStatus @default(active)
+  /// Zielgruppen-Tokens (global, location:*, department:*, specialty:*) - bei Stammdatenänderung neu berechnet.
+  scopes             String[]   @default([])
+  annualLeaveDays    Int        @default(30)
+  mustChangePassword Boolean    @default(false)
+  lastLoginAt        DateTime?
+  /// Zeitpunkt der Anonymisierung nach Art. 17 DSGVO. Gesetzt heißt: die
+  /// identifizierenden Felder sind ersetzt, der Vorgangsbezug bleibt erhalten.
+  anonymizedAt       DateTime?
+  /// Darf Mandanten anlegen und sperren - betrifft alle Häuser, nicht nur das eigene.
+  isPlatformAdmin    Boolean    @default(false)
+  /// Wird bei Sperre und Passwortwechsel erhöht und macht alle bis dahin
+  /// ausgegebenen Tokens sofort ungültig.
+  tokenVersion       Int        @default(0)
+  failedLoginCount   Int        @default(0)
+  /// Gesetzt, solange das Konto nach zu vielen Fehlversuchen gesperrt ist.
+  lockedUntil        DateTime?
+  locationId         String?
+  departmentId       String?
+  specialtyAreaId    String?
+  managerId          String?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  location      Location?      @relation(fields: [locationId], references: [id])
+  department    Department?    @relation(fields: [departmentId], references: [id])
+  specialtyArea SpecialtyArea? @relation(fields: [specialtyAreaId], references: [id])
+  manager       User?          @relation("ManagerRelation", fields: [managerId], references: [id])
+  reports       User[]         @relation("ManagerRelation")
+
+  roles             UserRole[]
+  newsPosts         NewsPost[]             @relation("NewsAuthor")
+  newsComments      NewsComment[]
+  newsReads         NewsRead[]
+  orders            Order[]                @relation("OrderRequester")
+  orderComments     OrderComment[]
+  approvalDecisions ApprovalDecision[]     @relation("ApprovalActor")
+  auditLogs         AuditLog[]             @relation("AuditActor")
+  notifications     Notification[]
+  documents         Document[]             @relation("DocumentOwner")
+  events            CalendarEvent[]        @relation("EventOrganizer")
+  ticketsRequested  Ticket[]               @relation("TicketRequester")
+  ticketsAssigned   Ticket[]               @relation("TicketAssignee")
+  ticketComments    TicketComment[]
+  onboarding        OnboardingAssignment[] @relation("OnboardingEmployee")
+  absences          Absence[]              @relation("AbsenceEmployee")
+  absenceDecisions  Absence[]              @relation("AbsenceDecider")
+  roomBookings      RoomBooking[]
+  wikiArticles      WikiArticle[]          @relation("WikiAuthor")
+  ideas             Idea[]                 @relation("IdeaAuthor")
+  ideaVotes         IdeaVote[]
+  polls             Poll[]                 @relation("PollAuthor")
+  pollVotes         PollVote[]
+
+  @@unique([tenantId, username])
+  @@unique([tenantId, email])
+  @@index([status])
+  @@index([locationId, departmentId])
+  @@index([tenantId])
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  tenantId    String   @default("")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  key         String
+  name        String
+  description String
+  /// Rangfolge: höher schlägt niedriger bei der Bestimmung der Hauptrolle.
+  rank        Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  permissions RolePermission[]
+  users       UserRole[]
+
+  @@unique([tenantId, key])
+  @@index([tenantId])
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  tenantId    String   @default("")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  key         String
+  name        String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  roles RolePermission[]
+
+  @@unique([tenantId, key])
+  @@index([tenantId])
+}
+
+model UserRole {
+  id                   String        @id @default(cuid())
+  tenantId             String        @default("")
+  tenant               Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId               String
+  roleId               String
+  scopeType            RoleScopeType @default(global)
+  scopeLocationId      String?
+  scopeDepartmentId    String?
+  scopeSpecialtyAreaId String?
+  createdAt            DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId, roleId, scopeType, scopeLocationId, scopeDepartmentId, scopeSpecialtyAreaId])
+  @@index([userId])
+  @@index([tenantId])
+}
+
+model RolePermission {
+  id           String   @id @default(cuid())
+  tenantId     String   @default("")
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, roleId, permissionId])
+  @@index([tenantId])
+}
+
+// ------------------------------------------------------ Modulsteuerung
+
+/// Feature-Toggle je Modul. Schlüssel stammen aus der Registry in @ah-intranet/shared.
+model ModuleSetting {
+  key       String
+  tenantId  String   @default("")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@id([tenantId, key])
+  @@index([tenantId])
+}
+
+// -------------------------------------------------------------- News
+
+model NewsPost {
+  id             String     @id @default(cuid())
+  tenantId       String     @default("")
+  tenant         Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  slug           String
+  title          String
+  teaser         String
+  content        String
+  priority       Priority   @default(normal)
+  status         NewsStatus @default(draft)
+  pinned         Boolean    @default(false)
+  audienceScopes String[]   @default(["global"])
+  publishedAt    DateTime?
+  expiresAt      DateTime?
+  authorId       String
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  author      User             @relation("NewsAuthor", fields: [authorId], references: [id])
+  attachments NewsAttachment[]
+  comments    NewsComment[]
+  reads       NewsRead[]
+
+  @@unique([tenantId, slug])
+  @@index([status, publishedAt])
+  @@index([audienceScopes], type: Gin)
+  @@index([tenantId])
 }
 
 model NewsAttachment {
   id         String         @id @default(cuid())
+  tenantId   String         @default("")
+  tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   newsPostId String
   fileName   String
   mimeType   String
-  storageKey String
+  url        String
   type       AttachmentType
   createdAt  DateTime       @default(now())
 
-  newsPost   NewsPost       @relation(fields: [newsPostId], references: [id])
+  newsPost NewsPost @relation(fields: [newsPostId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
 }
 
-model NewsAudience {
-  id              String       @id @default(cuid())
-  newsPostId      String
-  audienceType    AudienceType
-  locationId      String?
-  departmentId    String?
-  specialtyAreaId String?
-  createdAt       DateTime     @default(now())
+model NewsComment {
+  id         String   @id @default(cuid())
+  tenantId   String   @default("")
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  newsPostId String
+  authorId   String
+  message    String
+  createdAt  DateTime @default(now())
 
-  newsPost        NewsPost      @relation(fields: [newsPostId], references: [id])
-  location        Location?     @relation(fields: [locationId], references: [id])
-  department      Department?   @relation(fields: [departmentId], references: [id])
-  specialtyArea   SpecialtyArea? @relation(fields: [specialtyAreaId], references: [id])
+  newsPost NewsPost @relation(fields: [newsPostId], references: [id], onDelete: Cascade)
+  author   User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([newsPostId])
+  @@index([tenantId])
 }
+
+model NewsRead {
+  id         String   @id @default(cuid())
+  tenantId   String   @default("")
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  newsPostId String
+  userId     String
+  readAt     DateTime @default(now())
+
+  newsPost NewsPost @relation(fields: [newsPostId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, newsPostId, userId])
+  @@index([userId])
+  @@index([tenantId])
+}
+
+// ------------------------------------------------------- Bestellungen
 
 model Order {
-  id              String        @id @default(cuid())
-  orderNumber     String        @unique
+  id              String      @id @default(cuid())
+  tenantId        String      @default("")
+  tenant          Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orderNumber     String
   type            OrderType
   requesterId     String
-  status          OrderStatus   @default(draft)
+  status          OrderStatus @default(draft)
   orderCycleId    String?
   submittedAt     DateTime?
   approvedAt      DateTime?
   rejectedAt      DateTime?
   orderedAt       DateTime?
   completedAt     DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  /// Rechnungsbetrag des externen Dienstleisters, Grundlage für den DATEV-Export.
+  netAmount       Decimal?    @db.Decimal(12, 2)
+  supplierInvoice String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
-  requester       User          @relation("OrderRequester", fields: [requesterId], references: [id])
-  orderCycle      OrderCycle?   @relation(fields: [orderCycleId], references: [id])
-  statusHistory   OrderStatusHistory[]
-  comments        OrderComment[]
+  requester         User                 @relation("OrderRequester", fields: [requesterId], references: [id])
+  orderCycle        OrderCycle?          @relation(fields: [orderCycleId], references: [id])
+  statusHistory     OrderStatusHistory[]
+  comments          OrderComment[]
   businessCardOrder BusinessCardOrder?
-  workwearOrder   WorkwearOrder?
+  workwearOrder     WorkwearOrder?
   approvalDecisions ApprovalDecision[]
+
+  @@unique([tenantId, orderNumber])
+  @@index([status, createdAt])
+  @@index([requesterId])
+  @@index([tenantId])
 }
 
 model OrderStatusHistory {
-  id          String      @id @default(cuid())
-  orderId     String
-  status      OrderStatus
-  note        String?
-  changedAt   DateTime    @default(now())
+  id        String      @id @default(cuid())
+  tenantId  String      @default("")
+  tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orderId   String
+  status    OrderStatus
+  note      String?
+  actorName String?
+  changedAt DateTime    @default(now())
 
-  order       Order       @relation(fields: [orderId], references: [id])
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([tenantId])
 }
 
 model OrderComment {
-  id          String      @id @default(cuid())
-  orderId     String
-  authorName  String
-  comment     String
-  createdAt   DateTime    @default(now())
+  id        String   @id @default(cuid())
+  tenantId  String   @default("")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orderId   String
+  authorId  String
+  message   String
+  createdAt DateTime @default(now())
 
-  order       Order       @relation(fields: [orderId], references: [id])
+  order  Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  author User  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([tenantId])
 }
 
 model BusinessCardFieldDefinition {
-  id          String      @id @default(cuid())
-  key         String      @unique
-  label       String
-  fieldType   String
-  sortOrder   Int
-  isRequired  Boolean     @default(false)
-  isActive    Boolean     @default(true)
-  optionsJson Json?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  values      BusinessCardOrderField[]
+  id         String   @id @default(cuid())
+  tenantId   String   @default("")
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  key        String
+  label      String
+  fieldType  String
+  sortOrder  Int
+  isRequired Boolean  @default(false)
+  isActive   Boolean  @default(true)
+  options    String[] @default([])
+  helpText   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  values BusinessCardOrderField[]
+
+  @@unique([tenantId, key])
+  @@index([tenantId])
 }
 
 model BusinessCardOrder {
-  id          String      @id @default(cuid())
-  orderId     String      @unique
+  id            String   @id @default(cuid())
+  tenantId      String   @default("")
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orderId       String   @unique
+  quantity      Int      @default(100)
   reorderFromId String?
-  createdAt   DateTime    @default(now())
+  createdAt     DateTime @default(now())
 
-  order       Order       @relation(fields: [orderId], references: [id])
-  reorderFrom BusinessCardOrder? @relation("BusinessCardReorder", fields: [reorderFromId], references: [id])
-  reorders    BusinessCardOrder[] @relation("BusinessCardReorder")
+  order       Order                    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  reorderFrom BusinessCardOrder?       @relation("BusinessCardReorder", fields: [reorderFromId], references: [id])
+  reorders    BusinessCardOrder[]      @relation("BusinessCardReorder")
   fields      BusinessCardOrderField[]
+
+  @@index([tenantId])
 }
 
 model BusinessCardOrderField {
-  id                    String                        @id @default(cuid())
-  businessCardOrderId   String
-  fieldDefinitionId     String
-  value                 String
-  createdAt             DateTime                      @default(now())
+  id                  String   @id @default(cuid())
+  tenantId            String   @default("")
+  tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  businessCardOrderId String
+  fieldDefinitionId   String
+  value               String
+  createdAt           DateTime @default(now())
 
-  businessCardOrder     BusinessCardOrder             @relation(fields: [businessCardOrderId], references: [id])
-  fieldDefinition       BusinessCardFieldDefinition   @relation(fields: [fieldDefinitionId], references: [id])
+  businessCardOrder BusinessCardOrder           @relation(fields: [businessCardOrderId], references: [id], onDelete: Cascade)
+  fieldDefinition   BusinessCardFieldDefinition @relation(fields: [fieldDefinitionId], references: [id])
+
+  @@index([businessCardOrderId])
+  @@index([tenantId])
 }
 
 model WorkwearCatalogItem {
-  id          String      @id @default(cuid())
+  id          String   @id @default(cuid())
+  tenantId    String   @default("")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name        String
   category    String
   description String?
-  isActive    Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  sizes       WorkwearItemSize[]
-  orderItems  WorkwearOrderItem[]
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sizes      WorkwearItemSize[]
+  orderItems WorkwearOrderItem[]
+
+  @@index([tenantId])
 }
 
 model WorkwearItemSize {
-  id          String      @id @default(cuid())
+  id            String   @id @default(cuid())
+  tenantId      String   @default("")
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   catalogItemId String
-  sizeLabel   String
-  sortOrder   Int
-  isActive    Boolean     @default(true)
-  createdAt   DateTime    @default(now())
+  sizeLabel     String
+  sortOrder     Int
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
 
-  catalogItem WorkwearCatalogItem @relation(fields: [catalogItemId], references: [id])
+  catalogItem WorkwearCatalogItem @relation(fields: [catalogItemId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, catalogItemId, sizeLabel])
+  @@index([tenantId])
 }
 
 model WorkwearOrder {
-  id          String      @id @default(cuid())
-  orderId     String      @unique
-  createdAt   DateTime    @default(now())
+  id        String   @id @default(cuid())
+  tenantId  String   @default("")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orderId   String   @unique
+  createdAt DateTime @default(now())
 
-  order       Order       @relation(fields: [orderId], references: [id])
-  items       WorkwearOrderItem[]
+  order Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  items WorkwearOrderItem[]
+
+  @@index([tenantId])
 }
 
 model WorkwearOrderItem {
-  id              String      @id @default(cuid())
+  id              String   @id @default(cuid())
+  tenantId        String   @default("")
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   workwearOrderId String
   catalogItemId   String
   sizeLabel       String
   quantity        Int
-  createdAt       DateTime    @default(now())
+  createdAt       DateTime @default(now())
 
-  workwearOrder   WorkwearOrder @relation(fields: [workwearOrderId], references: [id])
-  catalogItem     WorkwearCatalogItem @relation(fields: [catalogItemId], references: [id])
+  workwearOrder WorkwearOrder       @relation(fields: [workwearOrderId], references: [id], onDelete: Cascade)
+  catalogItem   WorkwearCatalogItem @relation(fields: [catalogItemId], references: [id])
+
+  @@index([workwearOrderId])
+  @@index([tenantId])
 }
 
 model ApprovalRule {
-  id              String      @id @default(cuid())
+  id              String        @id @default(cuid())
+  tenantId        String        @default("")
+  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   orderType       OrderType
   scopeType       RoleScopeType @default(global)
   locationId      String?
   departmentId    String?
   specialtyAreaId String?
   roleKey         String
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([tenantId])
 }
 
 model ApprovalDecision {
-  id          String                @id @default(cuid())
-  orderId     String
-  actorId     String
-  decision    ApprovalDecisionType
-  note        String?
-  decidedAt   DateTime              @default(now())
+  id        String               @id @default(cuid())
+  tenantId  String               @default("")
+  tenant    Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orderId   String
+  actorId   String
+  decision  ApprovalDecisionType
+  note      String?
+  decidedAt DateTime             @default(now())
 
-  order       Order                 @relation(fields: [orderId], references: [id])
-  actor       User                  @relation("ApprovalActor", fields: [actorId], references: [id])
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  actor User  @relation("ApprovalActor", fields: [actorId], references: [id])
+
+  @@index([orderId])
+  @@index([tenantId])
 }
 
 model OrderCycle {
-  id          String      @id @default(cuid())
-  cycleType    CycleType
-  title       String
+  id            String    @id @default(cuid())
+  tenantId      String    @default("")
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cycleType     CycleType
+  title         String
   nextOrderDate DateTime
-  locationId   String?
-  notes       String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  locationId    String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  location    Location?   @relation(fields: [locationId], references: [id])
-  orders      Order[]
+  location Location? @relation(fields: [locationId], references: [id])
+  orders   Order[]
+
+  @@index([tenantId])
+}
+
+// -------------------------------------------------- Dokumente & Wissen
+
+model Document {
+  id             String           @id @default(cuid())
+  tenantId       String           @default("")
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title          String
+  category       String
+  description    String?
+  fileType       DocumentFileType @default(pdf)
+  url            String
+  ownerId        String
+  audienceScopes String[]         @default(["global"])
+  isActive       Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  owner User @relation("DocumentOwner", fields: [ownerId], references: [id])
+
+  @@index([category])
+  @@index([audienceScopes], type: Gin)
+  @@index([tenantId])
+}
+
+model WikiArticle {
+  id          String   @id @default(cuid())
+  tenantId    String   @default("")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  slug        String
+  title       String
+  category    String
+  content     String
+  tags        String[] @default([])
+  isPublished Boolean  @default(true)
+  authorId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  author User @relation("WikiAuthor", fields: [authorId], references: [id])
+
+  @@unique([tenantId, slug])
+  @@index([category])
+  @@index([tags], type: Gin)
+  @@index([tenantId])
+}
+
+// -------------------------------------------------- Kalender & Räume
+
+model CalendarEvent {
+  id             String           @id @default(cuid())
+  tenantId       String           @default("")
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title          String
+  category       CalendarCategory @default(meeting)
+  startsAt       DateTime
+  endsAt         DateTime
+  location       String?
+  description    String?
+  audienceScopes String[]         @default(["global"])
+  organizerId    String
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organizer User @relation("EventOrganizer", fields: [organizerId], references: [id])
+
+  @@index([startsAt])
+  @@index([audienceScopes], type: Gin)
+  @@index([tenantId])
+}
+
+model Room {
+  id         String   @id @default(cuid())
+  tenantId   String   @default("")
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name       String
+  locationId String?
+  capacity   Int      @default(8)
+  equipment  String[] @default([])
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  location Location?     @relation(fields: [locationId], references: [id])
+  bookings RoomBooking[]
+
+  @@index([tenantId])
+}
+
+model RoomBooking {
+  id        String   @id @default(cuid())
+  tenantId  String   @default("")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  roomId    String
+  userId    String
+  title     String
+  startsAt  DateTime
+  endsAt    DateTime
+  createdAt DateTime @default(now())
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, startsAt])
+  @@index([tenantId])
+}
+
+// ------------------------------------------------------------ Tickets
+
+model Ticket {
+  id          String         @id @default(cuid())
+  tenantId    String         @default("")
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  number      String
+  title       String
+  description String
+  category    TicketCategory @default(it)
+  priority    Priority       @default(normal)
+  status      TicketStatus   @default(offen)
+  requesterId String
+  assigneeId  String?
+  closedAt    DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  requester User            @relation("TicketRequester", fields: [requesterId], references: [id])
+  assignee  User?           @relation("TicketAssignee", fields: [assigneeId], references: [id])
+  comments  TicketComment[]
+
+  @@unique([tenantId, number])
+  @@index([status, createdAt])
+  @@index([requesterId])
+  @@index([tenantId])
+}
+
+model TicketComment {
+  id        String   @id @default(cuid())
+  tenantId  String   @default("")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  ticketId  String
+  authorId  String
+  message   String
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([tenantId])
+}
+
+// --------------------------------------------------------- Onboarding
+
+model OnboardingTemplate {
+  id            String   @id @default(cuid())
+  tenantId      String   @default("")
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name          String
+  targetRole    String
+  durationLabel String
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  steps       OnboardingStep[]
+  assignments OnboardingAssignment[]
+
+  @@index([tenantId])
+}
+
+model OnboardingStep {
+  id         String   @id @default(cuid())
+  tenantId   String   @default("")
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  templateId String
+  title      String
+  ownerRole  String
+  isRequired Boolean  @default(true)
+  sortOrder  Int
+  createdAt  DateTime @default(now())
+
+  template OnboardingTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  items    OnboardingItem[]
+
+  @@index([templateId])
+  @@index([tenantId])
+}
+
+model OnboardingAssignment {
+  id         String   @id @default(cuid())
+  tenantId   String   @default("")
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  templateId String
+  userId     String
+  startDate  DateTime
+  createdAt  DateTime @default(now())
+
+  template OnboardingTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  user     User               @relation("OnboardingEmployee", fields: [userId], references: [id], onDelete: Cascade)
+  items    OnboardingItem[]
+
+  @@unique([tenantId, templateId, userId])
+  @@index([tenantId])
+}
+
+model OnboardingItem {
+  id           String    @id @default(cuid())
+  tenantId     String    @default("")
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignmentId String
+  stepId       String
+  done         Boolean   @default(false)
+  doneAt       DateTime?
+  note         String?
+
+  assignment OnboardingAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  step       OnboardingStep       @relation(fields: [stepId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, assignmentId, stepId])
+  @@index([tenantId])
+}
+
+// ------------------------------------------------------ Abwesenheiten
+
+model Absence {
+  id          String        @id @default(cuid())
+  tenantId    String        @default("")
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId      String
+  type        AbsenceType   @default(urlaub)
+  startDate   DateTime
+  endDate     DateTime
+  workingDays Float
+  status      AbsenceStatus @default(submitted)
+  note        String?
+  deciderId   String?
+  decidedAt   DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user    User  @relation("AbsenceEmployee", fields: [userId], references: [id], onDelete: Cascade)
+  decider User? @relation("AbsenceDecider", fields: [deciderId], references: [id])
+
+  @@index([userId, status])
+  @@index([startDate])
+  @@index([tenantId])
+}
+
+// -------------------------------------------------------- Beteiligung
+
+model Idea {
+  id           String     @id @default(cuid())
+  tenantId     String     @default("")
+  tenant       Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title        String
+  description  String
+  category     String     @default("Allgemein")
+  status       IdeaStatus @default(neu)
+  authorId     String
+  decisionNote String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  author User       @relation("IdeaAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  votes  IdeaVote[]
+
+  @@index([status])
+  @@index([tenantId])
+}
+
+model IdeaVote {
+  id        String   @id @default(cuid())
+  tenantId  String   @default("")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  ideaId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  idea Idea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, ideaId, userId])
+  @@index([tenantId])
+}
+
+model Poll {
+  id          String    @id @default(cuid())
+  tenantId    String    @default("")
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  question    String
+  description String?
+  closesAt    DateTime?
+  isActive    Boolean   @default(true)
+  authorId    String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  author  User         @relation("PollAuthor", fields: [authorId], references: [id])
+  options PollOption[]
+  votes   PollVote[]
+
+  @@index([tenantId])
+}
+
+model PollOption {
+  id        String @id @default(cuid())
+  tenantId  String @default("")
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pollId    String
+  label     String
+  sortOrder Int
+
+  poll  Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  votes PollVote[]
+
+  @@index([pollId])
+  @@index([tenantId])
+}
+
+model PollVote {
+  id        String   @id @default(cuid())
+  tenantId  String   @default("")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pollId    String
+  optionId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  poll   Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  option PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, pollId, userId])
+  @@index([optionId])
+  @@index([tenantId])
+}
+
+// ----------------------------------------------- Schnellzugriffe & Co.
+
+model QuickLink {
+  id             String   @id @default(cuid())
+  tenantId       String   @default("")
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  label          String
+  url            String
+  description    String?
+  icon           String   @default("Link2")
+  sortOrder      Int      @default(0)
+  isActive       Boolean  @default(true)
+  audienceScopes String[] @default(["global"])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([audienceScopes], type: Gin)
+  @@index([tenantId])
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  tenantId  String              @default("")
+  tenant    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId    String
+  title     String
+  detail    String
+  channel   NotificationChannel @default(in_app)
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime            @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([tenantId])
 }
 
 model AuditLog {
-  id            String      @id @default(cuid())
-  actorId        String?
-  actorUsername  String
-  action         String
-  entityType     String
-  entityId       String
-  detail         String
-  metadataJson   Json?
-  createdAt      DateTime    @default(now())
+  id            String   @id @default(cuid())
+  tenantId      String   @default("")
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actorId       String?
+  actorUsername String
+  action        String
+  entityType    String
+  entityId      String
+  detail        String
+  metadataJson  Json?
+  createdAt     DateTime @default(now())
 
-  actor          User?       @relation("AuditActor", fields: [actorId], references: [id])
+  actor User? @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+  @@index([tenantId])
 }
+
+// ------------------------------------------------------ Schnittstellen
+
+enum SyncRunStatus {
+  running
+  succeeded
+  failed
+}
+
+enum SyncDirection {
+  inbound
+  outbound
+}
+
+/// Laufzeitzustand eines Konnektors. Die fachliche Definition steht in der
+/// Registry in @ah-intranet/shared; hier liegen nur Konfiguration und Status.
+
+/// Protokoll jedes Synchronisationslaufs - auch der fehlgeschlagenen.
+
+/// Zuordnung interner Datensätze zu ihren Gegenstücken im Fremdsystem.
+
+/// Aus Fremdsystemen übernommener Fahrzeugbestand. Lesend gepflegt: die
+/// führenden Daten bleiben im DMS bzw. in der Börse.

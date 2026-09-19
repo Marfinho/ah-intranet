@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+# Ein laufender Durchgang pro Branch reicht; ältere werden abgebrochen.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Nur für die Pipeline. Produktive Werte kommen aus den Repository-Secrets.
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ah_intranet_ci?schema=public
+  # Eigene Datenbank für den Abweichungsvergleich. Prisma setzt die
+  # Schattendatenbank dabei zurück - zeigt sie auf die Arbeitsdatenbank, ist
+  # deren Migrationsbuchführung danach weg.
+  SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ah_intranet_shadow
+  JWT_SECRET: ci-schluessel-ohne-bedeutung
+  FRONTEND_URL: http://localhost:3000
+  API_URL: http://localhost:3001/api
+  NEXT_PUBLIC_API_URL: http://localhost:3001/api
+
+jobs:
+  quality:
+    name: Typen, Lint, Tests, Build
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: ah_intranet_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Abhängigkeiten installieren
+        run: pnpm install --frozen-lockfile
+
+      # Postgres 16 ist die Version des Dienstcontainers; ein älterer Client
+      # verweigert den Dump.
+      - name: Postgres-Werkzeuge bereitstellen
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-16
+
+      - name: Schattendatenbank anlegen
+        run: PGPASSWORD=postgres createdb -h localhost -U postgres ah_intranet_shadow
+
+      # Das Shared-Paket muss gebaut sein, bevor die API typprüft.
+      - name: Shared-Paket bauen
+        run: pnpm --filter @ah-intranet/shared build
+
+      - name: Prisma-Client erzeugen
+        run: pnpm --filter api prisma:generate
+
+      - name: Schema prüfen
+        run: pnpm --filter api exec prisma validate
+
+      - name: Formatierung prüfen
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typen prüfen
+        run: pnpm typecheck
+
+      - name: Unit-Tests
+        run: pnpm -r test
+
+      # Stellt sicher, dass die Migrationen von null an durchlaufen und zum
+      # Schema passen - ein häufiger Bruch, den Unit-Tests nicht bemerken.
+      - name: Migrationen gegen leere Datenbank anwenden
+        run: pnpm --filter api exec prisma migrate deploy
+
+      - name: Auf Schemaabweichung prüfen
+        run: pnpm --filter api exec prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --shadow-database-url "$SHADOW_DATABASE_URL" --exit-code
+
+      - name: Seed einspielen
+        run: pnpm --filter api exec tsx prisma/seed.ts
+
+      - name: Bauen
+        run: pnpm build
+
+      # Der Aufbewahrungslauf greift auf jedes Modell zu. Eine Frist ohne
+      # hinterlegten Löschweg fällt hier auf, nicht erst nachts auf dem Server.
+      - name: Aufbewahrungsfristen prüfen
+        run: pnpm --filter api aufbewahrung:vorschau
+
+      # Beweist bei jedem Durchlauf, dass sich eine Sicherung vollständig
+      # zurückspielen lässt. Ein Schemawechsel, der den Weg bricht, fällt hier
+      # auf - nicht erst im Ernstfall.
+      - name: Probelauf der Wiederherstellung
+        run: ./scripts/probelauf.sh

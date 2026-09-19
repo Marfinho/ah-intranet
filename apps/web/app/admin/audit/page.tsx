@@ -1,23 +1,66 @@
-import { auditLogs } from "@ah-intranet/shared";
+import type { AuditLogItem } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
-import { DataTable } from "@/components/data-table";
-import { Section } from "@/components/ui";
-import { formatDate } from "@/lib/utils";
+import { FilterBar } from "@/components/filter-bar";
+import { EmptyState, Section } from "@/components/ui";
+import { apiGet } from "@/lib/api";
+import { requireModule, requireRole } from "@/lib/session";
+import { formatDateTime } from "@/lib/utils";
 
-export default function AdminAuditPage() {
+export default async function AuditPage({ searchParams }: { searchParams: { search?: string; action?: string } }) {
+  await requireModule("audit");
+  await requireRole("admin");
+
+  const query = new URLSearchParams();
+  if (searchParams.search) query.set("search", searchParams.search);
+  if (searchParams.action) query.set("action", searchParams.action);
+
+  const entries = await apiGet<AuditLogItem[]>(`/audit?${query.toString()}`);
+  const actions = [...new Set(entries.map((entry) => entry.action))].sort();
+
   return (
-    <AppShell title="Admin · Audit-Log" subtitle="Nachvollziehbarkeit für Login, Inhalte, Stammdaten, Freigaben und Statusänderungen">
-      <Section title="Audit-Ereignisse" subtitle="Relevante Aktionen werden als einsehbare Grundstruktur protokolliert">
-        <DataTable
-          rows={auditLogs}
-          columns={[
-            { key: "created", header: "Zeitpunkt", render: (log) => formatDate(log.createdAt) },
-            { key: "actor", header: "Akteur", render: (log) => log.actor },
-            { key: "action", header: "Aktion", render: (log) => <span className="font-semibold text-slate-900">{log.action}</span> },
-            { key: "entity", header: "Objekt", render: (log) => `${log.entityType} · ${log.entityId}` },
-            { key: "detail", header: "Detail", render: (log) => log.detail },
-          ]}
-        />
+    <AppShell title="Audit-Log" subtitle="Nachvollziehbare Protokollierung aller relevanten Aktionen">
+      <Section title={`${entries.length} Ereignisse`} subtitle="Die jüngsten 200 Einträge">
+        <div className="space-y-4">
+          <FilterBar
+            searchPlaceholder="Aktion, Person oder Detail"
+            selects={[
+              {
+                name: "action",
+                label: "Alle Aktionen",
+                options: actions.map((value) => ({ value, label: value })),
+              },
+            ]}
+          />
+
+          {entries.length === 0 ? (
+            <EmptyState title="Keine Einträge" detail="Für diese Filter wurde nichts protokolliert." />
+          ) : (
+            <div className="overflow-x-auto rounded-2xl border border-slate-200">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="bg-slate-50 text-left text-slate-600">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold">Zeitpunkt</th>
+                    <th className="px-4 py-3 font-semibold">Person</th>
+                    <th className="px-4 py-3 font-semibold">Aktion</th>
+                    <th className="px-4 py-3 font-semibold">Objekt</th>
+                    <th className="px-4 py-3 font-semibold">Detail</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {entries.map((entry) => (
+                    <tr key={entry.id}>
+                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDateTime(entry.createdAt)}</td>
+                      <td className="px-4 py-3 font-medium text-slate-900">{entry.actor}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-slate-600">{entry.action}</td>
+                      <td className="px-4 py-3 text-slate-600">{entry.entityType}</td>
+                      <td className="px-4 py-3 text-slate-700">{entry.detail}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </Section>
     </AppShell>
   );
