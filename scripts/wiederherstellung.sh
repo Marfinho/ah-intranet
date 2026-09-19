@@ -62,6 +62,5 @@ pg_restore --dbname="$(pg_url "$ZIEL_URL")" --clean --if-exists --no-owner --no-
 
 echo "Wiederherstellung abgeschlossen."
 echo
-echo "Nicht vergessen: INTEGRATION_SECRET_KEY muss derselbe sein wie zum"
-echo "Zeitpunkt der Sicherung, sonst sind die Zugangsdaten zu Fremdsystemen"
-echo "unlesbar. JWT_SECRET darf abweichen - dann müssen sich alle neu anmelden."
+echo "Hinweis: Weicht JWT_SECRET vom Stand der Sicherung ab, müssen sich alle"
+echo "Personen neu anmelden. Die Daten sind davon nicht betroffen."
