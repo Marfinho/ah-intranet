@@ -95,6 +95,38 @@ describe("applyTenantScope", () => {
     expect(args.create).toMatchObject({ tenantId: TENANT });
   });
 
+  it("stempelt verschachtelte Anlagen in einer Änderung", () => {
+    // Regression: die Freigabe einer Bestellung schreibt ihre Historie als
+    // verschachtelte Anlage. Ohne Stempel landete dort der Vorgabewert "" und
+    // die Fremdschlüsselbedingung schlug zu - die Freigabe endete mit 500.
+    const args = scope("Order", "update", {
+      where: { id: "o1" },
+      data: { status: "approved", statusHistory: { create: { status: "approved" } } },
+    });
+
+    expect(args.data).toMatchObject({ status: "approved" });
+    expect((args.data as Record<string, any>).statusHistory.create).toMatchObject({ tenantId: TENANT });
+  });
+
+  it("stempelt den geänderten Datensatz selbst nicht", () => {
+    const args = scope("Order", "update", { where: { id: "o1" }, data: { status: "approved" } });
+
+    expect(args.data).toEqual({ status: "approved" });
+  });
+
+  it("stempelt in connectOrCreate den Datensatz, nicht die Hülle", () => {
+    const args = scope("Order", "create", {
+      data: {
+        orderNumber: "B-1",
+        statusHistory: { connectOrCreate: { where: { id: "h1" }, create: { status: "submitted" } } },
+      },
+    });
+
+    const huelle = (args.data as Record<string, any>).statusHistory.connectOrCreate;
+    expect(huelle.where).toEqual({ id: "h1" });
+    expect(huelle.create).toMatchObject({ tenantId: TENANT });
+  });
+
   it("lässt die Mandantentabelle selbst unangetastet", () => {
     const args = scope("Tenant", "findMany", { where: { isActive: true } });
 
