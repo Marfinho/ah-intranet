@@ -194,6 +194,16 @@ Erfolg des Restores.
   sei das maschinell gelöst.
 - Datenschutzfunktionen sind bewusst **kein abschaltbares Modul** – ein Schalter,
   der gesetzliche Pflichten entfernt, wäre ein Fehler im Entwurf.
+- **Je Modul** steht in [`docs/recht.md`](docs/recht.md), was rechtlich gilt:
+  Rechtsgrundlage, Mitbestimmung, Frist, Fallstricke. Vier Module sind scharf –
+  Abwesenheiten (Gesundheitsdaten), Schichtplan (Arbeitszeit), Umfragen (**nicht
+  anonym**, obwohl es so aussieht) und das Audit-Log.
+- **Ehrlich benannte Lücke:** Der Schichtplan weist Doppelbelegungen ab, prüft
+  aber **nicht** die Ruhezeit nach § 5 ArbZG, die Höchstarbeitszeit nach § 3 und
+  die Pausen nach § 4. Wer das automatisiert, muss es bauen – zu behaupten, es
+  sei da, wäre schlimmer als die Lücke.
+- Vorlagen für Auftragsverarbeitung und Betriebsvereinbarung:
+  [`docs/vorlagen/`](docs/vorlagen/).
 - Einzelheiten und die Mitbestimmung nach § 87 BetrVG: [`docs/datenschutz.md`](docs/datenschutz.md).
 
 ## Bekannte Lücken
@@ -213,4 +223,10 @@ Offen vor dem Produktivbetrieb:
 - **Eine laufende Installation.** Entscheidungsgrundlage in
   [`docs/ausrollen.md`](docs/ausrollen.md).
 - **Rohabfragen:** `$queryRaw` umgeht die Mandantentrennung (siehe oben).
-- **Auftragsverarbeitungsvertrag** zwischen Betreiber und Haus (Vorlage fehlt).
+- **Auftragsverarbeitungsvertrag** zwischen Betreiber und Haus. Vorlage liegt
+  in [`docs/vorlagen/auftragsverarbeitung.md`](docs/vorlagen/auftragsverarbeitung.md)
+  und ist **anwaltlich zu prüfen**, bevor sie unterschrieben wird.
+- **Dateiupload:** Dokumente und Anhänge sind Verweise (`Document.url`), keine
+  hochgeladenen Dateien. Das kann so bleiben, wenn das Haus ein Laufwerk hat –
+  es ist eine Entscheidung, keine Selbstverständlichkeit.
+- **Arbeitszeitgrenzen im Schichtplan** (siehe Datenschutz).
