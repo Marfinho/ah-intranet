@@ -173,6 +173,7 @@ export class UsersController {
 
   @Post(":id/reset-password")
   @Roles("admin")
+  @Permission("users.manage")
   resetPassword(@CurrentUser() user: RequestUser, @Param("id") id: string) {
     return this.people.resetPassword(user, id);
   }
@@ -223,6 +224,7 @@ export class AbsencesController {
   }
 
   @Post(":id/decision")
+  @Permission("absences.approve")
   decide(@CurrentUser() user: RequestUser, @Param("id") id: string, @Body() dto: DecisionDto) {
     return this.absences.decide(user, id, dto.approve, dto.note);
   }

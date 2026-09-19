@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
-import { UNVERZICHTBARE_RECHTE, getPermission } from "@ah-intranet/shared";
+import { ADMIN_ROLLE, UNVERZICHTBARE_RECHTE, getPermission } from "@ah-intranet/shared";
 import type {
   AppRole,
   EmployeeDirectoryEntry,
@@ -352,10 +352,16 @@ export class PeopleService {
   /**
    * Verhindert, dass ein Haus sich selbst aussperrt.
    *
-   * Wer `roles.manage` aus der letzten Rolle nimmt, die es trägt, kommt nie
-   * wieder an den Rechte-Editor - und ohne `users.manage` entsteht auch kein
-   * neues Administrationskonto mehr. Beides ist nicht rückgängig zu machen,
-   * also wird es vorher abgewiesen.
+   * `roles.manage` und `users.manage` sind unverzichtbar: Ohne das erste kommt
+   * niemand mehr an den Rechte-Editor, ohne das zweite entsteht kein neues
+   * Administrationskonto. Beides ist nicht rückgängig zu machen.
+   *
+   * Entscheidend ist dabei **nicht**, ob irgendeine Rolle das Recht noch trägt,
+   * sondern ob eine Rolle es trägt, die auch durch die Rollenprüfung der
+   * betreffenden Route kommt. Beide Routen verlangen `@Roles("admin")` - ein
+   * Recht bei `fachbereichsadmin` nützt dort nichts. Es aus der
+   * Administrationsrolle zu nehmen, sperrt das Haus also selbst dann aus, wenn
+   * eine andere Rolle es formal besitzt.
    */
   private async assertNichtAusgesperrt(roleId: string, kuenftig: Set<string>): Promise<void> {
     const fehlend = UNVERZICHTBARE_RECHTE.filter((recht) => !kuenftig.has(recht));
@@ -363,20 +369,18 @@ export class PeopleService {
       return;
     }
 
-    const andere = await this.prisma.role.findMany({
-      where: { id: { not: roleId } },
-      select: { name: true, permissions: { select: { permission: { select: { key: true } } } } },
-    });
-
-    for (const recht of fehlend) {
-      const traegt = andere.some((rolle) => rolle.permissions.some((eintrag) => eintrag.permission.key === recht));
-      if (!traegt) {
-        throw new BadRequestException(
-          `"${getPermission(recht)?.name ?? recht}" ist das letzte seiner Art. Würde es hier entfernt, ` +
-            "käme niemand mehr an die Rechteverwaltung. Vergeben Sie es zuerst an eine andere Rolle.",
-        );
-      }
+    const rolle = await this.prisma.role.findUnique({ where: { id: roleId }, select: { key: true } });
+    if (rolle?.key !== ADMIN_ROLLE) {
+      // Aus einer anderen Rolle darf das Recht verschwinden: die
+      // Administrationsrolle behält es und kommt durch die Rollenprüfung.
+      return;
     }
+
+    const namen = fehlend.map((recht) => `"${getPermission(recht)?.name ?? recht}"`).join(" und ");
+    throw new BadRequestException(
+      `${namen} kann der Administration nicht entzogen werden. Nur diese Rolle kommt an die Rechte- und ` +
+        "Benutzerverwaltung - ohne sie könnte niemand die Entscheidung zurücknehmen.",
+    );
   }
 
   /* ---------------------------------------------------------- Helfer */

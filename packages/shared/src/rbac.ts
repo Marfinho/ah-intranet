@@ -91,3 +91,12 @@ export function isPermissionKey(key: string): boolean {
  * mehr zustande.
  */
 export const UNVERZICHTBARE_RECHTE: readonly string[] = ["roles.manage", "users.manage"];
+
+/**
+ * Die Rolle, die als einzige an Rechte- und Benutzerverwaltung kommt.
+ *
+ * Beide Routen verlangen sie zusätzlich zum Recht. Ein unverzichtbares Recht
+ * bei einer anderen Rolle nützt deshalb nichts - es käme gar nicht bis zur
+ * Rechteprüfung.
+ */
+export const ADMIN_ROLLE = "admin";
