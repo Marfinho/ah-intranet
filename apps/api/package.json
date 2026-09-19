@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "aufbewahrung": "node dist/scripts/aufbewahrung.js",
-    "aufbewahrung:vorschau": "node dist/scripts/aufbewahrung.js --vorschau"
+    "aufbewahrung:vorschau": "node dist/scripts/aufbewahrung.js --vorschau",
+    "anonymisieren": "node dist/scripts/anonymisieren.js"
   },
   "dependencies": {
     "@ah-intranet/shared": "workspace:*",

@@ -109,11 +109,14 @@ Zwei Dinge, die dabei ehrlich benannt gehören:
   Punkt 3 der Freigabeliste.
 - **Testdaten aus der Produktion gehören anonymisiert.** Echte Personendaten in
   einer Erprobungsumgebung sind ein Datenschutzverstoß, kein Schönheitsfehler.
-  Die Anonymisierung gibt es bereits je Person; für eine ganze Datenbank fehlt
-  der Massenlauf.
+  Den Lauf dafür gibt es: `node dist/scripts/anonymisieren.js`, beschrieben in
+  [`betrieb.md`](betrieb.md). Er ersetzt Personen durch Kunstfiguren, statt sie
+  unkenntlich zu machen – sonst wäre die Umgebung nicht mehr zu bedienen.
 
 ## Was noch fehlt
 
 - Eine laufende Installation. Ohne sie bleibt alles oberhalb Theorie.
+- Der Rückkanal aus der Anwendung: ein Knopf, der aus einer Erprobung heraus
+  eine Serviceanfrage anlegt.
 - Fehler- und Protokollauswertung. Ohne sie fällt ein Fehler erst auf, wenn
   jemand anruft.

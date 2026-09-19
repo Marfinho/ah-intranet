@@ -88,6 +88,31 @@ ein Dump kann durchlaufen und trotzdem halbe Tabellen enthalten.
 
 Wann: monatlich, und nach jeder Änderung an Schema oder Sicherungsweg.
 
+## Erprobungsumgebung befüllen
+
+Ein Pilotsystem lebt von echten Datenmengen – aber nicht von echten Personen.
+
+```bash
+./scripts/sicherung.sh /tmp/uebernahme
+./scripts/wiederherstellung.sh /tmp/uebernahme/<datei>.dump "postgresql://…/ahoi_pilot"
+DATABASE_URL="postgresql://…/ahoi_pilot" node dist/scripts/anonymisieren.js --ja-diese-datenbank
+```
+
+Der letzte Schritt ersetzt jede Person durch eine **Kunstfigur**: erfundener,
+aber stabiler Name, Kennung daraus abgeleitet, Adresse auf `.invalid` (reserviert,
+also nie zustellbar), keine Telefonnummern. Rollen, Standort und Abteilung
+bleiben – ohne sie ließen sich Freigabewege und Zielgruppen nicht erproben.
+Benachrichtigungen, Lesebestätigungen und das Protokoll fallen weg.
+
+Ohne `--ja-diese-datenbank` bricht das Skript ab und nennt die Datenbank, auf die
+es zeigt. Ein versehentlicher Lauf gegen die Produktion wäre nicht rückgängig zu
+machen.
+
+**Die Grenze:** Freitexte bleiben stehen. Ein Ticket mit „Rückfrage an Frau
+Meier" nennt eine Person, ohne dass ein Datenfeld darauf zeigt. Das Skript zählt
+am Ende auf, wie viele Freitexte es gibt; durchsehen muss sie ein Mensch, bevor
+die Umgebung Dritten offensteht.
+
 ## Aktualisierung
 
 ```bash
