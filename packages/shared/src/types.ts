@@ -524,3 +524,59 @@ export interface Paginated<T> {
   page: number;
   pageSize: number;
 }
+
+/* ------------------------------------------------------- Anmeldeverfahren */
+
+/**
+ * Zusätzliche Anmeldeart eines Hauses. Das Passwort ist immer da und steht
+ * deshalb nicht in dieser Liste.
+ */
+export type AuthProviderKind = "entra";
+
+export interface AuthProviderSummary {
+  id: string;
+  kind: AuthProviderKind;
+  label: string;
+  /** Verzeichnis beim Anbieter - bei Entra die Verzeichnis-ID des Hauses. */
+  directory: string;
+  clientId: string;
+  /** Ob ein Clientschlüssel hinterlegt ist. Der Schlüssel selbst verlässt die API nie. */
+  hasSecret: boolean;
+  isActive: boolean;
+  updatedAt: string;
+}
+
+/** Beschreibung einer Anmeldeart für die Verwaltungsoberfläche. */
+export interface AuthProviderDefinition {
+  kind: AuthProviderKind;
+  name: string;
+  description: string;
+  /**
+   * Ob die Anmeldeart in dieser Fassung tatsächlich benutzt werden kann.
+   * Ist sie es nicht, lässt sie sich hinterlegen, aber nicht einschalten.
+   */
+  inBetrieb: boolean;
+  /** Was das Haus bereitstellen muss, bevor es losgeht. */
+  voraussetzungen: string[];
+}
+
+export const AUTH_PROVIDER_DEFINITIONS: readonly AuthProviderDefinition[] = [
+  {
+    kind: "entra",
+    name: "Microsoft Entra ID",
+    description:
+      "Anmeldung mit dem Firmenkonto über OpenID Connect. Auf Entra-beigetretenen Rechnern läuft sie ohne Eingabe " +
+      "durch, auf allen anderen Geräten über das Microsoft-Anmeldefenster.",
+    inBetrieb: false,
+    voraussetzungen: [
+      "Verzeichnis-ID des Hauses aus dem Entra-Portal",
+      "App-Registrierung mit Umleitungs-URI auf diese Installation",
+      "Clientschlüssel der App-Registrierung",
+      "Zuordnung der Konten: die Kennung im Intranet muss zum Konto im Verzeichnis passen",
+    ],
+  },
+];
+
+export function getAuthProvider(kind: string): AuthProviderDefinition | undefined {
+  return AUTH_PROVIDER_DEFINITIONS.find((eintrag) => eintrag.kind === kind);
+}

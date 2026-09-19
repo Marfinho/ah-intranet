@@ -60,6 +60,12 @@ export const PERMISSION_DEFINITIONS: readonly PermissionDefinition[] = [
     bereich: "Verwaltung",
   },
   {
+    key: "auth.manage",
+    name: "Anmeldeverfahren verwalten",
+    description: "Zusätzliche Anmeldearten des Hauses hinterlegen und freischalten",
+    bereich: "Verwaltung",
+  },
+  {
     key: "privacy.manage",
     name: "Datenschutz bearbeiten",
     description: "Auskunft erteilen, Konten anonymisieren, Fristen ausführen",

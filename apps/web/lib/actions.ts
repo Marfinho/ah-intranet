@@ -485,6 +485,26 @@ export async function setRolePermissionsAction(roleId: string, permissions: stri
   return run(() => apiSend("PATCH", `/roles/${roleId}/permissions`, { permissions }), ["/admin/rollen"]);
 }
 
+export async function saveAuthProviderAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const payload = {
+    kind: String(formData.get("kind") ?? "entra"),
+    label: String(formData.get("label") ?? ""),
+    directory: String(formData.get("directory") ?? ""),
+    clientId: String(formData.get("clientId") ?? ""),
+    // Leeres Feld heißt: den hinterlegten Schlüssel behalten.
+    clientSecret: String(formData.get("clientSecret") ?? "") || undefined,
+  };
+  return run(() => apiSend("POST", "/anmeldeverfahren", payload), ["/admin/anmeldung"], "Zugangsdaten gespeichert.");
+}
+
+export async function setAuthProviderActiveAction(kind: string, isActive: boolean): Promise<ActionState> {
+  return run(() => apiSend("PATCH", `/anmeldeverfahren/${kind}/aktiv`, { isActive }), ["/admin/anmeldung"]);
+}
+
+export async function removeAuthProviderAction(kind: string): Promise<ActionState> {
+  return run(() => apiSend("DELETE", `/anmeldeverfahren/${kind}`), ["/admin/anmeldung"]);
+}
+
 export async function createRoleAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
   const payload = {
     name: String(formData.get("name") ?? ""),

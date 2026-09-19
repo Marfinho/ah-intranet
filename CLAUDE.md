@@ -134,6 +134,21 @@ Erfolg des Restores.
 - Geheimnisse gehören nie in die Antwort der API und nie unverschlüsselt in die
   Datenbank.
 
+## Anmeldung
+
+- **Passwort ist der Grundweg** und nicht abschaltbar: ein Haus soll ohne
+  IT-Termin starten können, und der Zugang vom Telefon in der Halle darf nicht
+  an der Domäne des Kunden hängen.
+- Zusätzliche Anmeldearten je Haus in `TenantAuthProvider`, Katalog in
+  `packages/shared/src/types.ts` (`AUTH_PROVIDER_DEFINITIONS`).
+- **Entra ID ist vorbereitet, nicht in Betrieb.** Zugangsdaten lassen sich
+  hinterlegen, freischalten nicht – solange der Austausch fehlt, wäre ein Knopf
+  im Anmeldeformular eine Lüge. Der Schalter weist das mit Begründung ab.
+- Geheimnisse verschlüsselt (`core/geheimnis.ts`, AES-256-GCM, `SECRET_KEY`).
+  Ohne Schlüssel wird nichts gespeichert – lieber eine Absage als Klartext.
+- **Kerberos/SPNEGO bleibt draußen:** nur auf domänenbeigetretenen Rechnern,
+  kein zweiter Faktor, je Haus eigene Einrichtung.
+
 ## Datenschutz
 
 - **Auskunft** (Art. 15) als Datei über **Administration → Datenschutz**.

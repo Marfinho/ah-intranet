@@ -195,8 +195,43 @@ model Tenant {
   quickLinks                   QuickLink[]
   notifications                Notification[]
   auditLogs                    AuditLog[]
+  authProviders                TenantAuthProvider[]
 
   @@index([isActive])
+}
+
+/// Art einer Anmeldung. `password` ist immer da und steht nicht in dieser Tabelle.
+enum AuthProviderKind {
+  entra
+}
+
+/// Zusätzliche Anmeldeart eines Hauses.
+///
+/// Das Passwort bleibt der Grundweg: damit startet jedes Haus ohne Vorbedingung
+/// und der Monteur kommt auch vom privaten Telefon in der Halle hinein. Wer
+/// Microsoft Entra ID einsetzt, hinterlegt es hier zusätzlich.
+///
+/// `isActive` schaltet die Anmeldeart im Anmeldeformular frei. Solange der
+/// Austausch mit dem Anbieter nicht gebaut ist, bleibt sie aus - ein Knopf, der
+/// nichts tut, wäre schlimmer als keiner.
+model TenantAuthProvider {
+  id           String           @id @default(cuid())
+  tenantId     String           @default("")
+  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  kind         AuthProviderKind
+  /// Beschriftung im Anmeldeformular, z. B. "Anmeldung mit dem Firmenkonto".
+  label        String
+  /// Verzeichnis beim Anbieter (bei Entra: die Verzeichnis-ID des Hauses).
+  directory    String
+  clientId     String
+  /// Verschlüsselt (AES-256-GCM); verlässt die API nie.
+  clientSecret String?
+  isActive     Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@unique([tenantId, kind])
+  @@index([tenantId])
 }
 
 // ------------------------------------------------------- Organisation
