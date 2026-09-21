@@ -4,6 +4,8 @@ import { getModule } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
 import { ModuleRegistryService } from "../../core/module-registry.service";
 import { NotificationsService } from "../../core/notifications.service";
+import { AuditService } from "../../core/audit.service";
+import { requireTenantId } from "../../core/tenant-context";
 import { audienceFilter, displayName } from "../../core/mappers";
 import { can, type RequestUser } from "../../core/request-user";
 import { NewsService } from "../content/news.service";
@@ -25,6 +27,7 @@ export class PlatformService {
     private readonly desk: ServiceDeskService,
     private readonly resources: ResourcesService,
     private readonly absences: AbsencesService,
+    private readonly audit: AuditService,
   ) {}
 
   /**
@@ -286,6 +289,35 @@ export class PlatformService {
         { label: "Veröffentlichte News", value: String(news), helper: `${auditCount} Audit-Ereignisse` },
       ] satisfies DashboardMetric[],
     };
+  }
+
+  /**
+   * Bearbeitung des eigenen Mandantenprofils durch das Haus selbst.
+   *
+   * Getrennt von `TenantsController`: der dort verwaltet alle Häuser und ist
+   * der Plattformverwaltung vorbehalten. Hier pflegt ein Haus nur sein
+   * eigenes Profil (Name, Notizen) - geschützt über `tenant.manage`, nicht
+   * über `@PlatformAdmin()`.
+   */
+  async updateOwnTenant(user: RequestUser, input: { name?: string; notes?: string | null }) {
+    const tenantId = requireTenantId();
+    const tenant = await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: {
+        ...(input.name !== undefined ? { name: input.name.trim() } : {}),
+        ...(input.notes !== undefined ? { notes: input.notes?.trim() || null } : {}),
+      },
+    });
+
+    await this.audit.log({
+      actor: user,
+      action: "tenant.update_own",
+      entityType: "tenant",
+      entityId: tenant.id,
+      detail: `Mandantenprofil "${tenant.name}" durch das Haus selbst aktualisiert`,
+    });
+
+    return { id: tenant.id, name: tenant.name, notes: tenant.notes };
   }
 
   async auditLog(filter: { search?: string; action?: string; take?: number } = {}): Promise<AuditLogItem[]> {

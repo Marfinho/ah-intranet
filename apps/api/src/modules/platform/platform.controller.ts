@@ -1,7 +1,18 @@
-import { Controller, Get, Query } from "@nestjs/common";
+import { Body, Controller, Get, Patch, Query } from "@nestjs/common";
+import { IsOptional, IsString } from "class-validator";
 import { PlatformService } from "./platform.service";
 import { CurrentUser, Feature, Permission } from "../../core/decorators";
 import type { RequestUser } from "../../core/request-user";
+
+class UpdateTenantProfileDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string | null;
+}
 
 @Controller("dashboard")
 export class DashboardController {
@@ -32,6 +43,13 @@ export class AdminController {
   @Permission("admin.access")
   summary() {
     return this.platform.adminSummary();
+  }
+
+  /** Eigenes Mandantenprofil - nicht zu verwechseln mit der Mandantenverwaltung des Betreibers. */
+  @Patch("mandant")
+  @Permission("tenant.manage")
+  updateTenant(@CurrentUser() user: RequestUser, @Body() dto: UpdateTenantProfileDto) {
+    return this.platform.updateOwnTenant(user, dto);
   }
 }
 
