@@ -1,4 +1,4 @@
-# Reverse Proxy für die Erprobung von Subdomains im Heimnetz.
+# Reverse Proxy für die Erprobung im Heimnetz.
 # Nur HTTP: ein selbst ausgestelltes Zertifikat für eine lokale Domain
 # bringt in jedem Browser eine Warnung - für die reine Funktionsprüfung im
 # eigenen Netz unnötiger Aufwand. Echtes TLS gehört zum späteren
@@ -7,7 +7,16 @@
 	auto_https off
 }
 
-http://*.{$BASE_DOMAIN}:80, http://{$BASE_DOMAIN}:80 {
+# Die nackte Domain ist die Marketing-Landingpage, nicht die Anwendung -
+# Interessenten sind eine andere Zielgruppe als angemeldete Mitarbeitende.
+http://{$BASE_DOMAIN}:80 {
+	root * /srv/landing
+	file_server
+}
+
+# Jede Subdomain (Kunde oder die Plattformverwaltung unter "verwaltung")
+# geht an die eigentliche Anwendung.
+http://*.{$BASE_DOMAIN}:80 {
 	# Ohne diese Zeile ersetzt Caddy den Host-Kopf durch die Zieladresse
 	# (`web:3000`) - und genau der Host, den der Browser gerufen hat, ist
 	# es, woraus die API das Haus erkennt.

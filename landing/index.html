@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AHOI – Autohaus Organisation &amp; Information</title>
+<meta name="description" content="Intranet für Autohäuser mit mehreren Standorten: Aushänge, Bestellungen, Freigaben, Anträge, Serviceanfragen, Einarbeitung." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --grund: #F1F3F5;
+    --flaeche: #FFFFFF;
+    --schrift: #0F1417;
+    --schrift-gedaempft: #4C575E;
+    --schrift-leise: #78848B;
+    --linie: #D3D9DD;
+    --akzent: #DC3A14;
+    --akzent-text: #A2270C;
+    --akzent-zart: #FBE3D9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --grund: #0E1113;
+      --flaeche: #181C1F;
+      --schrift: #E6EAEC;
+      --schrift-gedaempft: #A3AFB5;
+      --schrift-leise: #7B878E;
+      --linie: #2A3338;
+      --akzent: #FF6B41;
+      --akzent-text: #FF8A66;
+      --akzent-zart: #3A1A0F;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--grund);
+    color: var(--schrift);
+    font-family: "Source Sans 3", system-ui, sans-serif;
+    line-height: 1.55;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.5rem max(1rem, calc((100vw - 960px) / 2));
+  }
+  .signet {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    width: 28px;
+    height: 28px;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+  .signet span { background: var(--schrift); border-radius: 2px; }
+  .signet span:nth-child(2) { background: var(--akzent); }
+  .wortmarke {
+    font-family: "Archivo", system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    font-size: 1.1rem;
+  }
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 3rem 1rem 5rem;
+  }
+  h1 {
+    font-family: "Archivo", system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    font-size: clamp(2rem, 5vw, 3.25rem);
+    margin: 0 0 1rem;
+  }
+  .lead {
+    color: var(--schrift-gedaempft);
+    font-size: 1.2rem;
+    max-width: 40rem;
+    margin: 0 0 2.5rem;
+  }
+  .karten {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+    margin: 2.5rem 0;
+  }
+  .karte {
+    background: var(--flaeche);
+    border: 1px solid var(--linie);
+    border-radius: 16px;
+    padding: 1.5rem;
+  }
+  .karte h2 {
+    font-family: "Archivo", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin: 0 0 0.5rem;
+  }
+  .karte p { color: var(--schrift-gedaempft); margin: 0; font-size: 0.95rem; }
+  .cta {
+    display: inline-block;
+    margin-top: 0.5rem;
+    background: var(--akzent);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 0.85rem 1.75rem;
+    border-radius: 12px;
+  }
+  .hinweis {
+    margin-top: 3rem;
+    padding: 1.25rem 1.5rem;
+    background: var(--akzent-zart);
+    color: var(--akzent-text);
+    border-radius: 12px;
+    font-size: 0.9rem;
+  }
+  footer {
+    text-align: center;
+    color: var(--schrift-leise);
+    font-size: 0.85rem;
+    padding: 2rem 1rem;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="signet" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+    <span class="wortmarke">AHOI</span>
+  </header>
+
+  <main>
+    <h1>Das Intranet für Autohäuser mit mehreren Standorten</h1>
+    <p class="lead">
+      Aushänge, Bestellungen, Freigaben, Anträge, Serviceanfragen und Einarbeitung
+      an einem Ort – für ein Haus oder für mehrere Filialen unter einer Adresse.
+    </p>
+
+    <a class="cta" href="mailto:info@ahoi.example">Kontakt aufnehmen</a>
+
+    <div class="karten">
+      <div class="karte">
+        <h2>Mehrere Häuser, eine Adresse</h2>
+        <p>Jedes Autohaus meldet sich mit Benutzername und Passwort an – ganz ohne technisches Vorwissen.</p>
+      </div>
+      <div class="karte">
+        <h2>Module nach Bedarf</h2>
+        <p>Fachbereiche einzeln ein- und ausschaltbar, neue Funktionen erst nach Erprobung im eigenen Haus.</p>
+      </div>
+      <div class="karte">
+        <h2>Rechte statt Rollenraten</h2>
+        <p>Jedes Haus vergibt eigene Rollen und Rechte – serverseitig durchgesetzt, nicht nur im Formular versteckt.</p>
+      </div>
+    </div>
+
+    <div class="hinweis">
+      Diese Seite ist ein Platzhalter. Inhalte, Bilder und Text folgen –
+      Farben, Schrift und Zeichen entsprechen bereits dem Erscheinungsbild
+      aus <code>docs/ci.md</code>.
+    </div>
+  </main>
+
+  <footer>AHOI – Autohaus Organisation &amp; Information</footer>
+</body>
+</html>

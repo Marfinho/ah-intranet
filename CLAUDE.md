@@ -55,6 +55,11 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
   ungefiltert. Rohabfragen müssen den Mandanten selbst filtern.
 - **Plattformverwaltung ≠ Adminrolle.** `admin` verwaltet das eigene Haus;
   Häuser anlegen und sperren darf nur `isPlatformAdmin` (`@PlatformAdmin()`).
+- **Die Plattformverwaltung wohnt in einem eigenen Mandanten**, nicht bei
+  einem Kunden. Kein Sonderfall im Code: der Betreiber ist einfach ein
+  Mandant wie jeder andere (Kennung `verwaltung`, eigene Subdomain), nur ohne
+  Geschäftsdaten und mit Konten, die `isPlatformAdmin` tragen. Wer Häuser
+  anlegen darf, meldet sich dort an, nicht bei einem Kunden mit.
 - Auflösung des Hauses: eigene Domain oder Subdomain, sonst die Kennung im
   Anmeldeformular. Nur bei genau einem Haus entfällt die Angabe.
 - Ein neues Haus entsteht samt Rollen, Rechten und erstem Administrationskonto

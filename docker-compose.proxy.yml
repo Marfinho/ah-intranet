@@ -22,3 +22,4 @@ services:
       BASE_DOMAIN: ${BASE_DOMAIN:-ahoi.localhost}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./landing:/srv/landing:ro

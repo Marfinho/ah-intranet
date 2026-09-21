@@ -48,6 +48,12 @@ PROXY_PORT=8090 BASE_DOMAIN=ahoi.home docker compose -f docker-compose.yml -f do
 Die Adressen lauten dann entsprechend `http://autohaus-mueller.ahoi.home:8090`
 (bzw. ohne Portangabe, wenn `PROXY_PORT=80` gesetzt und der Port frei ist).
 
+Die **nackte Domain** (`http://ahoi.home:8090` ohne Subdomain) zeigt dabei
+nicht die Anwendung, sondern die Marketing-Landingpage aus `landing/` –
+Interessenten sind eine andere Zielgruppe als angemeldete Mitarbeitende.
+Jede Subdomain (`autohaus-mueller.ahoi.home`, `verwaltung.ahoi.home`, …) geht
+an die eigentliche Anwendung.
+
 Damit Geräte im Netz die Adresse überhaupt finden, braucht es einen der
 beiden Wege:
 
@@ -81,8 +87,23 @@ Zwei Stellen mussten dafür angepasst werden:
   ihn jetzt als `x-forwarded-host` weiter, genau wie es ein Reverse Proxy vor
   der API täte; `TenantMiddleware` liest diesen Kopf jetzt bevorzugt.
 
+## Plattformverwaltung und Marketingseite
+
+Häuser anlegen und sperren ist keine Funktion der Kunden-Mandanten, sondern
+liegt in einem eigenen, schlanken Mandanten: `verwaltung` (im Seed
+`prisma/seed.ts` als `PLATFORM_TENANT` angelegt, Login `plattform` /
+`Intranet2026!`). Adresse entsprechend `verwaltung.localhost:3000` bzw.
+`verwaltung.ahoi.home:8090`. Wer sich dort anmeldet, sieht unter
+**Administration → Autohäuser** die Mandantenverwaltung – unabhängig davon,
+bei welchem Kunden man sonst angemeldet ist.
+
+Die nackte Domain (ohne Subdomain) ist bewusst weder das eine noch das
+andere, sondern die Marketing-Landingpage aus `landing/index.html` –
+Interessenten landen dort, nicht im Login eines beliebigen Kunden.
+
 ## Ein Haus anlegen
 
-Über **Administration → Mandanten** (nur `isPlatformAdmin`) oder direkt per
-API. Die Kennung (`slug`) bestimmt die Subdomain – `slug: "autohaus-mueller"`
-ergibt `autohaus-mueller.localhost` bzw. `autohaus-mueller.ahoi.home`.
+Über **Administration → Autohäuser** im Mandanten `verwaltung` (nur
+`isPlatformAdmin`) oder direkt per API. Die Kennung (`slug`) bestimmt die
+Subdomain – `slug: "autohaus-mueller"` ergibt `autohaus-mueller.localhost`
+bzw. `autohaus-mueller.ahoi.home`.
