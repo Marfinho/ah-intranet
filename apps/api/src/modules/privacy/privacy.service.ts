@@ -205,18 +205,26 @@ export class PrivacyService {
 
     const name = displayName(user);
 
-    const [notifications, newsReads, ideaVotes, pollVotes] = await this.prisma.$transaction([
+    // Alles in **einer** Transaktion. Der Vorgang ist unumkehrbar; bräche er
+    // zwischen zwei Schritten ab, bliebe entweder ein anonymisiertes Konto mit
+    // Rechten stehen oder eines, dessen Spuren gelöscht sind, während die
+    // Identität noch dranhängt. Beides wäre schlimmer als ein sauberer Abbruch.
+    const { notifications, newsReads, ideaVotes, pollVotes } = await this.prisma.$transaction(async (tx) => {
       // Reine Aktivitätsspuren: kein Beweiswert, voller Personenbezug.
-      this.prisma.notification.deleteMany({ where: { userId } }),
-      this.prisma.newsRead.deleteMany({ where: { userId } }),
-      this.prisma.ideaVote.deleteMany({ where: { userId } }),
-      this.prisma.pollVote.deleteMany({ where: { userId } }),
-    ]);
+      const entfernt = {
+        notifications: await tx.notification.deleteMany({ where: { userId } }),
+        newsReads: await tx.newsRead.deleteMany({ where: { userId } }),
+        ideaVotes: await tx.ideaVote.deleteMany({ where: { userId } }),
+        pollVotes: await tx.pollVote.deleteMany({ where: { userId } }),
+      };
 
-    await this.prisma.user.update({ where: { id: userId }, data: anonymisierteFelder(userId) });
+      await tx.user.update({ where: { id: userId }, data: anonymisierteFelder(userId) });
 
-    // Rollen entziehen: ein anonymisiertes Konto darf keine Rechte mehr tragen.
-    await this.prisma.userRole.deleteMany({ where: { userId } });
+      // Rollen entziehen: ein anonymisiertes Konto darf keine Rechte mehr tragen.
+      await tx.userRole.deleteMany({ where: { userId } });
+
+      return entfernt;
+    });
 
     await this.audit.log({
       actor,

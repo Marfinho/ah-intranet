@@ -45,8 +45,14 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
 - **Fail-closed:** ohne Mandantenkontext scheitert der Datenzugriff hart, statt
   über alle Häuser zu laufen. Abläufe, die das fachlich brauchen (Anmeldung,
   Mandantenverwaltung), markieren sich mit `runUnscoped`.
-- Grenze der Methode: `$queryRaw` läuft ohne Modell durch die Middleware und ist
-  ungefiltert. Rohabfragen müssen den Mandanten selbst filtern.
+- Grenzen der Methode, beide bekannt und benannt:
+  - `$queryRaw` läuft ohne Modell durch die Middleware und ist ungefiltert.
+    Rohabfragen müssen den Mandanten selbst filtern.
+  - Die Middleware filtert die **oberste** Operation. Eine über `include`
+    geladene Beziehung folgt ihrem Fremdschlüssel ungefiltert, und `connect`
+    bleibt ungestempelt. Fremdschlüssel aus Anfragedaten gehören deshalb vor
+    dem Schreiben über `core/referenzen.ts` geprüft – sonst gibt der nächste
+    Lesezugriff den Namen eines fremden Datensatzes aus.
 - **Plattformverwaltung ≠ Adminrolle.** `admin` verwaltet das eigene Haus;
   Häuser anlegen und sperren darf nur `isPlatformAdmin` (`@PlatformAdmin()`).
 - Auflösung des Hauses: eigene Domain oder Subdomain, sonst die Kennung im
@@ -197,5 +203,7 @@ Offen vor dem Produktivbetrieb:
   Einsammeln und Durchsuchen ist Sache der Umgebung.
 - **Eine laufende Installation.** Entscheidungsgrundlage in
   [`docs/ausrollen.md`](docs/ausrollen.md).
-- **Rohabfragen:** `$queryRaw` umgeht die Mandantentrennung (siehe oben).
+- **Rohabfragen:** `$queryRaw` umgeht die Mandantentrennung (siehe oben). Neue
+  Rohabfragen brauchen den Mandanten in der Bedingung; neue Fremdschlüssel aus
+  Anfragedaten brauchen `pruefeReferenz`.
 - **Auftragsverarbeitungsvertrag** zwischen Betreiber und Haus (Vorlage fehlt).

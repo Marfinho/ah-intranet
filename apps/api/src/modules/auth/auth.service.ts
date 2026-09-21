@@ -8,6 +8,7 @@ import { AuditService } from "../../core/audit.service";
 import { buildScopes, displayName, scopeLabel, sortiereRollen } from "../../core/mappers";
 import type { JwtPayload } from "../../core/guards";
 import type { RequestUser } from "../../core/request-user";
+import { gesperrtBis } from "./regeln";
 
 const userWithContext = {
   tenant: { select: { slug: true, name: true } },
@@ -28,6 +29,15 @@ const userWithContext = {
   },
 } as const;
 
+/**
+ * Eine einzige Absage für jeden Fehlschlag der Anmeldung.
+ *
+ * Unterschiedliche Meldungen für "Kennung unbekannt", "Benutzer unbekannt" und
+ * "Passwort falsch" sind bequem - und genau die Auskunft, mit der sich Konten
+ * und Mandanten von außen aufzählen lassen.
+ */
+const UNGUELTIG = "Anmeldung fehlgeschlagen. Bitte Autohaus-Kennung, Benutzername und Passwort prüfen.";
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -36,26 +46,26 @@ export class AuthService {
     private readonly audit: AuditService,
   ) {}
 
-  /** Nach so vielen Fehlversuchen wird das Konto vorübergehend gesperrt. */
-  private static readonly MAX_FAILED_LOGINS = 5;
-  private static readonly LOCK_MINUTES = 15;
-
   /**
    * Prüft die Zugangsdaten gegen den in der Datenbank gespeicherten bcrypt-Hash.
    * Existiert der Benutzer nicht, wird trotzdem ein Vergleich gegen einen
    * Dummy-Hash ausgeführt, damit die Antwortzeit keine Benutzernamen verrät.
    *
-   * Fehlversuche werden gezählt; nach `MAX_FAILED_LOGINS` ist das Konto für
-   * `LOCK_MINUTES` gesperrt. Das begrenzt Rateversuche auch dann, wenn jemand
-   * die IP-Drosselung über viele Adressen umgeht.
+   * Fehlversuche werden gezählt und kosten ab dem fünften eine wachsende
+   * Wartezeit (`regeln.ts`). Das begrenzt Rateversuche auch dann, wenn jemand
+   * die IP-Drosselung über viele Adressen umgeht - ohne die Sperre zur Waffe
+   * gegen Kolleginnen und Kollegen zu machen.
    */
   async validate(username: string, password: string) {
     // Ohne Mandanten ist nicht entscheidbar, welches Konto gemeint ist -
     // derselbe Benutzername kann in mehreren Häusern existieren.
     if (!currentTenant()) {
-      throw new UnauthorizedException(
-        "Kein Autohaus zugeordnet. Bitte die Kennung angeben oder die Adresse des Hauses verwenden.",
-      );
+      // Bewusst dieselbe Meldung wie bei falschen Zugangsdaten. Eine eigene
+      // ("Kennung unbekannt") wäre ein Orakel, mit dem sich die Kundenliste des
+      // Betreibers über das Anmeldeformular abfragen ließe: bekannter Slug =
+      // andere Antwort. Der Hinweis auf die Kennung steht im Formular, wo er
+      // hilft, statt in der Antwort, wo er ausgewertet wird.
+      throw new UnauthorizedException(UNGUELTIG);
     }
 
     const user = await this.prisma.user.findFirst({
@@ -64,8 +74,12 @@ export class AuthService {
     });
 
     if (user?.lockedUntil && user.lockedUntil > new Date()) {
-      const minuten = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60_000);
-      throw new UnauthorizedException(`Das Konto ist nach mehreren Fehlversuchen für ${minuten} Minute(n) gesperrt.`);
+      const sekunden = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 1000);
+      throw new UnauthorizedException(
+        sekunden > 60
+          ? `Nach mehreren Fehlversuchen bitte ${Math.ceil(sekunden / 60)} Minute(n) warten.`
+          : `Nach mehreren Fehlversuchen bitte ${sekunden} Sekunde(n) warten.`,
+      );
     }
 
     const hash = user?.passwordHash ?? "$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalidin";
@@ -75,10 +89,13 @@ export class AuthService {
       if (user) {
         await this.registerFailedAttempt(user.id, user.failedLoginCount);
       }
-      throw new UnauthorizedException("Ungültige Zugangsdaten");
+      throw new UnauthorizedException(UNGUELTIG);
     }
     if (user.status !== "active") {
-      throw new UnauthorizedException("Dieses Konto ist deaktiviert");
+      // Auch hier keine eigene Auskunft: "deaktiviert" bestätigt, dass es das
+      // Konto gibt. Wer sein Konto für gesperrt hält, fragt in der Verwaltung
+      // nach - dort weiß man es, ohne dass es die API jedem sagt.
+      throw new UnauthorizedException(UNGUELTIG);
     }
     return user;
   }
@@ -156,17 +173,19 @@ export class AuthService {
     });
   }
 
-  /** Zählt einen Fehlversuch und sperrt das Konto beim Erreichen der Grenze. */
+  /**
+   * Zählt einen Fehlversuch und setzt die daraus folgende Wartezeit.
+   *
+   * Der Zähler läuft bewusst weiter, statt beim Sperren auf null zu gehen -
+   * nur so wächst die Wartezeit mit jedem weiteren Versuch. Zurückgesetzt wird
+   * er bei erfolgreicher Anmeldung und beim Zurücksetzen des Passworts.
+   */
   private async registerFailedAttempt(userId: string, current: number): Promise<void> {
     const next = current + 1;
-    const gesperrt = next >= AuthService.MAX_FAILED_LOGINS;
 
     await this.prisma.user.update({
       where: { id: userId },
-      data: {
-        failedLoginCount: gesperrt ? 0 : next,
-        lockedUntil: gesperrt ? new Date(Date.now() + AuthService.LOCK_MINUTES * 60_000) : null,
-      },
+      data: { failedLoginCount: next, lockedUntil: gesperrtBis(next) },
     });
   }
 

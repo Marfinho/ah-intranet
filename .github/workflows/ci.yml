@@ -17,7 +17,10 @@ env:
   # Schattendatenbank dabei zurück - zeigt sie auf die Arbeitsdatenbank, ist
   # deren Migrationsbuchführung danach weg.
   SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ah_intranet_shadow
-  JWT_SECRET: ci-schluessel-ohne-bedeutung
+  # Zufallswert ohne Bedeutung außerhalb der Pipeline. Kein Platzhalter:
+  # die API verweigert seit `pruefeSitzungsschluessel` den Start mit den
+  # bekannten Beispielwerten, und die Skripte fahren die Anwendung hoch.
+  JWT_SECRET: RHdPrfs32TzwYtN8HWTRTvc1QWW1Mk/x+u9PG8YXBKOlGsktaqtKGRuC
   FRONTEND_URL: http://localhost:3000
   API_URL: http://localhost:3001/api
   NEXT_PUBLIC_API_URL: http://localhost:3001/api

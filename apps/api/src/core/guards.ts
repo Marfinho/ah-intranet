@@ -10,13 +10,17 @@ import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import type { Request } from "express";
 import type { AppRole } from "@ah-intranet/shared";
-import { getModule, permissionName } from "@ah-intranet/shared";
+import { getModule, permissionName, sitzungsCookieName } from "@ah-intranet/shared";
 import { FEATURE_KEY, PERMISSION_KEY, PLATFORM_ADMIN_KEY, PUBLIC_KEY } from "./decorators";
 import { ModuleRegistryService } from "./module-registry.service";
 import { PrismaService } from "./prisma.service";
 import type { RequestUser } from "./request-user";
 
-export const SESSION_COOKIE = "ah_session";
+/**
+ * Der Name hängt an der Umgebung (siehe `sitzungsCookieName`), deshalb einmal
+ * beim Start ausgewertet und nicht bei jedem Zugriff.
+ */
+export const SESSION_COOKIE = sitzungsCookieName(process.env.NODE_ENV === "production");
 
 export interface JwtPayload {
   sub: string;

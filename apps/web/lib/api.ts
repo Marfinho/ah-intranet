@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
+import { sitzungsCookieName } from "@ah-intranet/shared";
 
-export const SESSION_COOKIE = "ah_session";
+/** Muss mit dem Namen übereinstimmen, den die API setzt - daher dieselbe Quelle. */
+export const SESSION_COOKIE = sitzungsCookieName(process.env.NODE_ENV === "production");
 
 /** Serverseitige Basis-URL; im Container zeigt sie auf den API-Service. */
 const API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";

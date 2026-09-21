@@ -54,6 +54,23 @@ export const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   cancelled: [],
 };
 
+/**
+ * Gibt hier jemand die eigene Bestellung frei?
+ *
+ * Bestellungen und Freigaben sind laut `retention.ts` buchungsrelevante
+ * Unterlagen (§ 147 AO, § 257 HGB). Eine Freigabe, die dieselbe Person erteilt,
+ * die den Vorgang ausgelöst hat, ist keine Kontrolle, sondern eine Unterschrift
+ * unter die eigene Anforderung - und im Protokoll später nicht von einer
+ * echten zu unterscheiden.
+ *
+ * Bewusst nur die **Genehmigung**: Die eigene Bestellung abzulehnen nimmt
+ * niemandem etwas und ist fachlich eine Rücknahme; das Stornieren steht
+ * derselben Person ohnehin offen.
+ */
+export function istSelbstfreigabe(order: { requesterId: string }, actorId: string, target: OrderStatus): boolean {
+  return target === "approved" && order.requesterId === actorId;
+}
+
 export const STATUS_LABELS: Record<OrderStatus, string> = {
   draft: "Entwurf",
   submitted: "Eingereicht",
@@ -393,6 +410,12 @@ export class OrdersService {
         `Für Freigabeentscheidungen fehlt die Berechtigung "${permissionName("orders.approve")}".`,
       );
     }
+    if (istSelbstfreigabe(order, user.id, target)) {
+      throw new ForbiddenException(
+        "Die eigene Bestellung darf nicht selbst freigegeben werden. " +
+          "Bitte von einer zweiten freigabeberechtigten Person entscheiden lassen.",
+      );
+    }
     if (!ALLOWED_TRANSITIONS[order.status].includes(target)) {
       throw new BadRequestException(
         `Übergang von "${STATUS_LABELS[order.status]}" nach "${STATUS_LABELS[target]}" ist nicht zulässig.`,
@@ -671,10 +694,13 @@ export class OrdersService {
       detail: `${order.orderNumber} eingereicht: ${this.summaryText(order)}`,
     });
 
-    const approvers = await this.notifications.userIdsWithRole("fachbereichsadmin");
-    const admins = await this.notifications.userIdsWithRole("admin");
+    // Über das Recht, nicht über Rollenschlüssel: welche Rolle freigibt,
+    // entscheidet jedes Haus selbst. Eine eigene Rolle "Werkstattleitung" mit
+    // orders.approve bekäme sonst nie eine Meldung und die Freigabe bliebe
+    // liegen, ohne dass jemand etwas davon merkt.
+    const approvers = await this.notifications.userIdsWithPermission("orders.approve");
     await this.notifications.notify({
-      userIds: [...approvers, ...admins],
+      userIds: approvers,
       title: `Neue Freigabe: ${order.orderNumber}`,
       detail: `${displayName(order.requester)} · ${this.summaryText(order)}`,
       link: "/freigaben",

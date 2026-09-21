@@ -42,7 +42,9 @@ export default tseslint.config(
       "apps/api/src/scripts/**/*.ts",
       "e2e/**/*.js",
       "scripts/**/*.{js,mjs,ts}",
-      "**/*.config.js",
+      // Auch .mjs: next.config.mjs liest NODE_ENV, um HSTS nur in Produktion
+      // zu setzen.
+      "**/*.config.{js,mjs}",
     ],
     languageOptions: {
       globals: {

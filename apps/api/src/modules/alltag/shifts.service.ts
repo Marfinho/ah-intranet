@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import type { ShiftItem, ShiftSwapItem, ShiftSwapStatus } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
+import { pruefeReferenzen } from "../../core/referenzen";
 import { AuditService } from "../../core/audit.service";
 import { NotificationsService } from "../../core/notifications.service";
 import { displayName, toIso } from "../../core/mappers";
@@ -67,6 +68,7 @@ export class ShiftsService {
 
   async create(user: RequestUser, input: ShiftInput): Promise<ShiftItem> {
     const { startsAt, endsAt } = this.pruefeZeitraum(input);
+    await this.pruefeZuordnung(input);
     await this.pruefeDoppelbelegung(input.assigneeId ?? null, startsAt, endsAt, null);
 
     const shift = await this.prisma.shift.create({
@@ -109,6 +111,8 @@ export class ShiftsService {
     if (endsAt <= startsAt) {
       throw new BadRequestException("Das Ende der Schicht muss nach dem Beginn liegen.");
     }
+
+    await this.pruefeZuordnung(input);
 
     const kuenftigerAssignee = input.assigneeId === undefined ? vorhanden.assigneeId : input.assigneeId || null;
     await this.pruefeDoppelbelegung(kuenftigerAssignee, startsAt, endsAt, id);
@@ -389,6 +393,26 @@ export class ShiftsService {
    * Fachlich der häufigste Planungsfehler, und einer, der erst am Morgen der
    * Schicht auffällt - deshalb wird er beim Speichern abgewiesen.
    */
+  /**
+   * Standort, Abteilung und eingeteiltes Konto müssen zum eigenen Haus gehören.
+   *
+   * Ohne diese Prüfung könnte eine Kennung aus einem fremden Haus am Datensatz
+   * landen; der Schichtplan gäbe danach über `include` den Namen der fremden
+   * Person aus.
+   */
+  private async pruefeZuordnung(input: Partial<ShiftInput>): Promise<void> {
+    await pruefeReferenzen([
+      { modell: this.prisma.location, id: input.locationId, bezeichnung: "Der Standort" },
+      { modell: this.prisma.department, id: input.departmentId, bezeichnung: "Die Abteilung" },
+      {
+        modell: this.prisma.user,
+        id: input.assigneeId,
+        bezeichnung: "Das eingeteilte Konto",
+        zusatz: { status: "active" },
+      },
+    ]);
+  }
+
   private async pruefeDoppelbelegung(
     assigneeId: string | null,
     startsAt: Date,

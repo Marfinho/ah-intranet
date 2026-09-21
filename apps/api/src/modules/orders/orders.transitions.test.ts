@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { OrderStatus } from "@prisma/client";
-import { ALLOWED_TRANSITIONS, STATUS_LABELS } from "./orders.service";
+import { ALLOWED_TRANSITIONS, STATUS_LABELS, istSelbstfreigabe } from "./orders.service";
 
 /**
  * Der Freigabeprozess ist das fachliche Herzstück. Diese Prüfungen halten die
@@ -93,6 +93,26 @@ describe("STATUS_LABELS", () => {
     for (const status of ALL) {
       expect(STATUS_LABELS[status]).toBeTruthy();
       expect(STATUS_LABELS[status]).not.toBe(status);
+    }
+  });
+});
+
+describe("Vier-Augen-Prinzip", () => {
+  const eigene = { requesterId: "u1" };
+
+  it("lässt die eigene Bestellung nicht selbst genehmigen", () => {
+    expect(istSelbstfreigabe(eigene, "u1", "approved")).toBe(true);
+  });
+
+  it("lässt eine fremde Bestellung genehmigen", () => {
+    expect(istSelbstfreigabe(eigene, "u2", "approved")).toBe(false);
+  });
+
+  it("greift nur bei der Genehmigung", () => {
+    // Die eigene Bestellung abzulehnen oder zu stornieren nimmt niemandem
+    // etwas - das ist eine Rücknahme, keine umgangene Kontrolle.
+    for (const status of ALL.filter((eintrag) => eintrag !== "approved")) {
+      expect(istSelbstfreigabe(eigene, "u1", status)).toBe(false);
     }
   });
 });

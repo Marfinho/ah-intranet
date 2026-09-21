@@ -64,7 +64,10 @@ export async function loginAction(_previous: ActionState, formData: FormData): P
   // Das Set-Cookie der API in die Next-Antwort übernehmen, damit Server
   // Components im selben Origin authentifiziert sind.
   const setCookie = response.headers.get("set-cookie") ?? "";
-  const token = /ah_session=([^;]+)/.exec(setCookie)?.[1];
+  // Den Namen nicht fest verdrahten: er trägt in Produktion den Präfix
+  // `__Host-`. Die Grenze davor verhindert, dass ein anders benanntes Cookie
+  // mit gleichem Ende versehentlich passt.
+  const token = new RegExp(`(?:^|[,;]\\s*)${SESSION_COOKIE}=([^;]+)`).exec(setCookie)?.[1];
   if (!token) {
     return { ok: false, message: "Die Sitzung konnte nicht gesetzt werden." };
   }

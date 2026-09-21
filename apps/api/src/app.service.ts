@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { AuditService } from "./core/audit.service";
 import { PrismaService } from "./core/prisma.service";
 
 export interface HealthReport {
@@ -9,6 +10,13 @@ export interface HealthReport {
   checks: {
     database: { ok: boolean; latencyMs?: number; message?: string };
     secrets: { ok: boolean; message?: string };
+    /**
+     * Fehlgeschlagene Audit-Einträge der letzten Stunde. Bewusst **ohne**
+     * Einfluss auf `ok`: ein Protokollfehler ist meldepflichtig, aber die
+     * Instanz deswegen aus dem Verkehr zu ziehen hilft niemandem - es folgte
+     * eine Neustartschleife, die das Protokoll auch nicht schreibt.
+     */
+    audit: { ok: boolean; ausfaelleLetzteStunde: number; message?: string };
   };
 }
 
@@ -16,7 +24,10 @@ export interface HealthReport {
 export class AppService {
   private readonly logger = new Logger(AppService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   /**
    * Prüft, ob der Dienst tatsächlich arbeitsfähig ist.
@@ -28,12 +39,13 @@ export class AppService {
   async getHealth(): Promise<HealthReport> {
     const database = await this.checkDatabase();
     const secrets = this.checkSecrets();
+    const audit = this.checkAudit();
 
     return {
       ok: database.ok && secrets.ok,
       service: "ah-intranet-api",
       uptimeSeconds: Math.round(process.uptime()),
-      checks: { database, secrets },
+      checks: { database, secrets, audit },
     };
   }
 
@@ -47,6 +59,24 @@ export class AppService {
       this.logger.error("Healthcheck: Datenbank nicht erreichbar", error as Error);
       return { ok: false, message: "Datenbank nicht erreichbar" };
     }
+  }
+
+  /**
+   * Lücken im Audit-Log sichtbar machen.
+   *
+   * `AuditService.log` schluckt Fehler bewusst, damit die Fachaktion nicht
+   * scheitert. Ohne diese Anzeige wüsste niemand, dass das Protokoll Lücken
+   * hat - und ein Protokoll mit unbemerkten Lücken ist kein Nachweis.
+   */
+  private checkAudit(): HealthReport["checks"]["audit"] {
+    const ausfaelle = this.audit.ausfaelleImFenster();
+    return ausfaelle === 0
+      ? { ok: true, ausfaelleLetzteStunde: 0 }
+      : {
+          ok: false,
+          ausfaelleLetzteStunde: ausfaelle,
+          message: `${ausfaelle} Audit-Eintrag/Einträge der letzten Stunde konnten nicht geschrieben werden.`,
+        };
   }
 
   /** Fehlende Schlüssel fallen sonst erst beim ersten Anmeldeversuch auf. */

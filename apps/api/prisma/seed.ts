@@ -22,7 +22,37 @@ function tenantClient(tenantId: string): PrismaClient {
   return client;
 }
 
-const DEMO_PASSWORD = process.env.SEED_PASSWORD ?? "Intranet2026!";
+/**
+ * Passwort der Demokonten.
+ *
+ * Der Seed legt ein vollständiges Musterhaus mit benannten Konten an - er ist
+ * ein Werkzeug für Entwicklung und Vorführung, keine Einrichtung. Liefe er auf
+ * einer produktiven Instanz mit dem eingebauten Wert, stünden dort Konten mit
+ * einem Passwort, das im Repository steht. Deshalb bricht er dort ab, statt
+ * still etwas Bekanntes anzulegen; wer den Seed produktiv wirklich braucht,
+ * setzt `SEED_PASSWORD` und trifft damit eine bewusste Entscheidung.
+ */
+function demoPasswort(): string {
+  const gesetzt = process.env.SEED_PASSWORD;
+  if (gesetzt) {
+    if (gesetzt.length < 10) {
+      throw new Error("SEED_PASSWORD muss mindestens 10 Zeichen lang sein.");
+    }
+    return gesetzt;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "Der Seed legt Demokonten mit einem im Repository nachlesbaren Passwort an und " +
+        "läuft deshalb nicht mit NODE_ENV=production. Wird er hier wirklich gebraucht, " +
+        "muss SEED_PASSWORD gesetzt werden.",
+    );
+  }
+
+  return "Intranet2026!";
+}
+
+const DEMO_PASSWORD = demoPasswort();
 
 const LOCATIONS = [
   { name: "Hauptbetrieb Bremen", code: "HB", address: "Bremer Heerstraße 120, 28719 Bremen" },

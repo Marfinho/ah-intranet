@@ -17,6 +17,8 @@ import type {
   UserAccountStatus,
 } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
+import { erzeugeStartpasswort } from "../../core/passwort";
+import { pruefeReferenz } from "../../core/referenzen";
 import { AuditService } from "../../core/audit.service";
 import { PRESENCE_LABELS, PRESENCE_VALUES, buildScopes, displayName, sortiereRollen } from "../../core/mappers";
 import type { RequestUser } from "../../core/request-user";
@@ -169,8 +171,9 @@ export class PeopleService {
       throw new BadRequestException(`Der Benutzername "${username}" ist bereits vergeben.`);
     }
 
-    const initialPassword = input.password ?? this.generatePassword();
+    const initialPassword = input.password ?? erzeugeStartpasswort();
     const scopes = await this.resolveScopes(input);
+    await this.pruefeVorgesetzte(input.managerId);
 
     const created = await this.prisma.user.create({
       data: {
@@ -218,6 +221,9 @@ export class PeopleService {
       departmentId: input.departmentId !== undefined ? input.departmentId : existing.departmentId,
       specialtyAreaId: input.specialtyAreaId !== undefined ? input.specialtyAreaId : existing.specialtyAreaId,
     });
+    if (input.managerId !== undefined) {
+      await this.pruefeVorgesetzte(input.managerId);
+    }
 
     const updated = await this.prisma.user.update({
       where: { id },
@@ -261,7 +267,7 @@ export class PeopleService {
       throw new NotFoundException("Benutzer nicht gefunden");
     }
 
-    const initialPassword = this.generatePassword();
+    const initialPassword = erzeugeStartpasswort();
     await this.prisma.user.update({
       where: { id },
       data: {
@@ -565,6 +571,23 @@ export class PeopleService {
     return rows.map((row) => ({ roleId: row.id }));
   }
 
+  /**
+   * Baut die Zielgruppen und prüft dabei die Zuordnung.
+   *
+   * Die Abfragen laufen über den mandantengefilterten Client. Eine Kennung aus
+   * einem fremden Haus findet hier also nichts - und darf dann auch nicht als
+   * Fremdschlüssel am Konto landen, sonst gäbe der nächste Lesezugriff über
+   * `include` den Namen des fremden Standorts preis.
+   */
+  /** Die vorgesetzte Person muss ein Konto desselben Hauses sein. */
+  private async pruefeVorgesetzte(managerId?: string | null): Promise<void> {
+    await pruefeReferenz({
+      modell: this.prisma.user,
+      id: managerId,
+      bezeichnung: "Die vorgesetzte Person",
+    });
+  }
+
   private async resolveScopes(input: {
     locationId?: string | null;
     departmentId?: string | null;
@@ -572,27 +595,31 @@ export class PeopleService {
   }): Promise<string[]> {
     const [location, department, specialty] = await Promise.all([
       input.locationId
-        ? this.prisma.location.findUnique({ where: { id: input.locationId }, select: { code: true } })
+        ? this.prisma.location.findFirst({ where: { id: input.locationId }, select: { code: true } })
         : null,
       input.departmentId
-        ? this.prisma.department.findUnique({ where: { id: input.departmentId }, select: { code: true } })
+        ? this.prisma.department.findFirst({ where: { id: input.departmentId }, select: { code: true } })
         : null,
       input.specialtyAreaId
-        ? this.prisma.specialtyArea.findUnique({ where: { id: input.specialtyAreaId }, select: { code: true } })
+        ? this.prisma.specialtyArea.findFirst({ where: { id: input.specialtyAreaId }, select: { code: true } })
         : null,
     ]);
+
+    if (input.locationId && !location) {
+      throw new BadRequestException("Der Standort ist in diesem Autohaus nicht vorhanden.");
+    }
+    if (input.departmentId && !department) {
+      throw new BadRequestException("Die Abteilung ist in diesem Autohaus nicht vorhanden.");
+    }
+    if (input.specialtyAreaId && !specialty) {
+      throw new BadRequestException("Der Fachbereich ist in diesem Autohaus nicht vorhanden.");
+    }
 
     return buildScopes({
       locationCode: location?.code,
       departmentCode: department?.code,
       specialtyCode: specialty?.code,
     });
-  }
-
-  private generatePassword(): string {
-    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
-    const bytes = Array.from({ length: 14 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]);
-    return `${bytes.join("")}!`;
   }
 
   private toDirectoryEntry(user: Prisma.UserGetPayload<{ select: typeof directorySelect }>): EmployeeDirectoryEntry {

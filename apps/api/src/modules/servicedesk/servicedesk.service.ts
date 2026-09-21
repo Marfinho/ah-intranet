@@ -115,10 +115,9 @@ export class ServiceDeskService {
     });
 
     await this.notifications.notify({
-      userIds: [
-        ...(await this.notifications.userIdsWithRole("fachbereichsadmin")),
-        ...(await this.notifications.userIdsWithRole("admin")),
-      ],
+      // Über das Recht, nicht über Rollenschlüssel - siehe
+      // `NotificationsService.userIdsWithPermission`.
+      userIds: await this.notifications.userIdsWithPermission("tickets.manage"),
       title: `Neue Serviceanfrage ${number}`,
       detail: `${input.title} (${input.category})`,
       link: "/tickets",

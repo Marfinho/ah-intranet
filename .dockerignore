@@ -1,0 +1,21 @@
+# Was nicht ins Abbild gehört.
+#
+# Ohne diese Liste nimmt `COPY . .` alles mit, was gerade im Arbeitsverzeichnis
+# liegt - einschließlich der .env-Dateien mit DATABASE_URL und JWT_SECRET und
+# lokaler Datenbanksicherungen. Ein Abbild, das man weitergibt, trüge die
+# Geheimnisse und die Personendaten des Hauses mit sich.
+**/.env
+**/.env.*
+!**/.env.example
+backups/
+**/node_modules
+**/dist
+**/.next
+.git
+.github
+e2e
+docs
+*.md
+!README.md
+**/*.dump
+**/*.dump.sha256

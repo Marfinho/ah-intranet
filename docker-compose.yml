@@ -4,9 +4,12 @@ services:
     environment:
       POSTGRES_DB: ah_intranet
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
-      - "5432:5432"
+      # Nur auf dem eigenen Rechner erreichbar. Ohne die Bindung an 127.0.0.1
+      # hängt die Datenbank mit `postgres/postgres` am Netz, sobald jemand
+      # diese Datei auf einem Server mit öffentlicher Adresse startet.
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -21,11 +24,17 @@ services:
       dockerfile: apps/api/Dockerfile
     environment:
       PORT: 3001
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/ah_intranet?schema=public
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/ah_intranet?schema=public
       FRONTEND_URL: http://localhost:3000
-      # Für den Produktivbetrieb durch ein Secret ersetzen.
-      JWT_SECRET: bitte-aendern-langer-zufallswert
+      # Kein Standardwert: `:?` bricht den Start ab, wenn nichts gesetzt ist.
+      # Vorher stand hier ein Beispielwert, mit dem die Anwendung anstandslos
+      # lief - und mit dem sich jede Sitzung fälschen ließe, weil er im
+      # Repository nachzulesen ist. Erzeugen mit `openssl rand -base64 48`.
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET muss gesetzt sein - siehe docs/betrieb.md}
       JWT_EXPIRES_IN: 12h
+      # Ohne diesen Schlüssel lassen sich keine Geheimnisse hinterlegen; die
+      # Anwendung läuft, weist das Speichern aber ab.
+      SECRET_KEY: ${SECRET_KEY:-}
     ports:
       - "3001:3001"
     depends_on:

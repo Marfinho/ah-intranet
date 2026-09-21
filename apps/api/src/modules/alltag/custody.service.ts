@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import type { CustodyItemSummary, CustodyKind, CustodyStatus } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
+import { pruefeReferenz } from "../../core/referenzen";
 import { AuditService } from "../../core/audit.service";
 import { NotificationsService } from "../../core/notifications.service";
 import { displayName, toIso } from "../../core/mappers";
@@ -71,6 +72,10 @@ export class CustodyService {
     if (input.kind === "fundsache" && !input.foundPlace?.trim()) {
       throw new BadRequestException("Bei einer Fundsache gehört der Fundort dazu - ohne ihn ist die Rückgabe Glück.");
     }
+
+    // Der Standort kommt aus den Anfragedaten und muss zum eigenen Haus
+    // gehören - der Fremdschlüssel allein nimmt auch eine fremde Kennung an.
+    await pruefeReferenz({ modell: this.prisma.location, id: input.locationId, bezeichnung: "Der Standort" });
 
     const item = await this.prisma.custodyItem.create({
       data: {

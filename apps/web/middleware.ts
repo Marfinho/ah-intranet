@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { sitzungsCookieName } from "@ah-intranet/shared";
 
-const SESSION_COOKIE = "ah_session";
+/** Derselbe Name, den API und Server Components verwenden. */
+const SESSION_COOKIE = sitzungsCookieName(process.env.NODE_ENV === "production");
 const PUBLIC_PATHS = ["/login"];
 
 /**

@@ -41,13 +41,20 @@ export class NotificationsService {
     }
   }
 
-  /** Alle Benutzer einer Rolle, z. B. zur Information der Freigebenden. */
-  async userIdsWithRole(roleKey: string): Promise<string[]> {
+  /**
+   * Aktive Konten, deren Rollen das genannte Recht tragen.
+   *
+   * Bewusst über das Recht und nicht über einen Rollenschlüssel: welche Rolle
+   * freigibt oder Anfragen bearbeitet, entscheidet jedes Haus selbst. Eine
+   * eigene Rolle "Werkstattleitung" mit `orders.approve` bekäme sonst nie eine
+   * Meldung - der Vorgang bliebe liegen, ohne dass jemand etwas davon merkt.
+   */
+  async userIdsWithPermission(permission: string): Promise<string[]> {
     const rows = await this.prisma.userRole.findMany({
-      where: { role: { key: roleKey }, user: { status: "active" } },
+      where: { role: { permissions: { some: { permission: { key: permission } } } }, user: { status: "active" } },
       select: { userId: true },
     });
-    return rows.map((row) => row.userId);
+    return [...new Set(rows.map((row) => row.userId))];
   }
 
   async list(user: RequestUser, onlyUnread = false): Promise<NotificationItem[]> {

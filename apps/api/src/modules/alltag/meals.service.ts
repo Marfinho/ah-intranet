@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import type { MealOfferItem, MealRoundup } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
+import { pruefeReferenz } from "../../core/referenzen";
 import { AuditService } from "../../core/audit.service";
 import { displayName, toIso } from "../../core/mappers";
 import type { RequestUser } from "../../core/request-user";
@@ -84,6 +85,10 @@ export class MealsService {
     if (input.options.some((option) => option.priceCents < 0)) {
       throw new BadRequestException("Ein negativer Preis ist keine Wahlmöglichkeit.");
     }
+
+    // Siehe `core/referenzen.ts`: ein ungeprüfter Fremdschlüssel aus den
+    // Anfragedaten unterläuft die Mandantentrennung beim nächsten Lesezugriff.
+    await pruefeReferenz({ modell: this.prisma.location, id: input.locationId, bezeichnung: "Der Standort" });
 
     const offer = await this.prisma.mealOffer.create({
       data: {

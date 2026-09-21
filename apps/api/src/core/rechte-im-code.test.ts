@@ -25,7 +25,13 @@ const QUELLEN = dateien(join(__dirname, "..")).map((pfad) => ({ pfad, inhalt: re
 
 /** Jede Stelle, an der der Code ein Recht benennt. */
 function verwendeteRechte(): { recht: string; pfad: string }[] {
-  const muster = [/@Permission\("([^"]+)"\)/g, /can\(user, "([^"]+)"\)/g, /permissionName\("([^"]+)"\)/g];
+  const muster = [
+    /@Permission\("([^"]+)"\)/g,
+    /can\(user, "([^"]+)"\)/g,
+    /permissionName\("([^"]+)"\)/g,
+    /[uU]serIdsWithPermission\("([^"]+)"\)/g,
+    /usersWithPermission\("([^"]+)"\)/g,
+  ];
   return QUELLEN.flatMap(({ pfad, inhalt }) =>
     muster.flatMap((regex) => [...inhalt.matchAll(regex)].map((treffer) => ({ recht: treffer[1], pfad }))),
   );
@@ -47,5 +53,14 @@ describe("Rechte im Code", () => {
     // Hauses aussperrt: sie kämen an keiner solchen Prüfung vorbei.
     const mitSchranke = QUELLEN.filter(({ inhalt }) => /@Roles\(/.test(inhalt));
     expect(mitSchranke.map((eintrag) => eintrag.pfad)).toEqual([]);
+  });
+
+  it("wählt auch Empfänger von Meldungen über das Recht, nicht über die Rolle", () => {
+    // Eine Auswahl über den Rollenschlüssel ist keine Sicherheitslücke, aber
+    // sie übergeht jede eigene Rolle des Hauses: die Freigabe bliebe liegen,
+    // ohne dass jemand eine Meldung bekommt. Diese Prüfung fehlte, als
+    // `userIdsWithRole("fachbereichsadmin")` genau das tat.
+    const mitRollenauswahl = QUELLEN.filter(({ inhalt }) => /WithRole\(/.test(inhalt));
+    expect(mitRollenauswahl.map((eintrag) => eintrag.pfad)).toEqual([]);
   });
 });
