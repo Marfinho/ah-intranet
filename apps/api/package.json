@@ -7,7 +7,7 @@
     "start": "node dist/main",
     "format": "prettier --write .",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate": "prisma migrate",
     "prisma:seed": "tsx prisma/seed.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
