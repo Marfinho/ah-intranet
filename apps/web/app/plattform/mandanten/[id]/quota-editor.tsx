@@ -1,18 +1,25 @@
 "use client";
 
 import { useTransition } from "react";
-import { setTenantLicenseAction } from "@/lib/actions";
+import type { ActionState } from "@/lib/actions";
 import { cn } from "@/lib/utils";
 
-/** Kurzes Formular per Prompt - das Kontingent ändert sich selten. */
-export function TenantLicenseEditor({ tenantId, licensedSeats }: { tenantId: string; licensedSeats: number | null }) {
+/** Kurzes Formular per Prompt - ein Kontingent ändert sich selten. Gemeinsam für Lizenzen und Standortlimit. */
+export function QuotaEditor({
+  label,
+  promptText,
+  value,
+  action,
+}: {
+  label: string;
+  promptText: string;
+  value: number | null;
+  action: (value: number | null) => Promise<ActionState>;
+}) {
   const [pending, startTransition] = useTransition();
 
   function edit() {
-    const eingabe = window.prompt(
-      "Lizenzkontingent (Höchstzahl aktiver Konten) - leer lassen für unbegrenzt:",
-      licensedSeats !== null ? String(licensedSeats) : "",
-    );
+    const eingabe = window.prompt(promptText, value !== null ? String(value) : "");
     if (eingabe === null) {
       return;
     }
@@ -23,7 +30,7 @@ export function TenantLicenseEditor({ tenantId, licensedSeats }: { tenantId: str
     }
 
     startTransition(async () => {
-      const result = await setTenantLicenseAction(tenantId, wert ? Number(wert) : null);
+      const result = await action(wert ? Number(wert) : null);
       if (!result.ok && result.message) {
         window.alert(result.message);
       }
@@ -40,7 +47,7 @@ export function TenantLicenseEditor({ tenantId, licensedSeats }: { tenantId: str
         pending && "cursor-not-allowed opacity-60",
       )}
     >
-      Lizenzkontingent ändern
+      {label}
     </button>
   );
 }

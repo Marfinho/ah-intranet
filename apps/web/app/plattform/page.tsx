@@ -27,6 +27,7 @@ export default async function PlattformUebersichtPage() {
                   <th className="pb-2">Kennung</th>
                   <th className="pb-2">Adresse</th>
                   <th className="pb-2">Lizenzen</th>
+                  <th className="pb-2">Standorte</th>
                   <th className="pb-2">Angelegt</th>
                   <th className="pb-2 text-right">Status</th>
                 </tr>
@@ -45,6 +46,12 @@ export default async function PlattformUebersichtPage() {
                     <td className="py-3 text-slate-600">
                       {tenant.activeUserCount} {tenant.licensedSeats !== null ? `von ${tenant.licensedSeats}` : ""}
                       {tenant.licensedSeats !== null && tenant.activeUserCount >= tenant.licensedSeats ? (
+                        <span className="ml-2 badge bg-amber-100 text-amber-800">ausgeschöpft</span>
+                      ) : null}
+                    </td>
+                    <td className="py-3 text-slate-600">
+                      {tenant.locationCount} {tenant.locationLimit !== null ? `von ${tenant.locationLimit}` : ""}
+                      {tenant.locationLimit !== null && tenant.locationCount >= tenant.locationLimit ? (
                         <span className="ml-2 badge bg-amber-100 text-amber-800">ausgeschöpft</span>
                       ) : null}
                     </td>

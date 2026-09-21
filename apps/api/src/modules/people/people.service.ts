@@ -178,6 +178,7 @@ export class PeopleService {
     if (await this.prisma.location.findFirst({ where: { code }, select: { id: true } })) {
       throw new BadRequestException(`Die Kennung "${code}" ist in diesem Haus bereits vergeben.`);
     }
+    await this.pruefeStandortlimit();
 
     const location = await this.prisma.location.create({
       data: { name: input.name.trim(), code, address: input.address?.trim() || null },
@@ -242,6 +243,25 @@ export class PeopleService {
       throw new BadRequestException(
         `Das Lizenzkontingent ist erreicht (${tenant.licensedSeats} aktive Konten). ` +
           "Bitte ein Konto deaktivieren oder das Kontingent erweitern lassen.",
+      );
+    }
+  }
+
+  /** Dieselbe Prüfung wie `pruefeLizenzkontingent`, nur für Standorte statt Konten. */
+  private async pruefeStandortlimit(): Promise<void> {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: requireTenantId() },
+      select: { locationLimit: true },
+    });
+    if (tenant.locationLimit === null) {
+      return;
+    }
+
+    const vorhandeneStandorte = await this.prisma.location.count();
+    if (vorhandeneStandorte >= tenant.locationLimit) {
+      throw new BadRequestException(
+        `Das Standortlimit ist erreicht (${tenant.locationLimit} Standorte). ` +
+          "Bitte das Limit von der Plattformverwaltung erweitern lassen.",
       );
     }
   }

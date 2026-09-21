@@ -183,6 +183,8 @@ export class TenantService implements OnModuleInit {
         userCount: tenant._count.users,
         activeUserCount: await this.client.user.count({ where: { tenantId: tenant.id, status: "active" } }),
         licensedSeats: tenant.licensedSeats,
+        locationLimit: tenant.locationLimit,
+        locationCount: await this.client.location.count({ where: { tenantId: tenant.id } }),
         createdAt: tenant.createdAt.toISOString(),
       })),
     );
@@ -203,9 +205,10 @@ export class TenantService implements OnModuleInit {
       throw new NotFoundException("Mandant nicht gefunden");
     }
 
-    const [activeUsers, totalUsers, orders, tickets, news, letzterEintrag] = await Promise.all([
+    const [activeUsers, totalUsers, locations, orders, tickets, news, letzterEintrag] = await Promise.all([
       this.client.user.count({ where: { tenantId: id, status: "active" } }),
       this.client.user.count({ where: { tenantId: id } }),
+      this.client.location.count({ where: { tenantId: id } }),
       this.client.order.count({ where: { tenantId: id } }),
       this.client.ticket.count({ where: { tenantId: id } }),
       this.client.newsPost.count({ where: { tenantId: id } }),
@@ -223,6 +226,8 @@ export class TenantService implements OnModuleInit {
       licensedSeats: tenant.licensedSeats,
       activeUsers,
       totalUsers,
+      locationLimit: tenant.locationLimit,
+      locations,
       orders,
       tickets,
       news,
@@ -244,6 +249,21 @@ export class TenantService implements OnModuleInit {
     }
 
     const updated = await this.client.tenant.update({ where: { id }, data: { licensedSeats } });
+    this.invalidate();
+    return updated;
+  }
+
+  /** Setzt das Standortlimit - dieselbe Logik wie `setLicense`, nur für Filialen. */
+  async setLocationLimit(id: string, locationLimit: number | null) {
+    const tenant = await this.client.tenant.findUnique({ where: { id } });
+    if (!tenant) {
+      throw new NotFoundException("Mandant nicht gefunden");
+    }
+    if (locationLimit !== null && locationLimit < 1) {
+      throw new BadRequestException("Das Standortlimit muss mindestens 1 sein - oder leer für unbegrenzt.");
+    }
+
+    const updated = await this.client.tenant.update({ where: { id }, data: { locationLimit } });
     this.invalidate();
     return updated;
   }
@@ -276,6 +296,7 @@ export class TenantService implements OnModuleInit {
     adminLastName?: string;
     adminEmail?: string;
     licensedSeats?: number | null;
+    locationLimit?: number | null;
   }) {
     const slug = input.slug.trim().toLowerCase();
     if (!/^[a-z0-9][a-z0-9-]{1,40}$/.test(slug)) {
@@ -307,6 +328,7 @@ export class TenantService implements OnModuleInit {
           domain: input.domain?.trim() || null,
           notes: input.notes?.trim() || null,
           licensedSeats: input.licensedSeats ?? null,
+          locationLimit: input.locationLimit ?? null,
         },
       });
       const tenantId = tenant.id;

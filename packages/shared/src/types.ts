@@ -90,6 +90,9 @@ export interface TenantSummary extends TenantRef {
   activeUserCount: number;
   /** Höchstzahl aktiver Konten. `null` heißt unbegrenzt. */
   licensedSeats: number | null;
+  /** Höchstzahl Standorte. `null` heißt unbegrenzt. */
+  locationLimit: number | null;
+  locationCount: number;
   createdAt: string;
 }
 
@@ -101,6 +104,8 @@ export interface TenantStats {
   licensedSeats: number | null;
   activeUsers: number;
   totalUsers: number;
+  locationLimit: number | null;
+  locations: number;
   orders: number;
   tickets: number;
   news: number;

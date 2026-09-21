@@ -152,6 +152,9 @@ model Tenant {
   /// Höchstzahl aktiver Konten. `null` heißt unbegrenzt - nicht jedes Haus
   /// hat ein Lizenzmodell, und ein erfundenes Limit wäre schlimmer als keins.
   licensedSeats Int?
+  /// Höchstzahl Standorte. `null` heißt unbegrenzt - dieselbe Logik wie
+  /// `licensedSeats`, nur für Filialen statt Konten.
+  locationLimit Int?
   notes     String?
   /// Eigenes Logo des Hauses (Weißmarke) - ersetzt das AHOI-Zeichen in
   /// Kopfzeile und Anmeldeseite dieses Mandanten. In der Datenbank statt auf

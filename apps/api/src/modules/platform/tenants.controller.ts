@@ -50,6 +50,12 @@ class CreateTenantDto {
   @IsInt()
   @Min(1)
   licensedSeats?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  locationLimit?: number;
 }
 
 class SetActiveDto {
@@ -65,6 +71,14 @@ class SetLicenseDto {
   @IsInt()
   @Min(1)
   licensedSeats?: number | null;
+}
+
+class SetLocationLimitDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  locationLimit?: number | null;
 }
 
 class ToggleModuleDto {
@@ -144,6 +158,28 @@ export class TenantsController {
         tenant.licensedSeats === null
           ? `Lizenzkontingent für "${tenant.name}" aufgehoben`
           : `Lizenzkontingent für "${tenant.name}" auf ${tenant.licensedSeats} gesetzt`,
+    });
+
+    return tenant;
+  }
+
+  @Patch(":id/standortlimit")
+  async setLocationLimit(
+    @Param("id") id: string,
+    @Body() dto: SetLocationLimitDto,
+    @CurrentUser() user: RequestUser,
+  ) {
+    const tenant = await this.tenants.setLocationLimit(id, dto.locationLimit ?? null);
+
+    await this.audit.log({
+      actor: user,
+      action: "tenant.locationLimit",
+      entityType: "tenant",
+      entityId: id,
+      detail:
+        tenant.locationLimit === null
+          ? `Standortlimit für "${tenant.name}" aufgehoben`
+          : `Standortlimit für "${tenant.name}" auf ${tenant.locationLimit} gesetzt`,
     });
 
     return tenant;

@@ -265,6 +265,10 @@ export async function createTenantAction(_previous: ActionState, formData: FormD
       const wert = String(formData.get("licensedSeats") ?? "").trim();
       return wert ? Number(wert) : undefined;
     })(),
+    locationLimit: (() => {
+      const wert = String(formData.get("locationLimit") ?? "").trim();
+      return wert ? Number(wert) : undefined;
+    })(),
   };
 
   return run(() => apiSend("POST", "/tenants", payload), ["/plattform"], `Haus "${payload.name}" eingerichtet.`);
@@ -276,6 +280,13 @@ export async function setTenantActiveAction(id: string, isActive: boolean): Prom
 
 export async function setTenantLicenseAction(id: string, licensedSeats: number | null): Promise<ActionState> {
   return run(() => apiSend("PATCH", `/tenants/${id}/lizenz`, { licensedSeats }), [
+    "/plattform",
+    `/plattform/mandanten/${id}`,
+  ]);
+}
+
+export async function setTenantLocationLimitAction(id: string, locationLimit: number | null): Promise<ActionState> {
+  return run(() => apiSend("PATCH", `/tenants/${id}/standortlimit`, { locationLimit }), [
     "/plattform",
     `/plattform/mandanten/${id}`,
   ]);
