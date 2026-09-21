@@ -1,5 +1,10 @@
 generator client {
   provider = "prisma-client-js"
+  // "native" fürs Entwickeln außerhalb von Docker; die musl-Variante fürs
+  // Alpine-Image der Dockerfiles. Explizit statt der Selbsterkennung, die auf
+  // aktuellem Alpine (OpenSSL 3, keine libssl.so.1.1 mehr im Repo) zur
+  // falschen Engine griff und die API beim Start abstürzen ließ.
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {

@@ -16,6 +16,9 @@ RUN pnpm --filter api prisma:generate && pnpm --filter api build
 FROM node:20-alpine
 WORKDIR /app
 RUN corepack enable
+# Ohne dieses Paket fehlt libssl.so.3, das die generierte musl-Engine von
+# Prisma zur Laufzeit lädt - ohne sie startet die API gar nicht erst.
+RUN apk add --no-cache openssl
 COPY --from=build /app .
 EXPOSE 3001
 CMD ["pnpm", "--filter", "api", "start"]
