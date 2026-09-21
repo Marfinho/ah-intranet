@@ -27,14 +27,6 @@ export function LoginForm({ next }: { next: string }) {
       </label>
 
       <label className="block text-sm font-medium text-slate-700">
-        Haus-Kennung <span className="font-normal text-slate-400">(optional)</span>
-        <input name="tenant" autoComplete="organization" placeholder="z. B. autohaus-mueller" className={inputClass} />
-        <span className="mt-1 block text-xs font-normal text-slate-500">
-          Nur nötig, wenn Ihr Haus keine eigene Adresse hat.
-        </span>
-      </label>
-
-      <label className="block text-sm font-medium text-slate-700">
         Passwort
         <input name="password" type="password" autoComplete="current-password" required className={inputClass} />
       </label>
