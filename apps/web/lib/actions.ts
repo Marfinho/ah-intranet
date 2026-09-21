@@ -250,21 +250,24 @@ export async function createTenantAction(_previous: ActionState, formData: FormD
     })(),
   };
 
-  return run(() => apiSend("POST", "/tenants", payload), ["/admin/mandanten"], `Haus "${payload.name}" eingerichtet.`);
+  return run(() => apiSend("POST", "/tenants", payload), ["/plattform"], `Haus "${payload.name}" eingerichtet.`);
 }
 
 export async function setTenantActiveAction(id: string, isActive: boolean): Promise<ActionState> {
-  return run(() => apiSend("PATCH", `/tenants/${id}/aktiv`, { isActive }), ["/admin/mandanten"]);
+  return run(() => apiSend("PATCH", `/tenants/${id}/aktiv`, { isActive }), ["/plattform"]);
 }
 
 export async function setTenantLicenseAction(id: string, licensedSeats: number | null): Promise<ActionState> {
-  return run(() => apiSend("PATCH", `/tenants/${id}/lizenz`, { licensedSeats }), ["/admin/mandanten"]);
+  return run(() => apiSend("PATCH", `/tenants/${id}/lizenz`, { licensedSeats }), [
+    "/plattform",
+    `/plattform/mandanten/${id}`,
+  ]);
 }
 
 export async function setTenantModuleAction(tenantId: string, key: string, enabled: boolean): Promise<ActionState> {
   return run(() => apiSend("PUT", `/tenants/${tenantId}/module/${key}`, { enabled }), [
-    "/admin/mandanten",
-    `/admin/mandanten/${tenantId}`,
+    "/plattform",
+    `/plattform/mandanten/${tenantId}`,
   ]);
 }
 

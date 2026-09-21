@@ -1,19 +1,12 @@
-import { redirect } from "next/navigation";
 import type { ModuleState, TenantStats } from "@ah-intranet/shared";
-import { AppShell } from "@/components/app-shell";
+import { PlatformShell } from "@/components/platform-shell";
 import { DataGrid, MetricCard, Section } from "@/components/ui";
 import { apiGet } from "@/lib/api";
-import { requireSession } from "@/lib/session";
 import { formatDateTime } from "@/lib/utils";
 import { TenantLicenseEditor } from "./tenant-license-editor";
 import { TenantModuleToggle } from "./tenant-module-toggle";
 
 export default async function TenantDetailPage({ params }: { params: { id: string } }) {
-  const session = await requireSession();
-  if (!session.isPlatformAdmin) {
-    redirect("/admin");
-  }
-
   const [stats, modules] = await Promise.all([
     apiGet<TenantStats>(`/tenants/${params.id}/kennzahlen`),
     apiGet<ModuleState[]>(`/tenants/${params.id}/module`),
@@ -25,7 +18,7 @@ export default async function TenantDetailPage({ params }: { params: { id: strin
   const uebrigeModule = modules.filter((module) => module.stage !== "beta" && !module.core);
 
   return (
-    <AppShell title={stats.name} subtitle={`Kennzahlen und Modulsteuerung · ${stats.slug}`}>
+    <PlatformShell title={stats.name} subtitle={`Kennzahlen und Modulsteuerung · ${stats.slug}`}>
       <Section
         title="Lizenz"
         subtitle={auslastung}
@@ -79,6 +72,6 @@ export default async function TenantDetailPage({ params }: { params: { id: strin
           ))}
         </ul>
       </Section>
-    </AppShell>
+    </PlatformShell>
   );
 }

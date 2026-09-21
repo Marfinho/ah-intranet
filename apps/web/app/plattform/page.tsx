@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import type { TenantSummary } from "@ah-intranet/shared";
-import { AppShell } from "@/components/app-shell";
+import { PlatformShell } from "@/components/platform-shell";
 import { EmptyState, Section } from "@/components/ui";
 import { apiGet } from "@/lib/api";
 import { requireSession } from "@/lib/session";
@@ -9,19 +8,13 @@ import { formatDateTime } from "@/lib/utils";
 import { TenantComposer } from "./tenant-composer";
 import { TenantRowActions } from "./tenant-row-actions";
 
-export default async function TenantsAdminPage() {
+export default async function PlattformUebersichtPage() {
   const session = await requireSession();
-  // Die Rolle `admin` gilt im eigenen Haus. Häuser anzulegen ist Sache des
-  // Betreibers - und darf im Haus nicht vergeben werden können.
-  if (!session.isPlatformAdmin) {
-    redirect("/admin");
-  }
-
   const tenants = await apiGet<TenantSummary[]>("/tenants");
   const aktiv = tenants.filter((tenant) => tenant.isActive).length;
 
   return (
-    <AppShell title="Autohäuser" subtitle="Mandanten der Plattform anlegen, freischalten und sperren">
+    <PlatformShell title="Autohäuser" subtitle="Mandanten der Plattform anlegen, freischalten und sperren">
       <Section title={`${aktiv} von ${tenants.length} Häusern freigeschaltet`} subtitle="Bestand">
         {tenants.length === 0 ? (
           <EmptyState title="Noch kein Haus angelegt" detail="Legen Sie unten das erste Autohaus an." />
@@ -42,7 +35,7 @@ export default async function TenantsAdminPage() {
                 {tenants.map((tenant) => (
                   <tr key={tenant.id}>
                     <td className="py-3 font-medium text-slate-900">
-                      <Link href={`/admin/mandanten/${tenant.id}`} className="hover:underline">
+                      <Link href={`/plattform/mandanten/${tenant.id}`} className="hover:underline">
                         {tenant.name}
                       </Link>
                       {tenant.notes ? <p className="text-xs font-normal text-slate-500">{tenant.notes}</p> : null}
@@ -80,6 +73,6 @@ export default async function TenantsAdminPage() {
       >
         <TenantComposer />
       </Section>
-    </AppShell>
+    </PlatformShell>
   );
 }
