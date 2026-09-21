@@ -92,7 +92,7 @@ export class ShiftsService {
     });
 
     if (shift.assigneeId) {
-      await this.benachrichtige([shift.assigneeId], `Neue Schicht: ${shift.label}`, this.zeitraum(shift), shift.id);
+      await this.benachrichtige([shift.assigneeId], `Neue Schicht: ${shift.label}`, this.zeitraum(shift));
     }
 
     return this.toItem(shift, user);
@@ -140,7 +140,7 @@ export class ShiftsService {
       (eintrag): eintrag is string => Boolean(eintrag) && vorhanden.assigneeId !== shift.assigneeId,
     );
     if (betroffene.length > 0) {
-      await this.benachrichtige(betroffene, `Schichtplan geändert: ${shift.label}`, this.zeitraum(shift), shift.id);
+      await this.benachrichtige(betroffene, `Schichtplan geändert: ${shift.label}`, this.zeitraum(shift));
     }
 
     return this.toItem(shift, user);
@@ -160,7 +160,7 @@ export class ShiftsService {
       detail: `Schicht "${shift.label}" am ${this.datum(shift.startsAt)} entfernt`,
     });
     if (shift.assigneeId) {
-      await this.benachrichtige([shift.assigneeId], `Schicht entfallen: ${shift.label}`, this.zeitraum(shift), null);
+      await this.benachrichtige([shift.assigneeId], `Schicht entfallen: ${shift.label}`, this.zeitraum(shift));
     }
   }
 
@@ -230,7 +230,6 @@ export class ShiftsService {
       [targetId],
       `Diensttausch angefragt: ${shift.label}`,
       `${user.displayName} fragt, ob Sie ${this.zeitraum(shift)} übernehmen.`,
-      shift.id,
     );
 
     return this.toSwap(swap, user, can(user, "shifts.approve"));
@@ -270,7 +269,6 @@ export class ShiftsService {
       accept
         ? `${user.displayName} übernimmt, sobald die Freigabe erteilt ist.`
         : `${user.displayName} kann die Schicht nicht übernehmen.`,
-      swap.shift.id,
     );
 
     return this.toSwap(aktualisiert, user, can(user, "shifts.approve"));
@@ -323,7 +321,6 @@ export class ShiftsService {
       [swap.requesterId, swap.targetId],
       approve ? `Tausch freigegeben: ${swap.shift.label}` : `Tausch nicht freigegeben: ${swap.shift.label}`,
       note?.trim() || (approve ? "Die Schicht ist umgetragen." : "Die Besetzung bleibt wie geplant."),
-      swap.shift.id,
     );
 
     const aktualisiert = await this.prisma.shiftSwap.findUniqueOrThrow({
@@ -363,7 +360,6 @@ export class ShiftsService {
       [swap.targetId],
       `Tauschanfrage zurückgezogen: ${swap.shift.label}`,
       `${user.displayName} braucht die Vertretung nicht mehr.`,
-      swap.shift.id,
     );
 
     return this.toSwap(aktualisiert, user, can(user, "shifts.approve"));
@@ -431,18 +427,14 @@ export class ShiftsService {
     return { startsAt, endsAt };
   }
 
-  private async benachrichtige(
-    userIds: string[],
-    title: string,
-    detail: string,
-    shiftId: string | null,
-  ): Promise<void> {
-    await this.notifications.notify({
-      userIds,
-      title,
-      detail,
-      link: shiftId ? "/schichtplan" : "/schichtplan",
-    });
+  /**
+   * Meldung an die Beteiligten - immer auch per E-Mail.
+   *
+   * Schichtänderungen betreffen die Arbeitszeit. Wer am Montag früh anfangen
+   * soll, muss es am Freitag erfahren, nicht beim nächsten Anmelden.
+   */
+  private async benachrichtige(userIds: string[], title: string, detail: string): Promise<void> {
+    await this.notifications.notify({ userIds, title, detail, link: "/schichtplan", auchPerMail: true });
   }
 
   private datum(wert: Date): string {

@@ -184,6 +184,7 @@ export class AbsencesService {
       title: `Abwesenheitsantrag ${approve ? "genehmigt" : "abgelehnt"}`,
       detail: note ?? `${TYPE_LABELS[absence.type]}, ${absence.workingDays} Arbeitstage`,
       link: "/abwesenheiten",
+      auchPerMail: true,
     });
 
     return this.toAbsence(updated);

@@ -44,7 +44,13 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
   Neuanlage. Fachcode führt `tenantId` nirgends mit.
 - **Fail-closed:** ohne Mandantenkontext scheitert der Datenzugriff hart, statt
   über alle Häuser zu laufen. Abläufe, die das fachlich brauchen (Anmeldung,
-  Mandantenverwaltung), markieren sich mit `runUnscoped`.
+  Mandantenverwaltung, das Einlösen eines Zurücksetz-Links), markieren sich mit
+  `runUnscoped`.
+- **Fallstrick bei `runWithTenant`/`runUnscoped`:** Prisma gibt _träge_ Promises
+  zurück - die Abfrage startet erst beim Abwarten. Wird sie aus dem Rumpf nur
+  zurückgegeben, liegt das Abwarten außerhalb des Kontexts und die Trennung
+  weist sie ab. Deshalb `async` mit `await` **im** Rumpf. Zwei Tests in
+  `core/tenant-context.test.ts` halten das fest.
 - Grenze der Methode: `$queryRaw` läuft ohne Modell durch die Middleware und ist
   ungefiltert. Rohabfragen müssen den Mandanten selbst filtern.
 - **Plattformverwaltung ≠ Adminrolle.** `admin` verwaltet das eigene Haus;
@@ -152,6 +158,15 @@ Erfolg des Restores.
 
 ## Anmeldung
 
+- **Vergessenes Passwort** ohne die Administration: Anforderung antwortet immer
+  gleich (sonst wäre das Formular ein Verzeichnis gültiger Kennungen), der
+  Token liegt nur als Hash in der Datenbank, gilt eine Stunde und einmal, und
+  das Setzen beendet alle Sitzungen des Kontos.
+- **E-Mail-Versand** in `core/mail.service.ts`. Ohne `SMTP_HOST` ist er aus und
+  meldet das - ein stiller Fehlschlag ließe Menschen auf eine Nachricht warten,
+  die nie kommt. Benachrichtigungen gehen nur dann zusätzlich per Mail, wenn
+  der Aufrufer es verlangt (`auchPerMail`): Entscheidungen über Anträge ja, ein
+  neuer Aushang nicht.
 - **Passwort ist der Grundweg** und nicht abschaltbar: ein Haus soll ohne
   IT-Termin starten können, und der Zugang vom Telefon in der Halle darf nicht
   an der Domäne des Kunden hängen.

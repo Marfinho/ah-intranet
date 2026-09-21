@@ -43,6 +43,24 @@ async function login(page, username) {
     await page.waitForSelector('[role="status"]', { timeout: 10000 });
     check("Falsches Passwort wird abgewiesen", (await page.textContent('[role="status"]')).includes("Ungültige"));
 
+    // 1b. Vergessenes Passwort - ohne Anmeldung erreichbar, und die Antwort
+    // verrät nicht, ob es die Kennung gibt.
+    await page.goto(`${BASE}/login`, { waitUntil: "networkidle" });
+    await page.click('a[href="/passwort-vergessen"]');
+    await page.waitForURL((u) => u.pathname === "/passwort-vergessen", { timeout: 10000 });
+    check("Weg zum vergessenen Passwort führt vom Anmeldeformular dorthin", true);
+
+    await page.fill('input[name="username"]', "gibtesnicht");
+    await page.fill('input[name="tenant"]', TENANT);
+    await page.click('form button[type="submit"]');
+    await page.waitForSelector('[role="status"]', { timeout: 10000 });
+    const auskunft = await page.textContent('[role="status"]');
+    check("Antwort verrät nicht, ob es das Konto gibt", auskunft.includes("Wenn es zu dieser Kennung"));
+
+    // Ohne Token gibt es kein Formular, sondern einen Hinweis.
+    await page.goto(`${BASE}/passwort-neu`, { waitUntil: "networkidle" });
+    check("Setzen ohne Link zeigt keinen Eingabeweg", (await page.locator('input[name="password"]').count()) === 0);
+
     // 2. Login als Mitarbeiter
     await login(page, "p.hansen");
     check("Login als Mitarbeiter", page.url() === `${BASE}/`, page.url());

@@ -196,6 +196,7 @@ model Tenant {
   notifications                Notification[]
   auditLogs                    AuditLog[]
   authProviders                TenantAuthProvider[]
+  passwordResets               PasswordReset[]
   shifts                       Shift[]
   shiftSwaps                   ShiftSwap[]
   custodyItems                 CustodyItem[]
@@ -395,6 +396,7 @@ model User {
   custodyBooked     CustodyEvent[]         @relation("CustodyActor")
   mealOffersMade    MealOffer[]            @relation("MealCreator")
   mealOrders        MealOrder[]            @relation("MealOrderUser")
+  passwordResets    PasswordReset[]
 
   @@unique([tenantId, username])
   @@unique([tenantId, email])
@@ -1428,4 +1430,25 @@ model MealOrder {
   /// Eine Bestellung je Person und Tag; ändern statt doppelt anlegen.
   @@unique([tenantId, offerId, userId])
   @@index([tenantId, offerId])
+}
+
+/// Einmaltoken zum Zurücksetzen eines vergessenen Passworts.
+///
+/// Gespeichert wird nur der Hash: ein Datenbankabzug darf niemandem den Zugang
+/// zu einem Konto eröffnen. Der Klartext steht ausschließlich in der E-Mail.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  tenantId  String    @default("")
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// SHA-256 des Tokens aus der E-Mail.
+  tokenHash String    @unique
+  expiresAt DateTime
+  /// Gesetzt, sobald der Token benutzt wurde - ein zweiter Versuch scheitert.
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([tenantId, userId])
+  @@index([expiresAt])
 }

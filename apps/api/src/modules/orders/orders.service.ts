@@ -441,6 +441,7 @@ export class OrdersService {
       title: `Bestellung ${updated.orderNumber}: ${STATUS_LABELS[target]}`,
       detail: note ?? this.nextAction(target),
       link: `/bestellungen/${orderId}`,
+      auchPerMail: true,
     });
 
     return this.toSummary(updated);
