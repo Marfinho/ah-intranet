@@ -6,14 +6,18 @@
 # Ein Wildcard-Eintrag `*.ahoi.home -> <IP des Servers>` (Router oder Pi-hole)
 # oder je ein Hosts-Eintrag pro Haus lässt jedes Gerät im Netz
 # `haus1.ahoi.home`, `haus2.ahoi.home`, ... erreichen. Nur für die Erprobung
-# gedacht: es läuft ohne TLS auf Port 80 - siehe docs/lokal-testen.md.
+# gedacht: es läuft ohne TLS - siehe docs/lokal-testen.md.
+#
+# PROXY_PORT ist standardmäßig 8090 statt 80, weil auf Unraid Port 80 meist
+# schon von der eigenen Weboberfläche belegt ist. Ist er frei, reicht
+# `PROXY_PORT=80 BASE_DOMAIN=... docker compose ...` für Adressen ohne Port.
 services:
   proxy:
     image: caddy:2-alpine
     depends_on:
       - web
     ports:
-      - "80:80"
+      - "${PROXY_PORT:-8090}:80"
     environment:
       BASE_DOMAIN: ${BASE_DOMAIN:-ahoi.localhost}
     volumes:

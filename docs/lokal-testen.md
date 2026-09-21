@@ -37,6 +37,17 @@ BASE_DOMAIN=ahoi.home docker compose -f docker-compose.yml -f docker-compose.pro
 `BASE_DOMAIN` ist frei wählbar – eine Adresse, die nicht wirklich im Internet
 existiert, reicht für den Hausgebrauch (`ahoi.home`, `ahoi.test`, …).
 
+Der Proxy hört standardmäßig auf Port **8090**, nicht auf 80 – auf Unraid
+belegt meist schon die eigene Weboberfläche Port 80. Ist bei dir ein anderer
+Port frei (oder 80 tatsächlich frei), einfach mitgeben:
+
+```bash
+PROXY_PORT=8090 BASE_DOMAIN=ahoi.home docker compose -f docker-compose.yml -f docker-compose.proxy.yml up -d
+```
+
+Die Adressen lauten dann entsprechend `http://autohaus-mueller.ahoi.home:8090`
+(bzw. ohne Portangabe, wenn `PROXY_PORT=80` gesetzt und der Port frei ist).
+
 Damit Geräte im Netz die Adresse überhaupt finden, braucht es einen der
 beiden Wege:
 
@@ -50,9 +61,10 @@ beiden Wege:
   192.168.1.50   autohaus-mueller.ahoi.home andere-firma.ahoi.home
   ```
 
-Danach im Browser `http://autohaus-mueller.ahoi.home`. Der Proxy hört nur auf
-Port 80 und ohne TLS – für die Erprobung im eigenen Netz ausreichend, ein
-selbst ausgestelltes Zertifikat brächte nur Warnmeldungen ohne echten Nutzen.
+Danach im Browser `http://autohaus-mueller.ahoi.home:8090` (oder der Port, den
+`PROXY_PORT` trägt). Ohne TLS – für die Erprobung im eigenen Netz ausreichend,
+ein selbst ausgestelltes Zertifikat brächte nur Warnmeldungen ohne echten
+Nutzen.
 Echtes TLS mit einer erreichbaren Domain ist eine der offenen Fragen vor dem
 Produktivbetrieb, siehe [`ausrollen.md`](ausrollen.md).
 
