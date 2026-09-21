@@ -3,24 +3,35 @@
 # bringt in jedem Browser eine Warnung - für die reine Funktionsprüfung im
 # eigenen Netz unnötiger Aufwand. Echtes TLS gehört zum späteren
 # Produktivbetrieb (siehe docs/ausrollen.md).
+#
+# Ein Site-Block je Hostname (`http://{$BASE_DOMAIN}:80`) matcht den
+# `Host`-Kopf inklusive Port - hinter Dockers Portweiterleitung sieht Caddy
+# aber genau den Port, den der Client extern gewählt hat (z. B. `:8090` via
+# PROXY_PORT), nicht die `80`, auf der der Container intern lauscht. Deshalb
+# ein einziger Block auf `:80` mit Matchern, die nur den Hostnamen prüfen -
+# das ist unabhängig vom extern sichtbaren Port.
 {
 	auto_https off
 }
 
-# Die nackte Domain ist die Marketing-Landingpage, nicht die Anwendung -
-# Interessenten sind eine andere Zielgruppe als angemeldete Mitarbeitende.
-http://{$BASE_DOMAIN}:80 {
-	root * /srv/landing
-	file_server
-}
+:80 {
+	@landingpage host {$BASE_DOMAIN}
+	handle @landingpage {
+		# Die nackte Domain ist die Marketing-Landingpage, nicht die
+		# Anwendung - Interessenten sind eine andere Zielgruppe als
+		# angemeldete Mitarbeitende.
+		root * /srv/landing
+		file_server
+	}
 
-# Jede Subdomain (Kunde oder die Plattformverwaltung unter "verwaltung")
-# geht an die eigentliche Anwendung.
-http://*.{$BASE_DOMAIN}:80 {
-	# Ohne diese Zeile ersetzt Caddy den Host-Kopf durch die Zieladresse
-	# (`web:3000`) - und genau der Host, den der Browser gerufen hat, ist
-	# es, woraus die API das Haus erkennt.
-	reverse_proxy web:3000 {
-		header_up Host {http.request.host}
+	handle {
+		# Jede Subdomain (Kunde oder die Plattformverwaltung unter
+		# "verwaltung") geht an die eigentliche Anwendung. Ohne die
+		# header_up-Zeile ersetzt Caddy den Host-Kopf durch die
+		# Zieladresse (`web:3000`) - und genau der Host, den der
+		# Browser gerufen hat, ist es, woraus die API das Haus erkennt.
+		reverse_proxy web:3000 {
+			header_up Host {http.request.host}
+		}
 	}
 }
