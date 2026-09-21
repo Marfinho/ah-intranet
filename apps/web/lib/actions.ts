@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { ApiError, SESSION_COOKIE, apiBaseUrl, apiSend } from "./api";
+import { ApiError, SESSION_COOKIE, apiBaseUrl, apiSend, tenantHostHeader } from "./api";
 
 export interface ActionState {
   ok: boolean;
@@ -54,7 +54,7 @@ export async function passwortVergessenAction(_previous: ActionState, formData: 
   try {
     await fetch(`${apiBaseUrl()}/auth/passwort-vergessen`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...tenantHostHeader() },
       body: JSON.stringify({ username, ...(tenant ? { tenant } : {}) }),
       cache: "no-store",
     });
@@ -114,7 +114,7 @@ export async function loginAction(_previous: ActionState, formData: FormData): P
 
   const response = await fetch(`${apiBaseUrl()}/auth/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...tenantHostHeader() },
     body: JSON.stringify({ username, password, ...(tenant ? { tenant } : {}) }),
     cache: "no-store",
   });

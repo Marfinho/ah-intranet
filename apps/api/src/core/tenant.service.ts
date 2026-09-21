@@ -5,6 +5,24 @@ import { PERMISSION_DEFINITIONS, ROLE_DEFINITIONS } from "@ah-intranet/shared";
 import type { TenantContext } from "./tenant-context";
 
 /**
+ * Liest die Kennung aus einer Subdomain: `<slug>.basis.tld` in Produktion,
+ * `<slug>.localhost` für die lokale Erprobung ohne eigene Domain oder
+ * Hosts-Eintrag - moderne Browser lösen `*.localhost` ungefragt auf die
+ * eigene Maschine auf (RFC 6761). `localhost` selbst und IP-Adressen sind
+ * keine Subdomain und liefern keine Kennung.
+ */
+export function slugFromHost(host: string | undefined): string | null {
+  const hostname = host?.split(":")[0]?.toLowerCase();
+  if (!hostname || hostname === "localhost" || /^\d+(\.\d+){3}$/.test(hostname)) {
+    return null;
+  }
+
+  const parts = hostname.split(".");
+  const istLokaleSubdomain = parts.length === 2 && parts[1] === "localhost";
+  return parts.length >= 3 || istLokaleSubdomain ? parts[0] : null;
+}
+
+/**
  * Löst den Mandanten einer Anfrage auf.
  *
  * Nutzt bewusst einen eigenen, ungefilterten Client: die Mandantentabelle darf
@@ -95,7 +113,7 @@ export class TenantService implements OnModuleInit {
   /** Erwartet `<slug>.basis.tld` oder eine als `domain` hinterlegte eigene Adresse. */
   private async byHost(host: string | undefined): Promise<TenantContext | null> {
     const hostname = host?.split(":")[0]?.toLowerCase();
-    if (!hostname || hostname === "localhost" || /^\d+(\.\d+){3}$/.test(hostname)) {
+    if (!hostname) {
       return null;
     }
 
@@ -110,8 +128,8 @@ export class TenantService implements OnModuleInit {
       return byDomain;
     }
 
-    const parts = hostname.split(".");
-    return parts.length >= 3 ? this.bySlug(parts[0]) : null;
+    const slug = slugFromHost(hostname);
+    return slug ? this.bySlug(slug) : null;
   }
 
   /**

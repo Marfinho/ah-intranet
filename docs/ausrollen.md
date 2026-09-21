@@ -61,9 +61,13 @@ Keine dieser Aufgaben ist groß. Zusammen sind sie ein halber Tag im Monat.
 
 ## Was fehlt
 
-- Ein Reverse Proxy mit automatischem Zertifikat (Caddy oder Traefik) ist nicht
-  Teil des Compose-Aufbaus. Er hängt davon ab, wo die Anwendung läuft, und ist in
-  beiden Fällen eine knappe Konfigurationsdatei.
+- Ein Reverse Proxy mit **automatischem, echtem Zertifikat** ist nicht Teil des
+  Compose-Aufbaus. Für die Erprobung mehrerer Häuser im eigenen Netz (z. B. auf
+  Unraid) liegt mit `docker-compose.proxy.yml` und `Caddyfile` bereits ein
+  Proxy ohne TLS bei – siehe [`lokal-testen.md`](lokal-testen.md). Für den
+  Produktivbetrieb mit einer echten, erreichbaren Domain fehlt noch die
+  Zertifikatsausstellung (Caddy oder Traefik mit ACME); das ist eine knappe
+  Ergänzung derselben Datei, keine neue Grundlage.
 - Der Abzug der Sicherungen an einen zweiten Ort – aus demselben Grund.
 
 Beides baue ich, sobald die Aufstellung feststeht. Vorher wäre es geraten.

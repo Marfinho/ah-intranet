@@ -1,0 +1,17 @@
+# Reverse Proxy für die Erprobung von Subdomains im Heimnetz.
+# Nur HTTP: ein selbst ausgestelltes Zertifikat für eine lokale Domain
+# bringt in jedem Browser eine Warnung - für die reine Funktionsprüfung im
+# eigenen Netz unnötiger Aufwand. Echtes TLS gehört zum späteren
+# Produktivbetrieb (siehe docs/ausrollen.md).
+{
+	auto_https off
+}
+
+http://*.{$BASE_DOMAIN}:80, http://{$BASE_DOMAIN}:80 {
+	# Ohne diese Zeile ersetzt Caddy den Host-Kopf durch die Zieladresse
+	# (`web:3000`) - und genau der Host, den der Browser gerufen hat, ist
+	# es, woraus die API das Haus erkennt.
+	reverse_proxy web:3000 {
+		header_up Host {http.request.host}
+	}
+}

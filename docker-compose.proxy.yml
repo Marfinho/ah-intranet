@@ -1,0 +1,20 @@
+# Ergänzung zu docker-compose.yml für die Erprobung von Subdomains im
+# Heimnetz (z. B. auf Unraid), ohne die Basisdatei anzufassen:
+#
+#   BASE_DOMAIN=ahoi.home docker compose -f docker-compose.yml -f docker-compose.proxy.yml up -d
+#
+# Ein Wildcard-Eintrag `*.ahoi.home -> <IP des Servers>` (Router oder Pi-hole)
+# oder je ein Hosts-Eintrag pro Haus lässt jedes Gerät im Netz
+# `haus1.ahoi.home`, `haus2.ahoi.home`, ... erreichen. Nur für die Erprobung
+# gedacht: es läuft ohne TLS auf Port 80 - siehe docs/lokal-testen.md.
+services:
+  proxy:
+    image: caddy:2-alpine
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+    environment:
+      BASE_DOMAIN: ${BASE_DOMAIN:-ahoi.localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
