@@ -1,7 +1,11 @@
 import { Prisma } from "@prisma/client";
 
-/** Modelle ohne Mandantenbezug: die Mandantentabelle selbst. */
-const GLOBAL_MODELS = new Set<string>(["Tenant"]);
+/**
+ * Modelle ohne Mandantenbezug: die Mandantentabelle selbst sowie der Betrieb
+ * der Maschine (Warnsystem-Einstellungen, Lastmesspunkte) - beides gilt für
+ * die Installation als Ganzes, nicht für ein einzelnes Haus.
+ */
+const GLOBAL_MODELS = new Set<string>(["Tenant", "PlatformSettings", "SystemMetricSample"]);
 
 /** Aktionen, bei denen der Mandant in `where` gehört. */
 const FILTERED_ACTIONS = new Set<Prisma.PrismaAction>([

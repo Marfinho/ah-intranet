@@ -60,6 +60,12 @@ export const PERMISSION_DEFINITIONS: readonly PermissionDefinition[] = [
     bereich: "Verwaltung",
   },
   {
+    key: "organisation.manage",
+    name: "Organisation verwalten",
+    description: "Standorte (Autohäuser) und Abteilungen des Hauses anlegen, innerhalb der Lizenzgrenze",
+    bereich: "Verwaltung",
+  },
+  {
     key: "auth.manage",
     name: "Anmeldeverfahren verwalten",
     description: "Zusätzliche Anmeldearten des Hauses hinterlegen und freischalten",

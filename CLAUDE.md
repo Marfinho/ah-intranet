@@ -185,7 +185,11 @@ Erfolg des Restores.
 
 Erledigt sind inzwischen: CI-Pipeline, Unit-Tests, Linting, Rate-Limiting und
 Kontosperre am Login, Session-Invalidierung, Healthcheck, Mandantenfähigkeit,
-Datenschutzfunktionen.
+Datenschutzfunktionen, Lizenzgrenzen je Haus (Standorte, Benutzerkonten) samt
+selbstständigem Aufbau der Organisation durch das Haus, ein einfaches
+Systemmonitoring mit Warnung per E-Mail. Adressierung mehrerer
+Autohausgruppen auf einer Installation (Domain, Subdomains, Verwaltung des
+Betreibers): [`docs/plattform.md`](docs/plattform.md).
 
 Offen vor dem Produktivbetrieb:
 
@@ -194,7 +198,9 @@ Offen vor dem Produktivbetrieb:
   dorthin hängt von der Umgebung des Hauses ab.
 - **Zentrale Protokollauswertung.** Die Anwendung schreibt je Anfrage eine
   JSON-Zeile mit Haus, Route, Status und Dauer auf die Standardausgabe; das
-  Einsammeln und Durchsuchen ist Sache der Umgebung.
+  Einsammeln und Durchsuchen ist Sache der Umgebung. Das Systemmonitoring
+  (`docs/plattform.md`) beobachtet nur die Last einer einzelnen Maschine, kein
+  Ersatz für eine echte Protokollsammlung mehrerer Instanzen.
 - **Eine laufende Installation.** Entscheidungsgrundlage in
   [`docs/ausrollen.md`](docs/ausrollen.md).
 - **Rohabfragen:** `$queryRaw` umgeht die Mandantentrennung (siehe oben).

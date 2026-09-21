@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { redirect } from "next/navigation";
 import type { TenantSummary } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
@@ -7,6 +8,7 @@ import { requireSession } from "@/lib/session";
 import { formatDateTime } from "@/lib/utils";
 import { TenantComposer } from "./tenant-composer";
 import { TenantRowActions } from "./tenant-row-actions";
+import { TenantLicenseForm } from "./tenant-license-form";
 
 export default async function TenantsAdminPage() {
   const session = await requireSession();
@@ -39,26 +41,33 @@ export default async function TenantsAdminPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {tenants.map((tenant) => (
-                  <tr key={tenant.id}>
-                    <td className="py-3 font-medium text-slate-900">
-                      {tenant.name}
-                      {tenant.notes ? <p className="text-xs font-normal text-slate-500">{tenant.notes}</p> : null}
-                    </td>
-                    <td className="py-3 font-mono text-xs text-slate-600">{tenant.slug}</td>
-                    <td className="py-3 text-slate-600">{tenant.domain ?? "–"}</td>
-                    <td className="py-3 text-slate-600">{tenant.userCount}</td>
-                    <td className="py-3 text-slate-600">{formatDateTime(tenant.createdAt)}</td>
-                    <td className="py-3">
-                      <div className="flex items-center justify-end gap-3">
-                        {tenant.isActive ? (
-                          <span className="badge bg-emerald-100 text-emerald-800">aktiv</span>
-                        ) : (
-                          <span className="badge bg-rose-100 text-rose-800">gesperrt</span>
-                        )}
-                        <TenantRowActions tenant={tenant} self={tenant.slug === session.tenant.slug} />
-                      </div>
-                    </td>
-                  </tr>
+                  <Fragment key={tenant.id}>
+                    <tr>
+                      <td className="py-3 font-medium text-slate-900">
+                        {tenant.name}
+                        {tenant.notes ? <p className="text-xs font-normal text-slate-500">{tenant.notes}</p> : null}
+                      </td>
+                      <td className="py-3 font-mono text-xs text-slate-600">{tenant.slug}</td>
+                      <td className="py-3 text-slate-600">{tenant.domain ?? "–"}</td>
+                      <td className="py-3 text-slate-600">{tenant.userCount}</td>
+                      <td className="py-3 text-slate-600">{formatDateTime(tenant.createdAt)}</td>
+                      <td className="py-3">
+                        <div className="flex items-center justify-end gap-3">
+                          {tenant.isActive ? (
+                            <span className="badge bg-emerald-100 text-emerald-800">aktiv</span>
+                          ) : (
+                            <span className="badge bg-rose-100 text-rose-800">gesperrt</span>
+                          )}
+                          <TenantRowActions tenant={tenant} self={tenant.slug === session.tenant.slug} />
+                        </div>
+                      </td>
+                    </tr>
+                    <tr className="bg-slate-50/60">
+                      <td colSpan={6} className="py-3 pl-1">
+                        <TenantLicenseForm tenant={tenant} />
+                      </td>
+                    </tr>
+                  </Fragment>
                 ))}
               </tbody>
             </table>

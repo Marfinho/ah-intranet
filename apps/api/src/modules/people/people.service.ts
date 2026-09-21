@@ -19,6 +19,7 @@ import type {
 import { PrismaService } from "../../core/prisma.service";
 import { AuditService } from "../../core/audit.service";
 import { PRESENCE_LABELS, PRESENCE_VALUES, buildScopes, displayName, sortiereRollen } from "../../core/mappers";
+import { requireTenantId } from "../../core/tenant-context";
 import type { RequestUser } from "../../core/request-user";
 
 const directorySelect = {
@@ -152,12 +153,73 @@ export class PeopleService {
   }
 
   async organisation() {
-    const [locations, departments, specialties] = await Promise.all([
+    const [locations, departments, specialties, tenant] = await Promise.all([
       this.prisma.location.findMany({ orderBy: { name: "asc" } }),
       this.prisma.department.findMany({ orderBy: { name: "asc" } }),
       this.prisma.specialtyArea.findMany({ orderBy: { name: "asc" } }),
+      this.prisma.tenant.findUniqueOrThrow({ where: { id: requireTenantId() }, select: { maxLocations: true } }),
     ]);
-    return { locations, departments, specialties };
+    return { locations, departments, specialties, maxLocations: tenant.maxLocations };
+  }
+
+  /**
+   * Legt ein Autohaus (Standort) im eigenen Mandanten an.
+   *
+   * Die Lizenzgrenze setzt ausschließlich die Plattformverwaltung
+   * (`Tenant.maxLocations`); das Haus selbst kann sie nicht anheben. `null`
+   * heißt unbegrenzt.
+   */
+  async createLocation(actor: RequestUser, input: { name: string; code: string; address?: string | null }) {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({ where: { id: requireTenantId() } });
+    if (tenant.maxLocations !== null) {
+      const vorhanden = await this.prisma.location.count();
+      if (vorhanden >= tenant.maxLocations) {
+        throw new BadRequestException(
+          `Die Lizenz erlaubt höchstens ${tenant.maxLocations} Standort(e). Für weitere wenden Sie sich an die Plattformverwaltung.`,
+        );
+      }
+    }
+
+    const name = input.name.trim();
+    const code = input.code.trim().toUpperCase();
+    if (await this.prisma.location.findFirst({ where: { OR: [{ name }, { code }] }, select: { id: true } })) {
+      throw new BadRequestException(`Ein Standort mit diesem Namen oder Kürzel besteht bereits.`);
+    }
+
+    const location = await this.prisma.location.create({
+      data: { name, code, address: input.address?.trim() || null },
+    });
+
+    await this.audit.log({
+      actor,
+      action: "location.create",
+      entityType: "location",
+      entityId: location.id,
+      detail: `Standort "${location.name}" (${location.code}) angelegt`,
+    });
+
+    return location;
+  }
+
+  /** Legt eine Abteilung im eigenen Mandanten an - ohne Lizenzgrenze. */
+  async createDepartment(actor: RequestUser, input: { name: string; code: string }) {
+    const name = input.name.trim();
+    const code = input.code.trim().toUpperCase();
+    if (await this.prisma.department.findFirst({ where: { OR: [{ name }, { code }] }, select: { id: true } })) {
+      throw new BadRequestException(`Eine Abteilung mit diesem Namen oder Kürzel besteht bereits.`);
+    }
+
+    const department = await this.prisma.department.create({ data: { name, code } });
+
+    await this.audit.log({
+      actor,
+      action: "department.create",
+      entityType: "department",
+      entityId: department.id,
+      detail: `Abteilung "${department.name}" (${department.code}) angelegt`,
+    });
+
+    return department;
   }
 
   async createUser(
@@ -167,6 +229,16 @@ export class PeopleService {
     const username = input.username.trim().toLowerCase();
     if (await this.prisma.user.findFirst({ where: { username }, select: { id: true } })) {
       throw new BadRequestException(`Der Benutzername "${username}" ist bereits vergeben.`);
+    }
+
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({ where: { id: requireTenantId() } });
+    if (tenant.maxUsers !== null) {
+      const vorhanden = await this.prisma.user.count({ where: { status: { not: "deleted" } } });
+      if (vorhanden >= tenant.maxUsers) {
+        throw new BadRequestException(
+          `Die Lizenz erlaubt höchstens ${tenant.maxUsers} Benutzerkonto(en). Für weitere wenden Sie sich an die Plattformverwaltung.`,
+        );
+      }
     }
 
     const initialPassword = input.password ?? this.generatePassword();

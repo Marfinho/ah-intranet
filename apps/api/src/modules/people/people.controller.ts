@@ -55,6 +55,17 @@ class UserBodyDto {
   @IsOptional() @IsIn(["active", "inactive"]) status?: "active" | "inactive";
 }
 
+class LocationDto {
+  @IsString() @MinLength(2) name!: string;
+  @IsString() @MinLength(2) code!: string;
+  @IsOptional() @IsString() address?: string;
+}
+
+class DepartmentDto {
+  @IsString() @MinLength(2) name!: string;
+  @IsString() @MinLength(2) code!: string;
+}
+
 class UserPatchDto {
   @IsOptional() @IsString() firstName?: string;
   @IsOptional() @IsString() lastName?: string;
@@ -168,6 +179,22 @@ export class UsersController {
   @Permission("users.read")
   organisation() {
     return this.people.organisation();
+  }
+
+  /**
+   * Selbstständiger Aufbau durch das Haus: ein Autohaus (Standort) anlegen -
+   * innerhalb der Lizenzgrenze, die nur die Plattformverwaltung setzt.
+   */
+  @Post("organisation/standorte")
+  @Permission("organisation.manage")
+  createLocation(@CurrentUser() user: RequestUser, @Body() dto: LocationDto) {
+    return this.people.createLocation(user, dto);
+  }
+
+  @Post("organisation/abteilungen")
+  @Permission("organisation.manage")
+  createDepartment(@CurrentUser() user: RequestUser, @Body() dto: DepartmentDto) {
+    return this.people.createDepartment(user, dto);
   }
 
   @Post()

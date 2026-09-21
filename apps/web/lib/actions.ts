@@ -156,6 +156,71 @@ export async function setTenantActiveAction(id: string, isActive: boolean): Prom
   return run(() => apiSend("PATCH", `/tenants/${id}/aktiv`, { isActive }), ["/admin/mandanten"]);
 }
 
+export async function setTenantLicenseAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const id = String(formData.get("id") ?? "");
+  const maxLocations = String(formData.get("maxLocations") ?? "").trim();
+  const maxUsers = String(formData.get("maxUsers") ?? "").trim();
+
+  return run(
+    () =>
+      apiSend("PATCH", `/tenants/${id}/lizenz`, {
+        maxLocations: maxLocations === "" ? null : Number(maxLocations),
+        maxUsers: maxUsers === "" ? null : Number(maxUsers),
+      }),
+    ["/admin/mandanten"],
+    "Lizenz aktualisiert.",
+  );
+}
+
+/* -------------------------------------------------------- Organisation */
+
+export async function createLocationAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const payload = {
+    name: String(formData.get("name") ?? ""),
+    code: String(formData.get("code") ?? ""),
+    address: String(formData.get("address") ?? "") || undefined,
+  };
+  return run(
+    () => apiSend("POST", "/users/organisation/standorte", payload),
+    ["/admin/organisation"],
+    `Standort "${payload.name}" angelegt.`,
+  );
+}
+
+export async function createDepartmentAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const payload = {
+    name: String(formData.get("name") ?? ""),
+    code: String(formData.get("code") ?? ""),
+  };
+  return run(
+    () => apiSend("POST", "/users/organisation/abteilungen", payload),
+    ["/admin/organisation"],
+    `Abteilung "${payload.name}" angelegt.`,
+  );
+}
+
+/* ---------------------------------------------------------- Monitoring */
+
+export async function setMonitoringSettingsAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const alertEmail = String(formData.get("alertEmail") ?? "").trim();
+  const payload = {
+    ...(alertEmail ? { alertEmail } : {}),
+    cpuThresholdPercent: Number(formData.get("cpuThresholdPercent") ?? 85),
+    memThresholdPercent: Number(formData.get("memThresholdPercent") ?? 90),
+    diskThresholdPercent: Number(formData.get("diskThresholdPercent") ?? 90),
+    cooldownMinutes: Number(formData.get("cooldownMinutes") ?? 60),
+  };
+  return run(
+    () => apiSend("PATCH", "/monitoring/einstellungen", payload),
+    ["/admin/monitoring"],
+    "Warnsystem gespeichert.",
+  );
+}
+
+export async function measureNowAction(): Promise<ActionState> {
+  return run(() => apiSend("POST", "/monitoring/messen"), ["/admin/monitoring"]);
+}
+
 /* -------------------------------------------------------------- News */
 
 export async function createNewsAction(_previous: ActionState, formData: FormData): Promise<ActionState> {

@@ -4,6 +4,7 @@ import { ModulesController } from "./modules.controller";
 import { TenantsController } from "./tenants.controller";
 import { AuthProvidersController } from "./auth-providers.controller";
 import { AuthProvidersService } from "./auth-providers.service";
+import { MonitoringController } from "./monitoring.controller";
 import { PlatformService } from "./platform.service";
 import { ContentModule } from "../content/content.module";
 import { OrdersModule } from "../orders/orders.module";
@@ -21,6 +22,7 @@ import { PeopleModule } from "../people/people.module";
     ModulesController,
     TenantsController,
     AuthProvidersController,
+    MonitoringController,
   ],
   providers: [PlatformService, AuthProvidersService],
 })

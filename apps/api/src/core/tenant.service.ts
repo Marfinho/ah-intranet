@@ -151,7 +151,7 @@ export class TenantService implements OnModuleInit {
   async list() {
     const tenants = await this.client.tenant.findMany({
       orderBy: { name: "asc" },
-      include: { _count: { select: { users: true } } },
+      include: { _count: { select: { users: true, locations: true } } },
     });
 
     return tenants.map((tenant) => ({
@@ -162,6 +162,9 @@ export class TenantService implements OnModuleInit {
       isActive: tenant.isActive,
       notes: tenant.notes,
       userCount: tenant._count.users,
+      locationCount: tenant._count.locations,
+      maxLocations: tenant.maxLocations,
+      maxUsers: tenant.maxUsers,
       createdAt: tenant.createdAt.toISOString(),
     }));
   }
@@ -289,6 +292,31 @@ export class TenantService implements OnModuleInit {
     }
 
     const updated = await this.client.tenant.update({ where: { id }, data: { isActive } });
+    this.invalidate();
+    return updated;
+  }
+
+  /**
+   * Setzt die Lizenzgrenzen eines Hauses - Standorte und Benutzerkonten.
+   *
+   * `null` heißt unbegrenzt. Die Prüfung gegen den aktuellen Bestand passiert
+   * bewusst nicht hier: eine schon überschrittene Grenze soll sich absenken
+   * lassen, ohne dass die Plattformverwaltung bestehende Daten anfassen muss -
+   * es verhindert nur die nächste Neuanlage im Haus.
+   */
+  async setLicense(id: string, input: { maxLocations?: number | null; maxUsers?: number | null }) {
+    const tenant = await this.client.tenant.findUnique({ where: { id } });
+    if (!tenant) {
+      throw new NotFoundException("Mandant nicht gefunden");
+    }
+
+    const updated = await this.client.tenant.update({
+      where: { id },
+      data: {
+        ...(input.maxLocations !== undefined ? { maxLocations: input.maxLocations } : {}),
+        ...(input.maxUsers !== undefined ? { maxUsers: input.maxUsers } : {}),
+      },
+    });
     this.invalidate();
     return updated;
   }

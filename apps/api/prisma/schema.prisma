@@ -145,6 +145,12 @@ model Tenant {
   domain    String?  @unique
   isActive  Boolean  @default(true)
   notes     String?
+  /// Lizenzgrenze: höchstens so viele Standorte (Autohäuser). `null` heißt unbegrenzt.
+  /// Nur die Plattformverwaltung setzt diesen Wert - das Haus selbst legt Standorte
+  /// nur innerhalb dieser Grenze an.
+  maxLocations Int?
+  /// Lizenzgrenze: höchstens so viele aktive Benutzerkonten. `null` heißt unbegrenzt.
+  maxUsers     Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1428,4 +1434,36 @@ model MealOrder {
   /// Eine Bestellung je Person und Tag; ändern statt doppelt anlegen.
   @@unique([tenantId, offerId, userId])
   @@index([tenantId, offerId])
+}
+
+// ------------------------------------------------- Plattformbetrieb
+
+/// Einstellungen des Betreibers für das Warnsystem - mandantenübergreifend,
+/// deshalb ein globales Modell ohne `tenantId` (siehe `tenant-isolation.ts`).
+/// Genau eine Zeile mit fester Kennung `"global"`.
+model PlatformSettings {
+  id                   String    @id @default("global")
+  /// Ohne Adresse wird keine Warnung verschickt - lieber eine Absage als ein
+  /// stiller Versuch ins Leere.
+  alertEmail           String?
+  cpuThresholdPercent  Int       @default(85)
+  memThresholdPercent  Int       @default(90)
+  diskThresholdPercent Int       @default(90)
+  /// Mindestabstand zwischen zwei Warnungen, damit ein anhaltend hoher Wert
+  /// nicht minütlich ein Postfach füllt.
+  cooldownMinutes      Int       @default(60)
+  lastAlertAt          DateTime?
+  updatedAt            DateTime  @updatedAt
+}
+
+/// Ein Messpunkt der Maschine, auf der AHOI läuft - global, nicht je Haus.
+model SystemMetricSample {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  loadAvg1   Float
+  cpuPercent Float
+  memPercent Float
+  diskPercent Float
+
+  @@index([createdAt])
 }

@@ -87,7 +87,36 @@ export interface TenantSummary extends TenantRef {
   isActive: boolean;
   notes: string | null;
   userCount: number;
+  locationCount: number;
   createdAt: string;
+  /** Lizenzgrenzen; `null` heißt unbegrenzt. Nur die Plattformverwaltung setzt sie. */
+  maxLocations: number | null;
+  maxUsers: number | null;
+}
+
+/* ---------------------------------------------------------- Plattformbetrieb */
+
+export interface SystemMetricSampleDto {
+  createdAt: string;
+  loadAvg1: number;
+  cpuPercent: number;
+  memPercent: number;
+  diskPercent: number;
+}
+
+export interface PlatformMonitoringSettings {
+  alertEmail: string | null;
+  cpuThresholdPercent: number;
+  memThresholdPercent: number;
+  diskThresholdPercent: number;
+  cooldownMinutes: number;
+  lastAlertAt: string | null;
+}
+
+export interface PlatformMonitoringPayload {
+  current: SystemMetricSampleDto | null;
+  history: SystemMetricSampleDto[];
+  settings: PlatformMonitoringSettings;
 }
 
 export interface LoginResponse {

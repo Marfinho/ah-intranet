@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
-import { IsBoolean, IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from "class-validator";
+import { IsBoolean, IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, Min, MinLength } from "class-validator";
 import { AuditService } from "../../core/audit.service";
 import { CurrentUser, PlatformAdmin } from "../../core/decorators";
 import type { RequestUser } from "../../core/request-user";
@@ -46,6 +46,19 @@ class CreateTenantDto {
 class SetActiveDto {
   @IsBoolean()
   isActive!: boolean;
+}
+
+class SetLicenseDto {
+  /** Leer/`null` heißt unbegrenzt. */
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  maxLocations?: number | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  maxUsers?: number | null;
 }
 
 /**
@@ -96,6 +109,28 @@ export class TenantsController {
       entityType: "tenant",
       entityId: id,
       detail: `Mandant "${tenant.name}" ${dto.isActive ? "freigeschaltet" : "gesperrt"}`,
+    });
+
+    return tenant;
+  }
+
+  /**
+   * Lizenzgrenzen des Hauses: höchstens so viele Standorte und Benutzerkonten.
+   * Das Haus selbst legt innerhalb dieser Grenze frei Standorte, Abteilungen
+   * und Mitarbeitende an - siehe `PeopleController`.
+   */
+  @Patch(":id/lizenz")
+  async setLicense(@Param("id") id: string, @Body() dto: SetLicenseDto, @CurrentUser() user: RequestUser) {
+    const tenant = await this.tenants.setLicense(id, dto);
+
+    await this.audit.log({
+      actor: user,
+      action: "tenant.license",
+      entityType: "tenant",
+      entityId: id,
+      detail: `Lizenz von "${tenant.name}" gesetzt: Standorte ${tenant.maxLocations ?? "unbegrenzt"}, Konten ${
+        tenant.maxUsers ?? "unbegrenzt"
+      }`,
     });
 
     return tenant;

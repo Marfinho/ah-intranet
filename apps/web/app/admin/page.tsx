@@ -8,6 +8,12 @@ import { can, requirePermission } from "@/lib/session";
 /** Jede Kachel nennt das Recht, das ihre Seite verlangt - nicht eine Rolle. */
 const ADMIN_LINKS = [
   { href: "/admin/module", label: "Module", detail: "Fachmodule ein- und ausschalten", recht: "modules.manage" },
+  {
+    href: "/admin/organisation",
+    label: "Organisation",
+    detail: "Standorte und Abteilungen anlegen",
+    recht: "organisation.manage",
+  },
   { href: "/admin/benutzer", label: "Benutzer", detail: "Konten anlegen und pflegen", recht: "users.manage" },
   { href: "/admin/rollen", label: "Rollen & Rechte", detail: "Eigene Rollen anlegen", recht: "roles.manage" },
   { href: "/admin/anmeldung", label: "Anmeldung", detail: "Anmeldearten des Hauses", recht: "auth.manage" },
@@ -32,7 +38,8 @@ const ADMIN_LINKS = [
 
 /** Nur für die Plattformverwaltung des Betreibers, nicht für Admins im Haus. */
 const PLATFORM_LINKS = [
-  { href: "/admin/mandanten", label: "Autohäuser", detail: "Mandanten anlegen und freischalten" },
+  { href: "/admin/mandanten", label: "Autohäuser", detail: "Mandanten anlegen, freischalten und lizenzieren" },
+  { href: "/admin/monitoring", label: "Monitoring", detail: "Systemlast und Warnsystem" },
 ];
 
 export default async function AdminPage() {
