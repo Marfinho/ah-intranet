@@ -500,6 +500,26 @@ export async function updateProfileAction(_previous: ActionState, formData: Form
   return run(() => apiSend("PATCH", "/profile", payload), ["/profil", "/mitarbeiter"], "Profil gespeichert.");
 }
 
+/**
+ * Wechselt die Voreinstellung der Darstellung.
+ *
+ * Erneuert wird das gesamte Layout, nicht nur die Profilseite: die Wahl sitzt
+ * auf <html> und gilt damit für jede Seite der Anwendung.
+ */
+export async function updateDarstellungAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const darstellung = String(formData.get("darstellung") ?? "standard");
+  try {
+    await apiSend("PATCH", "/profile", { darstellung });
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return { ok: false, message: error.message };
+    }
+    return { ok: false, message: "Unerwarteter Fehler. Bitte erneut versuchen." };
+  }
+  revalidatePath("/", "layout");
+  return { ok: true, detail: "Darstellung gespeichert." };
+}
+
 /* ------------------------------------------------------ Administration */
 
 export async function createUserAction(_previous: ActionState, formData: FormData): Promise<ActionState> {

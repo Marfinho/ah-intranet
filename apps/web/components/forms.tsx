@@ -18,7 +18,9 @@ export function SubmitButton({
       type="submit"
       disabled={pending}
       className={cn(
-        "rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60",
+        // `ziel` hält die Mindestfläche aus docs/ci.md ein - ein Knopf, der
+        // am Tresenterminal danebengeht, ist schlimmer als einer, der groß ist.
+        "ziel rounded-xl px-5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60",
         variant === "primary"
           ? "bg-brand-600 text-white hover:bg-brand-700"
           : "border border-slate-200 text-slate-700 hover:bg-slate-50",
@@ -93,7 +95,7 @@ export function ActionButton({
         });
       }}
       className={cn(
-        "rounded-xl px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60",
+        "ziel rounded-xl px-5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60",
         styles[variant],
         className,
       )}
@@ -118,10 +120,10 @@ export function Field({
     <label className={cn("text-sm font-medium text-slate-700", wide && "md:col-span-2")}>
       {label}
       {children}
-      {hint ? <span className="mt-1 block text-xs font-normal text-slate-500">{hint}</span> : null}
+      {hint ? <span className="mt-1 block text-xs font-normal text-slate-600">{hint}</span> : null}
     </label>
   );
 }
 
 export const inputClass =
-  "mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-brand-600 focus:ring-2";
+  "mt-2 min-h-ziel w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none ring-brand-600 focus:ring-2";

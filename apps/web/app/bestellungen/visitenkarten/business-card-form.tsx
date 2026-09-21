@@ -32,7 +32,7 @@ export function BusinessCardForm({
               key={field.key}
               className="flex items-start gap-3 rounded-2xl border border-slate-200 p-4 text-sm text-slate-700 md:col-span-2"
             >
-              <input type="checkbox" name={name} value="true" className="mt-1 h-4 w-4" />
+              <input type="checkbox" name={name} value="true" className="mt-1 h-5 w-5" />
               <span>
                 <span className="font-medium">{field.label}</span>
                 {field.helpText ? <span className="mt-1 block text-xs text-slate-500">{field.helpText}</span> : null}

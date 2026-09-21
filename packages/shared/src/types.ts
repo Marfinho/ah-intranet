@@ -72,6 +72,8 @@ export interface SessionUser {
   tenant: TenantRef;
   /** Darf Mandanten anlegen und abschalten - nicht identisch mit der Adminrolle im Haus. */
   isPlatformAdmin: boolean;
+  /** Gewählte Darstellung. Steht am Konto, damit sie auf jedem Gerät gilt. */
+  darstellung: Darstellung;
 }
 
 /** Kurzform eines Mandanten, wie sie in Sitzung und Kopfzeile erscheint. */
@@ -707,4 +709,42 @@ export interface MealRoundup {
   offer: { id: string; date: string; provider: string; orderDeadline: string; location?: string | null };
   lines: { option: string; priceCents: number; quantity: number; people: string[] }[];
   totalCents: number;
+}
+
+/* ---------------------------------------------------------- Darstellung */
+
+/**
+ * Voreinstellung der Darstellung. Es gibt **ein** Erscheinungsbild, nicht zwei
+ * Anwendungen: die Voreinstellung verschiebt nur Schriftgröße, Zeilenluft,
+ * Zielgröße und Kontrast auf denselben Achsen. Ein zweites, eigenes Design
+ * würde bei jeder neuen Seite doppelt gepflegt und wäre nach einem halben Jahr
+ * das schlechtere von beiden.
+ */
+export type Darstellung = "standard" | "gross";
+
+export interface DarstellungDefinition {
+  key: Darstellung;
+  name: string;
+  description: string;
+}
+
+export const DARSTELLUNG_DEFINITIONS: readonly DarstellungDefinition[] = [
+  {
+    key: "standard",
+    name: "Standard",
+    description: "Ruhige Dichte: mehr auf einen Blick, Grundschrift 16 px.",
+  },
+  {
+    key: "gross",
+    name: "Groß & klar",
+    description:
+      "Größere Schrift, mehr Zeilenluft, kräftigerer Kontrast und größere Schaltflächen. " +
+      "Hilft am Bildschirm in der Halle ebenso wie Augen, die nicht mehr die jüngsten sind.",
+  },
+];
+
+export const DARSTELLUNG_KEYS: readonly Darstellung[] = DARSTELLUNG_DEFINITIONS.map((eintrag) => eintrag.key);
+
+export function istDarstellung(wert: unknown): wert is Darstellung {
+  return typeof wert === "string" && (DARSTELLUNG_KEYS as readonly string[]).includes(wert);
 }

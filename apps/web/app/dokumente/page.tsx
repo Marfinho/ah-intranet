@@ -46,7 +46,7 @@ export default async function DocumentsPage({
           ) : (
             <ul className="grid gap-4 md:grid-cols-2">
               {data.items.map((document) => (
-                <li key={document.id} className="rounded-2xl border border-slate-200 p-5">
+                <li key={document.id} className="min-w-0 rounded-2xl border border-slate-200 p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="font-semibold text-slate-900">{document.title}</p>
@@ -69,7 +69,7 @@ export default async function DocumentsPage({
 
                   <a
                     href={document.url}
-                    className="mt-4 inline-block rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-brand-100 hover:bg-slate-50"
+                    className="mt-4 inline-block ziel rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition hover:border-brand-100 hover:bg-slate-50"
                   >
                     Öffnen
                   </a>

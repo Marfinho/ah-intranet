@@ -33,7 +33,7 @@ export function IdeaCard({ idea, canManage }: { idea: Idea; canManage: boolean }
       >
         <ChevronUp className="h-5 w-5" />
         <span className="text-lg font-bold">{idea.voteCount}</span>
-        <span className="text-[10px] uppercase tracking-wide">{idea.votedByMe ? "dafür" : "zustimmen"}</span>
+        <span className="text-xs uppercase tracking-wide">{idea.votedByMe ? "dafür" : "zustimmen"}</span>
       </button>
 
       {canManage ? (

@@ -2,6 +2,7 @@ import { AppShell } from "@/components/app-shell";
 import { InfoList, Section, Tag } from "@/components/ui";
 import { ProfileForm } from "./profile-form";
 import { PasswordForm } from "./password-form";
+import { DarstellungForm } from "./darstellung-form";
 import { requireSession } from "@/lib/session";
 import { apiGetSafe } from "@/lib/api";
 import type { EmployeeDirectoryEntry } from "@ah-intranet/shared";
@@ -62,6 +63,10 @@ export default async function ProfilePage() {
             responsibilities: (me?.responsibilities ?? []).join(", "),
           }}
         />
+      </Section>
+
+      <Section title="Darstellung" subtitle="Gilt für Ihr Konto auf jedem Gerät – auch am Terminal in der Halle">
+        <DarstellungForm current={session.darstellung} />
       </Section>
 
       <Section

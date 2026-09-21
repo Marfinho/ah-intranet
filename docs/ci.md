@@ -42,7 +42,66 @@ die Beschriftung, nicht der Farbton.
 | Lesetext     | **Source Sans 3** | 400 / 600 | Fließtext, Formulare, Tabelleninhalt     |
 
 Archivo eng laufen lassen (`-0.02em`) und groß setzen; Source Sans 3 bei 1,55
-Zeilenhöhe. Beschriftungen in Versalien mit `0.14em` Sperrung, klein und leise.
+Zeilenhöhe. Beschriftungen in Versalien mit `0.14em` Sperrung, gesetzt und leise
+– aber nicht kleiner als die Stufe `text-xs`: Versalien plus Sperrung kosten
+Lesbarkeit, das darf die Größe nicht noch einmal kosten.
+
+Die Stufen stehen in `tailwind.config.ts` und weichen bewusst von den
+Tailwind-Vorgaben ab. `text-sm` ist mit rund zweihundert Fundstellen die
+Brotschrift der Anwendung und liegt deshalb bei **16 px**, nicht bei 14; keine
+Stufe geht unter **14 px**. Alle Stufen stehen in `rem` – sie hängen damit an
+der Schriftgröße von `<html>` und wachsen mit der gewählten Darstellung mit.
+
+## Darstellung: ein Design, zwei Voreinstellungen
+
+Die Belegschaft eines Autohauses ist von der Auszubildenden bis zum
+Servicemeister kurz vor der Rente alles auf einmal. Deshalb ist die Darstellung
+einstellbar – aber es gibt **ein** Erscheinungsbild, nicht zwei Anwendungen. Ein
+zweites, eigenes Design müsste bei jedem neuen Modul doppelt gepflegt werden und
+wäre nach einem halben Jahr das schlechtere von beiden.
+
+Verschoben werden vier Achsen, alles andere bleibt gleich:
+
+| Achse        | Standard   | Groß & klar        | Wo sie sitzt                        |
+| ------------ | ---------- | ------------------ | ----------------------------------- |
+| Schriftgröße | 100 %      | 112,5 %            | `font-size` auf `<html>`            |
+| Zeilenluft   | 1,55       | 1,75               | `--ahoi-zeilenluft`                 |
+| Zielgröße    | 2,75 rem   | 3,25 rem           | `--ahoi-zielgroesse`, Klasse `ziel` |
+| Kontrast     | Grundskala | eine Stufe dunkler | `--ahoi-slate-*`, `--ahoi-brand-*`  |
+
+Weil die Farbskalen als RGB-Tripel in Variablen stehen und Tailwind sie über
+`rgb(var(--…) / <alpha-value>)` einbindet, gilt der Wechsel für alle Seiten
+zugleich – keine Utility-Klasse in den rund achtzig Seiten wird dafür angefasst.
+In „Groß & klar" rückt die Grauskala eine Stufe nach unten: `text-slate-500`
+kommt damit auf Weiß von 4,8:1 auf 7,4:1 und erfüllt WCAG 1.4.6 (AAA), ohne dass
+die Oberfläche in Schwarz kippt.
+
+Die Wahl steht **am Konto**, nicht im Browser: wer sie am Tresenrechner trifft,
+findet sie auf dem Telefon in der Halle wieder. Gesetzt wird sie serverseitig als
+`data-darstellung` auf `<html>` (`apps/web/app/layout.tsx`); ein Skript im
+Browser würde bei jedem Aufruf kurz die kleine Schrift aufblitzen lassen.
+
+**Was immer gilt, unabhängig von der Wahl:**
+
+- Bedienflächen halten die Mindestgröße nach WCAG 2.2 (2.5.5) ein – Knöpfe,
+  Eingabefelder und Auswahlen tragen dafür die Klasse `ziel` oder `min-h-ziel`.
+  Ausgenommen sind Verweise im Textfluss, deren Höhe die Zeile bestimmt.
+- Tastaturbedienung ist sichtbar: `:focus-visible` bekommt einen eigenen Rahmen
+  im Akzent, weil der Standardrahmen unter den Rundungen fast verschwindet.
+- Wer im Betriebssystem Bewegung abgestellt hat, bekommt keine Übergänge
+  (`prefers-reduced-motion`).
+- Zustände tragen immer ein Wort, nie nur einen Farbton.
+
+**Grenze, ehrlich benannt:** Vor der Anmeldung weiß die Anwendung nicht, wer da
+sitzt – Anmeldeseite und Passwortformulare erscheinen deshalb immer im Standard.
+Das ist vertretbar, weil der Grundstand für alle angehoben wurde (16 px
+Fließtext, 44 px Bedienflächen) und nicht erst die Voreinstellung ihn rettet.
+
+Eine neue Voreinstellung entsteht in `packages/shared/src/types.ts`
+(`DARSTELLUNG_DEFINITIONS`) **und** als Block `:root[data-darstellung="…"]` in
+`globals.css`. Ein Test hält beides zusammen: ohne Block sähe die neue
+Voreinstellung aus wie der Standard, ließe sich aber speichern – eine Wahl, die
+nichts bewirkt.
 
 ## Zeichen
 
@@ -74,12 +133,13 @@ Komponente `apps/web/components/logo.tsx`.
 
 ## Wo das CI lebt
 
-| Ort                               | Was dort steht                     |
-| --------------------------------- | ---------------------------------- |
-| `apps/web/app/globals.css`        | Farbtoken als CSS-Variablen        |
-| `apps/web/tailwind.config.ts`     | Akzentskala, Schriftfamilien       |
-| `apps/web/components/logo.tsx`    | Wort-Bild-Marke und Signet         |
-| `apps/web/public/ahoi-signet.svg` | Signet für alles außerhalb der App |
+| Ort                               | Was dort steht                              |
+| --------------------------------- | ------------------------------------------- |
+| `apps/web/app/globals.css`        | Farbskalen und Achsen als Variablen         |
+| `apps/web/tailwind.config.ts`     | Anbindung der Variablen, Schriftstufen      |
+| `apps/web/app/layout.tsx`         | Setzt die gewählte Darstellung auf `<html>` |
+| `apps/web/components/logo.tsx`    | Wort-Bild-Marke und Signet                  |
+| `apps/web/public/ahoi-signet.svg` | Signet für alles außerhalb der App          |
 
 Die Präsentation übernimmt dieselben Werte. Ändert sich eine Farbe, ändert sie
 sich in beiden – dafür steht diese Seite.

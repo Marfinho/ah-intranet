@@ -71,7 +71,7 @@ export function DocumentComposer({ categories }: { categories: string[] }) {
                 name="audienceScopes"
                 value={audience.value}
                 defaultChecked={audience.value === "global"}
-                className="h-4 w-4"
+                className="h-5 w-5"
               />
               {audience.label}
             </label>

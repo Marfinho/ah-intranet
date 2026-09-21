@@ -59,7 +59,7 @@ export default async function DirectoryPage({
           ) : (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {data.items.map((person) => (
-                <article key={person.id} className="rounded-2xl border border-slate-200 p-5">
+                <article key={person.id} className="min-w-0 rounded-2xl border border-slate-200 p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate font-semibold text-slate-900">{person.displayName}</p>
@@ -83,7 +83,10 @@ export default async function DirectoryPage({
                       <div className="flex gap-2">
                         <dt className="text-slate-500">Telefon:</dt>
                         <dd>
-                          <a href={`tel:${person.phone.replace(/\s/g, "")}`} className="text-brand-700 hover:underline">
+                          <a
+                            href={`tel:${person.phone.replace(/\s/g, "")}`}
+                            className="inline-block py-1 text-brand-700 hover:underline"
+                          >
                             {person.phone}
                           </a>
                         </dd>
@@ -95,7 +98,7 @@ export default async function DirectoryPage({
                         <dd>
                           <a
                             href={`tel:${person.mobile.replace(/\s/g, "")}`}
-                            className="text-brand-700 hover:underline"
+                            className="inline-block py-1 text-brand-700 hover:underline"
                           >
                             {person.mobile}
                           </a>
@@ -106,7 +109,10 @@ export default async function DirectoryPage({
                       <div className="flex gap-2">
                         <dt className="text-slate-500">E-Mail:</dt>
                         <dd className="min-w-0">
-                          <a href={`mailto:${person.email}`} className="block truncate text-brand-700 hover:underline">
+                          <a
+                            href={`mailto:${person.email}`}
+                            className="block truncate py-1 text-brand-700 hover:underline"
+                          >
                             {person.email}
                           </a>
                         </dd>

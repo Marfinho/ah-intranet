@@ -51,7 +51,7 @@ export function WorkwearForm({ catalog }: { catalog: WorkwearCatalogItem[] }) {
                         <select
                           value={size}
                           onChange={(event) => setSizes((current) => ({ ...current, [item.id]: event.target.value }))}
-                          className="ml-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800"
+                          className="ml-2 min-h-ziel rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800"
                           aria-label={`Größe für ${item.name}`}
                         >
                           {item.sizes.map((entry) => (

@@ -62,7 +62,7 @@ export function NewsComposer() {
       </Field>
 
       <label className="flex items-center gap-3 self-end rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700">
-        <input type="checkbox" name="pinned" className="h-4 w-4" />
+        <input type="checkbox" name="pinned" className="h-5 w-5" />
         Beitrag oben anpinnen
       </label>
 
@@ -78,7 +78,7 @@ export function NewsComposer() {
                 name="audienceScopes"
                 value={audience.value}
                 defaultChecked={audience.value === "global"}
-                className="h-4 w-4"
+                className="h-5 w-5"
               />
               {audience.label}
             </label>

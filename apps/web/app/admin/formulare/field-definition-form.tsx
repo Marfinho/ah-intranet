@@ -46,12 +46,12 @@ export function FieldDefinitionForm({ nextSortOrder }: { nextSortOrder: number }
       </Field>
 
       <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700">
-        <input type="checkbox" name="isRequired" className="h-4 w-4" />
+        <input type="checkbox" name="isRequired" className="h-5 w-5" />
         Pflichtfeld
       </label>
 
       <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700">
-        <input type="checkbox" name="isActive" defaultChecked className="h-4 w-4" />
+        <input type="checkbox" name="isActive" defaultChecked className="h-5 w-5" />
         Im Formular anzeigen
       </label>
 

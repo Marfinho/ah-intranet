@@ -331,6 +331,9 @@ model User {
   phone              String?
   mobile             String?
   presence           Presence   @default(vor_ort)
+  /// Gewählte Darstellung (Schlüssel aus der Registry in @ah-intranet/shared).
+  /// Am Konto und nicht im Browser, damit die Wahl auch am Terminal in der Halle gilt.
+  darstellung        String     @default("standard")
   responsibilities   String[]   @default([])
   status             UserStatus @default(active)
   /// Zielgruppen-Tokens (global, location:*, department:*, specialty:*) - bei Stammdatenänderung neu berechnet.

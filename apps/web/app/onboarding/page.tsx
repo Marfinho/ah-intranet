@@ -62,7 +62,7 @@ export default async function OnboardingPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {data.templates.map((template) => (
-              <article key={template.id} className="rounded-2xl border border-slate-200 p-5">
+              <article key={template.id} className="min-w-0 rounded-2xl border border-slate-200 p-5">
                 <p className="font-semibold text-slate-900">{template.name}</p>
                 <p className="mt-1 text-sm text-slate-600">
                   {template.targetRole} · {template.durationLabel}
@@ -71,9 +71,12 @@ export default async function OnboardingPage() {
                   {template.steps.map((step) => (
                     <li key={step.id} className="flex items-start gap-2">
                       <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-600" />
-                      <span>
-                        {step.title}
-                        <span className="ml-2 text-xs text-slate-500">
+                      <span className="min-w-0">
+                        {/* Das Leerzeichen ist die Umbruchstelle - ohne es steht
+                            Schritt und Zuständigkeit als ein Wort und schiebt
+                            die Karte bei großer Schrift über den Rand. */}
+                        {step.title}{" "}
+                        <span className="text-xs text-slate-500">
                           {step.ownerRole}
                           {!step.required ? " · optional" : ""}
                         </span>

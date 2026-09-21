@@ -18,7 +18,7 @@ export function PasswortNeuForm({ token }: { token: string }) {
         <FormAlert state={state} />
         <Link
           href="/login"
-          className="inline-block rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+          className="inline-block ziel rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700"
         >
           Zur Anmeldung
         </Link>

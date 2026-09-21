@@ -54,7 +54,7 @@ export function MealOrderActions({ offer, darfPflegen }: { offer: MealOfferItem;
         <>
           <a
             href={`/essen/${offer.id}/sammelliste`}
-            className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="ziel rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
           >
             Sammelliste
           </a>

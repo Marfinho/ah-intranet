@@ -83,7 +83,7 @@ export function SwapActions({ swap }: { swap: ShiftSwapItem }) {
             type="button"
             disabled={pending}
             onClick={() => startTransition(async () => melde(await respondSwapAction(swap.id, true)))}
-            className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
+            className="ziel rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
           >
             Übernehme ich
           </button>
@@ -104,7 +104,7 @@ export function SwapActions({ swap }: { swap: ShiftSwapItem }) {
             type="button"
             disabled={pending}
             onClick={() => startTransition(async () => melde(await decideSwapAction(swap.id, true)))}
-            className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
+            className="ziel rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
           >
             Tausch freigeben
           </button>

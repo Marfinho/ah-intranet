@@ -13,7 +13,10 @@ pnpm-Monorepo: NestJS-API (`apps/api`), Next.js-Frontend (`apps/web`),
 gemeinsame Typen und Registries (`packages/shared`).
 
 Erscheinungsbild, Farben, Schrift und Zeichen: [`docs/ci.md`](docs/ci.md). Wer
-dort etwas ändert, ändert es in Anwendung und Präsentation zugleich.
+dort etwas ändert, ändert es in Anwendung und Präsentation zugleich. Es gibt
+**ein** Design; die Darstellung ist auf vier Achsen einstellbar (Schriftgröße,
+Zeilenluft, Zielgröße, Kontrast), gewählt am Konto und gesetzt auf `<html>`.
+Zwei getrennte Oberflächen wären beim nächsten Modul doppelte Arbeit.
 
 ## Mittelfristiges Ziel
 

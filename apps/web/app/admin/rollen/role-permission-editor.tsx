@@ -97,7 +97,7 @@ export function RolePermissionEditor({
               onClick={() =>
                 startTransition(async () => melde(await updateRoleAction(role.id, { name, description, rank })))
               }
-              className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-40"
+              className="ziel rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-40"
             >
               Stammdaten speichern
             </button>
@@ -170,7 +170,7 @@ export function RolePermissionEditor({
             type="button"
             disabled={pending}
             onClick={() => startTransition(async () => melde(await setRolePermissionsAction(role.id, selected)))}
-            className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
+            className="ziel rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
           >
             {pending ? "Speichert …" : "Rechte speichern"}
           </button>

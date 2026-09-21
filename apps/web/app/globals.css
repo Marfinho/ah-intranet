@@ -3,13 +3,54 @@
 @tailwind utilities;
 
 /**
- * Farbtoken des Erscheinungsbildes AHOI. Beschrieben in docs/ci.md.
- * Tailwind-Klassen greifen darauf über die Skala `brand` zu; alles, was ohne
- * Utility-Klasse auskommen muss, nimmt diese Variablen.
+ * Erscheinungsbild AHOI. Beschrieben in docs/ci.md.
+ *
+ * Es gibt **ein** Design, keine zwei. Was die Voreinstellung der Darstellung
+ * verschiebt, sind vier Achsen: Schriftgröße, Zeilenluft, Zielgröße und
+ * Kontrast. Alles andere – Farben der Marke, Rundungen, Abstände, Aufbau der
+ * Seiten – bleibt gleich. Zwei getrennte Oberflächen wären beim nächsten Modul
+ * doppelte Arbeit, und eine der beiden wäre schnell die schlechtere.
+ *
+ * Die Farbskalen stehen als RGB-Tripel hier und nicht als Hex in der
+ * Tailwind-Konfiguration, weil sie sich damit je Voreinstellung austauschen
+ * lassen, ohne eine einzige Utility-Klasse in den rund 80 Seiten anzufassen.
  */
 :root {
   color-scheme: light;
 
+  /* --------------------------------------------- Achse 1+2: Schrift, Luft */
+  --ahoi-zeilenluft: 1.55;
+  --ahoi-zeilenluft-eng: 1.2;
+
+  /* ------------------------------------------------- Achse 3: Zielgröße */
+  /* 44 px ist die Mindestgröße nach WCAG 2.2 (2.5.5) – die Fläche, die ein
+     Daumen an einem Tresenterminal sicher trifft. */
+  --ahoi-zielgroesse: 2.75rem;
+
+  /* ------------------------------------- Achse 4: Kontrast (Grauskala) */
+  --ahoi-slate-50: 248 250 252;
+  --ahoi-slate-100: 241 245 249;
+  --ahoi-slate-200: 226 232 240;
+  --ahoi-slate-300: 203 213 225;
+  --ahoi-slate-400: 148 163 184;
+  --ahoi-slate-500: 100 116 139;
+  --ahoi-slate-600: 71 85 105;
+  --ahoi-slate-700: 51 65 85;
+  --ahoi-slate-800: 30 41 59;
+  --ahoi-slate-900: 15 23 42;
+
+  --ahoi-brand-50: 254 244 240;
+  --ahoi-brand-100: 251 227 217;
+  --ahoi-brand-200: 247 195 176;
+  --ahoi-brand-300: 240 155 124;
+  --ahoi-brand-400: 232 107 68;
+  --ahoi-brand-500: 220 58 20;
+  --ahoi-brand-600: 196 47 14;
+  --ahoi-brand-700: 162 39 12;
+  --ahoi-brand-800: 126 31 10;
+  --ahoi-brand-900: 92 23 7;
+
+  /* Token für alles, was ohne Utility-Klasse auskommen muss. */
   --ahoi-ground: #f1f3f5;
   --ahoi-surface: #ffffff;
   --ahoi-ink: #0f1417;
@@ -19,6 +60,41 @@
   --ahoi-accent: #dc3a14;
   --ahoi-accent-ink: #a2270c;
   --ahoi-accent-soft: #fbe3d9;
+}
+
+/**
+ * Voreinstellung "Groß & klar". Gesetzt wird sie serverseitig auf <html>
+ * (siehe app/layout.tsx), nicht per Skript im Browser: sonst blitzte bei jedem
+ * Seitenaufruf kurz die kleine Schrift auf.
+ *
+ * 112,5 % Grundschrift heißt 18 px – weil die Größen in `rem` stehen, wächst
+ * damit jede Schrift und jeder Innenabstand mit, ohne dass eine Seite eine
+ * eigene Regel braucht. Die Grautöne rücken eine Stufe nach unten: aus
+ * slate-500 auf Weiß (4,8:1) wird slate-600 (7,4:1) und damit AAA nach
+ * WCAG 1.4.6, ohne dass die Oberfläche in Schwarz kippt.
+ */
+:root[data-darstellung="gross"] {
+  --ahoi-zeilenluft: 1.75;
+  --ahoi-zeilenluft-eng: 1.3;
+  --ahoi-zielgroesse: 3.25rem;
+
+  --ahoi-slate-300: 148 163 184;
+  --ahoi-slate-400: 100 116 139;
+  --ahoi-slate-500: 71 85 105;
+  --ahoi-slate-600: 51 65 85;
+  --ahoi-slate-700: 30 41 59;
+
+  --ahoi-brand-500: 196 47 14;
+  --ahoi-brand-600: 162 39 12;
+  --ahoi-brand-700: 126 31 10;
+}
+
+html {
+  font-size: 100%;
+}
+
+html[data-darstellung="gross"] {
+  font-size: 112.5%;
 }
 
 body {
@@ -34,6 +110,25 @@ h3,
   letter-spacing: -0.018em;
 }
 
+/* Tastaturbedienung sichtbar machen – der Browser-Standardrahmen verschwindet
+   unter den eigenen Rundungen sonst fast. */
+:focus-visible {
+  outline: 2px solid rgb(var(--ahoi-brand-600));
+  outline-offset: 2px;
+}
+
+/* Wer Bewegung abgestellt hat, bekommt sie auch nicht. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 .card {
   @apply rounded-2xl bg-white shadow-card border border-slate-200;
 }
@@ -46,7 +141,14 @@ h3,
   @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold;
 }
 
-/* Beschriftungen: klein, gesperrt, leise – wie in der Präsentation. */
+/* Beschriftungen: klein, gesperrt, leise – wie in der Präsentation. Die
+   Sperrung kostet Lesbarkeit, deshalb sitzt die Größe nicht mehr bei 11 px. */
 .label {
-  @apply font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500;
+  @apply font-display text-xs font-semibold uppercase tracking-[0.14em] text-slate-500;
+}
+
+/* Bedienflächen halten die Mindestgröße ein, ohne dass jede Seite daran denkt. */
+.ziel {
+  @apply inline-flex items-center justify-center;
+  min-height: var(--ahoi-zielgroesse);
 }

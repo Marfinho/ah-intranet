@@ -24,7 +24,7 @@ export function UserRowActions({ userId, status, name }: { userId: string; statu
               }
             })
           }
-          className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+          className="ziel rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
         >
           Passwort zurücksetzen
         </button>
@@ -44,7 +44,7 @@ export function UserRowActions({ userId, status, name }: { userId: string; statu
               }
             });
           }}
-          className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+          className="ziel rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
         >
           {status === "active" ? "Deaktivieren" : "Aktivieren"}
         </button>

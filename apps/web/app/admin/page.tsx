@@ -62,7 +62,7 @@ export default async function AdminPage() {
           action={
             <Link
               href="/admin/module"
-              className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+              className="ziel rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700"
             >
               Module verwalten
             </Link>

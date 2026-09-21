@@ -38,7 +38,7 @@ export function TicketRow({
                 defaultValue={ticket.status}
                 disabled={pending}
                 onChange={(event) => update({ status: event.target.value })}
-                className="ml-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800"
+                className="ml-2 min-h-ziel rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800"
                 aria-label={`Status von ${ticket.number}`}
               >
                 <option value="offen">Offen</option>
@@ -54,7 +54,7 @@ export function TicketRow({
                 defaultValue=""
                 disabled={pending}
                 onChange={(event) => update({ assigneeId: event.target.value || null })}
-                className="ml-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800"
+                className="ml-2 min-h-ziel rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800"
                 aria-label={`Zuweisung von ${ticket.number}`}
               >
                 <option value="">— niemand —</option>
@@ -71,7 +71,7 @@ export function TicketRow({
         <button
           type="button"
           onClick={() => setOpen((current) => !current)}
-          className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          className="ziel rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
         >
           {open ? "Verlauf schließen" : "Antworten"}
         </button>

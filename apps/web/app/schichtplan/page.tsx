@@ -103,7 +103,7 @@ export default async function SchichtplanPage({ searchParams }: { searchParams: 
         action={
           <a
             href={searchParams.mine === "true" ? "/schichtplan" : "/schichtplan?mine=true"}
-            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="ziel rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
           >
             {searchParams.mine === "true" ? "Alle zeigen" : "Nur meine"}
           </a>

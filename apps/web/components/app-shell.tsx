@@ -83,7 +83,7 @@ export async function AppShell({
             >
               <Bell className="h-5 w-5" />
               {unread > 0 ? (
-                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-xs font-bold text-white">
                   {unread > 9 ? "9+" : unread}
                 </span>
               ) : null}
@@ -99,9 +99,9 @@ export async function AppShell({
                 <button
                   type="submit"
                   aria-label="Abmelden"
-                  className="rounded-lg p-2 text-slate-500 transition hover:bg-white hover:text-rose-600"
+                  className="ziel min-w-ziel rounded-lg text-slate-600 transition hover:bg-white hover:text-rose-600"
                 >
-                  <LogOut className="h-4 w-4" />
+                  <LogOut className="h-5 w-5" />
                 </button>
               </form>
             </div>
@@ -110,7 +110,7 @@ export async function AppShell({
       </header>
 
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
-        <aside className="card h-fit p-3 lg:sticky lg:top-6">
+        <aside className="card h-fit min-w-0 p-3 lg:sticky lg:top-6">
           <SideNav groups={groups} />
         </aside>
         <main className="min-w-0 space-y-6">{children}</main>

@@ -32,7 +32,7 @@ export default async function NewsPage({
           manage ? (
             <Link
               href="/admin/news"
-              className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+              className="ziel rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700"
             >
               Beitrag verfassen
             </Link>

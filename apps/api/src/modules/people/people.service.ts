@@ -10,6 +10,7 @@ import {
 } from "@ah-intranet/shared";
 import type {
   AppRole,
+  Darstellung,
   EmployeeDirectoryEntry,
   PermissionSummary,
   Presence,
@@ -105,7 +106,13 @@ export class PeopleService {
   /** Eigenes Profil pflegen - Kontaktdaten und Anwesenheit, keine Rollen. */
   async updateOwnProfile(
     user: RequestUser,
-    input: { phone?: string | null; mobile?: string | null; presence?: Presence; responsibilities?: string[] },
+    input: {
+      phone?: string | null;
+      mobile?: string | null;
+      presence?: Presence;
+      responsibilities?: string[];
+      darstellung?: Darstellung;
+    },
   ): Promise<EmployeeDirectoryEntry> {
     const updated = await this.prisma.user.update({
       where: { id: user.id },
@@ -114,6 +121,7 @@ export class PeopleService {
         ...(input.mobile !== undefined ? { mobile: input.mobile } : {}),
         ...(input.presence !== undefined ? { presence: PRESENCE_VALUES[input.presence] } : {}),
         ...(input.responsibilities !== undefined ? { responsibilities: input.responsibilities } : {}),
+        ...(input.darstellung !== undefined ? { darstellung: input.darstellung } : {}),
       },
       select: directorySelect,
     });

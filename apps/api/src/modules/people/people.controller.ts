@@ -15,7 +15,8 @@ import {
   ValidateNested,
 } from "class-validator";
 import type { AbsenceType } from "@prisma/client";
-import type { AppRole, Presence } from "@ah-intranet/shared";
+import { DARSTELLUNG_KEYS } from "@ah-intranet/shared";
+import type { AppRole, Darstellung, Presence } from "@ah-intranet/shared";
 import { PeopleService } from "./people.service";
 import { AbsencesService } from "./absences.service";
 import { OnboardingService } from "./onboarding.service";
@@ -30,6 +31,9 @@ class ProfileDto {
   @IsOptional() @IsString() mobile?: string | null;
   @IsOptional() @IsIn(["vor Ort", "mobil", "abwesend"]) presence?: Presence;
   @IsOptional() @IsArray() @IsString({ each: true }) responsibilities?: string[];
+  // Schlüssel aus der Registry, nicht aus einer zweiten Liste hier - sonst
+  // fiele eine neue Voreinstellung in der Prüfung durch, obwohl sie existiert.
+  @IsOptional() @IsIn(DARSTELLUNG_KEYS as readonly string[]) darstellung?: Darstellung;
 }
 
 class UserBodyDto {

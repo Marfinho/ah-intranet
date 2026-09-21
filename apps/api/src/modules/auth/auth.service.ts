@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcryptjs";
+import { istDarstellung } from "@ah-intranet/shared";
 import type { SessionUser } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
 import { currentTenant } from "../../core/tenant-context";
@@ -189,6 +190,7 @@ export class AuthService {
     jobTitle: string;
     mustChangePassword: boolean;
     isPlatformAdmin: boolean;
+    darstellung: string;
     tenant: { slug: string; name: string };
     location: { name: string; code: string } | null;
     department: { name: string; code: string } | null;
@@ -223,6 +225,9 @@ export class AuthService {
       mustChangePassword: user.mustChangePassword,
       tenant: { slug: user.tenant.slug, name: user.tenant.name },
       isPlatformAdmin: user.isPlatformAdmin,
+      // Unbekannter Schlüssel (etwa nach dem Entfernen einer Voreinstellung)
+      // fällt auf den Standard zurück statt die Oberfläche kaputtzumachen.
+      darstellung: istDarstellung(user.darstellung) ? user.darstellung : "standard",
     };
   }
 }

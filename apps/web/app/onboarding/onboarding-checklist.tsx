@@ -32,7 +32,7 @@ export function OnboardingChecklist({ items }: { items: OnboardingAssignment["it
                   }
                 });
               }}
-              className="mt-0.5 h-4 w-4"
+              className="mt-0.5 h-5 w-5"
             />
             <span className="min-w-0">
               <span className={cn("font-medium", item.done ? "text-emerald-900 line-through" : "text-slate-800")}>

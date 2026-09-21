@@ -36,7 +36,7 @@ export function CustodyActions({ item, people }: { item: CustodyItemSummary; peo
           <button
             type="button"
             onClick={() => setOffen((wert) => !wert)}
-            className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+            className="ziel rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700"
           >
             {item.kind === "schluessel" ? "Ausgeben" : "Abholung buchen"}
           </button>
@@ -47,7 +47,7 @@ export function CustodyActions({ item, people }: { item: CustodyItemSummary; peo
             type="button"
             disabled={pending}
             onClick={() => startTransition(async () => melde(await takeBackCustodyAction(item.id)))}
-            className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
+            className="ziel rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
           >
             Zurücknehmen
           </button>
@@ -128,7 +128,7 @@ export function CustodyActions({ item, people }: { item: CustodyItemSummary; peo
                   ),
                 )
               }
-              className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-40"
+              className="ziel rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-40"
             >
               Übergabe festhalten
             </button>

@@ -42,7 +42,7 @@ export function RoleComposer({ permissions, bereiche }: { permissions: Permissio
                       title={permission.description}
                       className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs"
                     >
-                      <input type="checkbox" name="permissions" value={permission.key} className="h-4 w-4" />
+                      <input type="checkbox" name="permissions" value={permission.key} className="h-5 w-5" />
                       {permission.name}
                     </label>
                   ))}

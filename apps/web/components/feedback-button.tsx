@@ -21,7 +21,7 @@ export function FeedbackButton() {
   return (
     <Link
       href={`/tickets?von=${encodeURIComponent(pathname)}`}
-      className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-100"
+      className="ziel gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 text-sm font-semibold text-brand-700 transition hover:bg-brand-100"
     >
       <MessageSquarePlus className="h-4 w-4" />
       <span className="hidden sm:inline">Rückmeldung</span>

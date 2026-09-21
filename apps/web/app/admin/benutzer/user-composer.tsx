@@ -92,7 +92,7 @@ export function UserComposer({
                 name="roles"
                 value={role.key}
                 defaultChecked={role.key === "mitarbeiter"}
-                className="h-4 w-4"
+                className="h-5 w-5"
               />
               {role.name}
             </label>

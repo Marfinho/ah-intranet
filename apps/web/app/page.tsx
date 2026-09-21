@@ -15,7 +15,7 @@ export default async function DashboardPage() {
     <AppShell title="Dashboard" subtitle="Ihre Übersicht über News, Aufgaben, Termine und Services">
       {/* Ruhige Fläche, Akzent nur als Markierung – siehe docs/ci.md. */}
       <section className="rounded-3xl bg-slate-900 p-6 text-white shadow-card">
-        <p className="font-display text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-400">
+        <p className="font-display text-xs font-semibold uppercase tracking-[0.18em] text-brand-400">
           Willkommen zurück
         </p>
         <h2 className="mt-2 text-3xl font-bold">{session.displayName}</h2>
@@ -30,7 +30,7 @@ export default async function DashboardPage() {
                 href={link.url}
                 target="_blank"
                 rel="noreferrer"
-                className="badge bg-white/15 text-white transition hover:bg-white/25"
+                className="badge ziel bg-white/15 px-4 text-white transition hover:bg-white/25"
               >
                 {link.label}
               </a>
