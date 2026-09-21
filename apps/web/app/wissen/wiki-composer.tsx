@@ -1,12 +1,14 @@
 "use client";
 
 import { useFormState } from "react-dom";
+import type { ZielgruppenKatalog } from "@ah-intranet/shared";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
+import { ZielgruppenAuswahl } from "@/components/zielgruppen-auswahl";
 import { createWikiAction, type ActionState } from "@/lib/actions";
 
 const initialState: ActionState = { ok: true };
 
-export function WikiComposer({ categories }: { categories: string[] }) {
+export function WikiComposer({ categories, katalog }: { categories: string[]; katalog: ZielgruppenKatalog }) {
   const [state, formAction] = useFormState(createWikiAction, initialState);
 
   return (
@@ -36,6 +38,12 @@ export function WikiComposer({ categories }: { categories: string[] }) {
 
       <Field label="Inhalt" wide>
         <textarea name="content" rows={8} required minLength={20} className={inputClass} />
+      </Field>
+
+      <Field label="Zielgruppe" wide hint="Von allen Häusern der Gruppe bis hinunter zur Abteilung">
+        <div className="mt-2">
+          <ZielgruppenAuswahl katalog={katalog} />
+        </div>
       </Field>
 
       <div className="md:col-span-2">

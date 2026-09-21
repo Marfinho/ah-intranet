@@ -1,30 +1,14 @@
 "use client";
 
 import { useFormState } from "react-dom";
+import type { ZielgruppenKatalog } from "@ah-intranet/shared";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
+import { ZielgruppenAuswahl } from "@/components/zielgruppen-auswahl";
 import { createNewsAction, type ActionState } from "@/lib/actions";
 
 const initialState: ActionState = { ok: true };
 
-/** Zielgruppen als Tokens: `global` oder `<typ>:<code>`. */
-const AUDIENCES = [
-  { value: "global", label: "Alle Mitarbeitenden" },
-  { value: "location:HB", label: "Standort Bremen" },
-  { value: "location:DEL", label: "Standort Delmenhorst" },
-  { value: "location:ACH", label: "Standort Achim" },
-  { value: "department:SRV", label: "Service & Werkstatt" },
-  { value: "department:VKN", label: "Verkauf Neuwagen" },
-  { value: "department:VKG", label: "Verkauf Gebrauchtwagen" },
-  { value: "department:TDI", label: "Teiledienst" },
-  { value: "department:VWL", label: "Verwaltung" },
-  { value: "department:MKT", label: "Marketing" },
-  { value: "department:IT", label: "IT" },
-  { value: "specialty:EMOB", label: "Elektromobilität" },
-  { value: "specialty:NFZ", label: "Nutzfahrzeuge" },
-  { value: "specialty:KUL", label: "Karosserie & Lack" },
-];
-
-export function NewsComposer() {
+export function NewsComposer({ katalog }: { katalog: ZielgruppenKatalog }) {
   const [state, formAction] = useFormState(createNewsAction, initialState);
 
   return (
@@ -66,23 +50,9 @@ export function NewsComposer() {
         Beitrag oben anpinnen
       </label>
 
-      <Field label="Zielgruppen *" wide hint="Mehrfachauswahl; ohne Auswahl gilt „Alle Mitarbeitenden“">
-        <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {AUDIENCES.map((audience) => (
-            <label
-              key={audience.value}
-              className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm"
-            >
-              <input
-                type="checkbox"
-                name="audienceScopes"
-                value={audience.value}
-                defaultChecked={audience.value === "global"}
-                className="h-5 w-5"
-              />
-              {audience.label}
-            </label>
-          ))}
+      <Field label="Zielgruppe" wide hint="Von allen Häusern der Gruppe bis hinunter zur Abteilung">
+        <div className="mt-2">
+          <ZielgruppenAuswahl katalog={katalog} />
         </div>
       </Field>
 

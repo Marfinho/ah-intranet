@@ -12,13 +12,10 @@ import type { ModuleStage } from "./modules";
 export type AppRole = string;
 
 /**
- * Zielgruppen werden als flache Tokens abgebildet: `global`, `location:<code>`,
- * `department:<code>` oder `specialty:<code>`. Das erlaubt eine einzige
- * Array-Überlappungsabfrage statt mehrerer Joins.
+ * Zielgruppen werden als flache Tokens abgebildet - Aufbau, Kaskade und
+ * Prüfung stehen in `zielgruppen.ts`.
  */
 export type AudienceScope = string;
-
-export const GLOBAL_SCOPE: AudienceScope = "global";
 
 export type OrderStatus =
   "draft" | "submitted" | "approved" | "rejected" | "queued_for_bulk_order" | "ordered" | "completed" | "cancelled";
@@ -176,6 +173,7 @@ export interface WikiArticle {
   author: string;
   updatedAt: string;
   isPublished: boolean;
+  audienceScopes: string[];
 }
 
 /* ---------------------------------------------------------- Bestellungen */
@@ -477,6 +475,7 @@ export interface Poll {
   options: PollOption[];
   totalVotes: number;
   myOptionId?: string | null;
+  audienceScopes: string[];
 }
 
 /* ------------------------------------------------------------- System */

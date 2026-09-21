@@ -72,6 +72,7 @@ class WikiBodyDto {
   @IsString() @MinLength(3) content!: string;
   @IsArray() @IsString({ each: true }) tags!: string[];
   @IsOptional() @IsBoolean() isPublished?: boolean;
+  @IsOptional() @IsArray() @IsString({ each: true }) audienceScopes?: string[];
 }
 
 class WikiPatchDto {
@@ -80,6 +81,7 @@ class WikiPatchDto {
   @IsOptional() @IsString() content?: string;
   @IsOptional() @IsArray() @IsString({ each: true }) tags?: string[];
   @IsOptional() @IsBoolean() isPublished?: boolean;
+  @IsOptional() @IsArray() @IsString({ each: true }) audienceScopes?: string[];
 }
 
 class QuickLinkBodyDto {
@@ -188,8 +190,8 @@ export class WikiController {
   }
 
   @Get(":slug")
-  detail(@Param("slug") slug: string) {
-    return this.documents.wikiDetail(slug);
+  detail(@CurrentUser() user: RequestUser, @Param("slug") slug: string) {
+    return this.documents.wikiDetail(user, slug);
   }
 
   @Post()

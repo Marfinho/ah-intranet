@@ -1,12 +1,21 @@
 "use client";
 
 import { useTransition } from "react";
-import type { Poll } from "@ah-intranet/shared";
+import type { Poll, ZielgruppenKatalog } from "@ah-intranet/shared";
+import { ZielgruppeAnzeige } from "@/components/zielgruppe-anzeige";
 import { closePollAction, votePollAction } from "@/lib/actions";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/utils";
 
-export function PollCard({ poll, canManage }: { poll: Poll; canManage: boolean }) {
+export function PollCard({
+  poll,
+  canManage,
+  katalog,
+}: {
+  poll: Poll;
+  canManage: boolean;
+  katalog: ZielgruppenKatalog;
+}) {
   const [pending, startTransition] = useTransition();
   const closed = !poll.isActive;
 
@@ -16,6 +25,13 @@ export function PollCard({ poll, canManage }: { poll: Poll; canManage: boolean }
         <div>
           <p className="font-semibold text-slate-900">{poll.question}</p>
           {poll.description ? <p className="mt-1 text-sm text-slate-600">{poll.description}</p> : null}
+          {/* Umfragen sind nicht anonym (siehe docs/recht.md). Wer abstimmt,
+              soll vorher sehen, wie klein der Kreis ist. */}
+          <ZielgruppeAnzeige
+            scopes={poll.audienceScopes}
+            katalog={katalog}
+            className="mt-2 inline-flex items-center gap-1 text-xs text-slate-600"
+          />
         </div>
         <div className="flex items-center gap-2">
           <span className="badge bg-slate-100 text-slate-600">{poll.totalVotes} Stimmen</span>

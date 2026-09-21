@@ -90,8 +90,21 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
   an Rollen wird in derselben Transaktion geprüft, ob noch ein **aktives Konto**
   `roles.manage` und `users.manage` trägt. Nein heißt Rückabwicklung. Ein Recht
   in einer leeren Rolle rettet niemanden.
-- **Zielgruppen als flache Scope-Tokens** (`location:HB`, `department:SRV`)
-  mit GIN-Index statt Join-Ketten.
+- **Zielgruppen als flache Scope-Tokens** mit GIN-Index statt Join-Ketten. Die
+  Kaskade geht von `global` über `location:HB` und `department:SRV` bis zum
+  Schnitt `location:HB+department:SRV` – „Service in Bremen" ist eben nicht
+  „Service überall" plus „Bremen komplett". Der Schnitt kostet keine zweite
+  Abfrage: das Konto bringt seine eigenen Kombinationen mit, die Prüfung bleibt
+  ein `hasSome`. Aufbau, Reihenfolge und Prüfung stehen in
+  `packages/shared/src/zielgruppen.ts`, die wählbaren Einträge kommen aus den
+  Stammdaten des Hauses (`core/zielgruppen.service.ts`) – nie aus einer Liste
+  im Oberflächencode.
+- **Eine Autohaus-Gruppe ist ein Mandant, ein Haus ist ein Standort.** Damit
+  teilen die Häuser Benutzerverwaltung, Rollen, Module und Audit-Log, und
+  gruppenweite Inhalte brauchen keinen Bruch in der Mandantentrennung. Häuser,
+  die getrennte Personaldaten brauchen (eigene Gesellschaft, eigener
+  Betriebsrat), gehören in eigene Mandanten – dann gibt es aber auch keine
+  gemeinsamen Aushänge.
 - **Ehrlichkeit über erfundene Funktionalität.** Wo eine Spezifikation fehlt
   (z. B. vertraglich geschützte Herstellerschnittstellen), wird das benannt und
   der Vorgang sauber abgewiesen – keine geratenen Endpunkte.

@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import type { ModuleState, SessionUser } from "@ah-intranet/shared";
+import type { ModuleState, SessionUser, ZielgruppenKatalog } from "@ah-intranet/shared";
 import { ApiError, apiGet } from "./api";
 
 /**
@@ -23,6 +23,18 @@ export const getModules = cache(async (): Promise<ModuleState[]> => {
     return await apiGet<ModuleState[]>("/modules");
   } catch {
     return [];
+  }
+});
+
+/**
+ * Die wählbaren Zielgruppen des Hauses. Leer heißt: nur „Alle Mitarbeitenden" -
+ * die Auswahl verschwindet dann, statt eine erfundene Liste anzubieten.
+ */
+export const getZielgruppen = cache(async (): Promise<ZielgruppenKatalog> => {
+  try {
+    return await apiGet<ZielgruppenKatalog>("/zielgruppen");
+  } catch {
+    return { eintraege: [] };
   }
 });
 

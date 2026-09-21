@@ -3,14 +3,16 @@ import { AppShell } from "@/components/app-shell";
 import { ActionButton } from "@/components/forms";
 import { EmptyState, PriorityBadge, Section, StatusBadge } from "@/components/ui";
 import { NewsComposer } from "./news-composer";
+import { ZielgruppeAnzeige } from "@/components/zielgruppe-anzeige";
 import { apiGet } from "@/lib/api";
-import { can, requirePermission } from "@/lib/session";
+import { can, getZielgruppen, requirePermission } from "@/lib/session";
 import { deleteNewsAction, setNewsStatusAction } from "@/lib/actions";
 import { formatDate } from "@/lib/utils";
 
 export default async function NewsAdminPage() {
   const session = await requirePermission("news.publish");
   const items = await apiGet<NewsItem[]>("/news?status=all");
+  const katalog = await getZielgruppen();
 
   return (
     <AppShell title="News verwalten" subtitle="Beiträge verfassen, veröffentlichen und archivieren">
@@ -18,7 +20,7 @@ export default async function NewsAdminPage() {
         title="Neuen Beitrag verfassen"
         subtitle="Zielgruppe und Priorität steuern Sichtbarkeit und Benachrichtigung"
       >
-        <NewsComposer />
+        <NewsComposer katalog={katalog} />
       </Section>
 
       <Section title={`${items.length} Beiträge`} subtitle="Entwürfe, veröffentlichte und archivierte Beiträge">
@@ -37,10 +39,14 @@ export default async function NewsAdminPage() {
                     </div>
                     <p className="mt-2 font-semibold text-slate-900">{item.title}</p>
                     <p className="mt-1 text-sm text-slate-600">{item.teaser}</p>
-                    <p className="mt-2 text-xs text-slate-500">
-                      {item.author} · {item.publishedAt ? formatDate(item.publishedAt) : "nicht veröffentlicht"} ·{" "}
-                      {item.audienceScopes.join(", ")}
+                    <p className="mt-2 text-xs text-slate-600">
+                      {item.author} · {item.publishedAt ? formatDate(item.publishedAt) : "nicht veröffentlicht"}
                     </p>
+                    <ZielgruppeAnzeige
+                      scopes={item.audienceScopes}
+                      katalog={katalog}
+                      className="mt-1 inline-flex items-center gap-1 text-xs text-slate-600"
+                    />
                   </div>
 
                   <div className="flex shrink-0 flex-wrap gap-2">

@@ -2,11 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { NewsItem } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
-import { PriorityBadge, Section, StatusBadge, Tag } from "@/components/ui";
+import { PriorityBadge, Section, StatusBadge } from "@/components/ui";
 import { CommentForm } from "@/components/comment-form";
 import { MarkReadOnView } from "@/components/mark-read-on-view";
+import { ZielgruppeAnzeige } from "@/components/zielgruppe-anzeige";
 import { ApiError, apiGet } from "@/lib/api";
-import { requireModule } from "@/lib/session";
+import { getZielgruppen, requireModule } from "@/lib/session";
 import { commentNewsAction } from "@/lib/actions";
 import { formatDate, formatDateTime } from "@/lib/utils";
 
@@ -22,6 +23,8 @@ export default async function NewsDetailPage({ params }: { params: { slug: strin
     }
     throw error;
   }
+
+  const katalog = await getZielgruppen();
 
   return (
     <AppShell title={article.title} subtitle={`Beitrag von ${article.author}`}>
@@ -64,10 +67,8 @@ export default async function NewsDetailPage({ params }: { params: { slug: strin
           </div>
         ) : null}
 
-        <div className="mt-6 flex flex-wrap gap-2">
-          {article.audienceScopes.map((scope) => (
-            <Tag key={scope}>{scope === "global" ? "Alle Mitarbeitenden" : scope}</Tag>
-          ))}
+        <div className="mt-6">
+          <ZielgruppeAnzeige scopes={article.audienceScopes} katalog={katalog} />
         </div>
       </Section>
 

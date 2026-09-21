@@ -38,6 +38,7 @@ class PollDto {
   @IsOptional() @IsString() description?: string;
   @IsArray() @ArrayNotEmpty() @IsString({ each: true }) options!: string[];
   @IsOptional() @IsString() closesAt?: string;
+  @IsOptional() @IsArray() @IsString({ each: true }) audienceScopes?: string[];
 }
 
 class VoteDto {

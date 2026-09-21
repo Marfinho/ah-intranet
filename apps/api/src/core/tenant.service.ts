@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleInit } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
-import { PERMISSION_DEFINITIONS, ROLE_DEFINITIONS } from "@ah-intranet/shared";
+import { PERMISSION_DEFINITIONS, ROLE_DEFINITIONS, eigeneZielgruppen } from "@ah-intranet/shared";
 import type { TenantContext } from "./tenant-context";
 
 /**
@@ -269,7 +269,7 @@ export class TenantService implements OnModuleInit {
           jobTitle: "Administration",
           locationId: location.id,
           departmentId: department.id,
-          scopes: ["global", `location:${location.code}`, `department:${department.code}`],
+          scopes: eigeneZielgruppen({ locationCode: location.code, departmentCode: department.code }),
           // Das Startpasswort kennt die Plattformverwaltung - es muss weg,
           // bevor mit dem Konto gearbeitet wird.
           mustChangePassword: true,

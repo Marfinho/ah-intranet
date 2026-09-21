@@ -4,18 +4,19 @@ import { ActionButton } from "@/components/forms";
 import { EmptyState, Section, Tag } from "@/components/ui";
 import { DocumentComposer } from "./document-composer";
 import { apiGet } from "@/lib/api";
-import { can, requirePermission } from "@/lib/session";
+import { can, getZielgruppen, requirePermission } from "@/lib/session";
 import { deleteDocumentAction } from "@/lib/actions";
 import { formatDate } from "@/lib/utils";
 
 export default async function DocumentsAdminPage() {
   const session = await requirePermission("documents.manage");
   const data = await apiGet<{ items: DocumentItem[]; categories: string[] }>("/documents");
+  const katalog = await getZielgruppen();
 
   return (
     <AppShell title="Dokumente verwalten" subtitle="Vorlagen, Formulare und Richtlinien pflegen">
       <Section title="Dokument hinzufügen" subtitle="Verlinkt auf eine Datei im DMS oder eine interne Adresse">
-        <DocumentComposer categories={data.categories} />
+        <DocumentComposer categories={data.categories} katalog={katalog} />
       </Section>
 
       <Section title={`${data.items.length} Dokumente`} subtitle="Inklusive deaktivierter Einträge">

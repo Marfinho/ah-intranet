@@ -4,7 +4,7 @@ import { EmptyState, Section } from "@/components/ui";
 import { PollCard } from "@/components/poll-card";
 import { PollComposer } from "./poll-composer";
 import { apiGet } from "@/lib/api";
-import { requireModule } from "@/lib/session";
+import { getZielgruppen, requireModule } from "@/lib/session";
 
 interface PollsResponse {
   items: Poll[];
@@ -16,12 +16,13 @@ export default async function PollsPage({ searchParams }: { searchParams: { all?
 
   const showAll = searchParams.all === "true";
   const data = await apiGet<PollsResponse>(`/polls${showAll ? "?all=true" : ""}`);
+  const katalog = await getZielgruppen();
 
   return (
     <AppShell title="Umfragen" subtitle="Kurzabstimmungen mit Auswertung in Echtzeit">
       {data.canManage ? (
         <Section title="Neue Umfrage" subtitle="Eine Stimme pro Person, Änderung jederzeit möglich">
-          <PollComposer />
+          <PollComposer katalog={katalog} />
         </Section>
       ) : null}
 
@@ -34,7 +35,7 @@ export default async function PollsPage({ searchParams }: { searchParams: { all?
         ) : (
           <div className="space-y-4">
             {data.items.map((poll) => (
-              <PollCard key={poll.id} poll={poll} canManage={data.canManage} />
+              <PollCard key={poll.id} poll={poll} canManage={data.canManage} katalog={katalog} />
             ))}
           </div>
         )}

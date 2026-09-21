@@ -1,6 +1,6 @@
 import { PrismaClient, type Prisma } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
-import { MODULE_DEFINITIONS, PERMISSION_DEFINITIONS, ROLE_DEFINITIONS } from "@ah-intranet/shared";
+import { MODULE_DEFINITIONS, PERMISSION_DEFINITIONS, ROLE_DEFINITIONS, eigeneZielgruppen } from "@ah-intranet/shared";
 import { applyTenantScope, isGlobalModel } from "../src/core/tenant-isolation";
 
 /** Ungefilterter Client für Aufräumen und Mandantenanlage. */
@@ -335,12 +335,11 @@ async function seedTenant(tenantId: string, platformAdmin: boolean) {
         locationId: location.id,
         departmentId: department.id,
         specialtyAreaId: specialty?.id ?? null,
-        scopes: [
-          "global",
-          `location:${location.code}`,
-          `department:${department.code}`,
-          ...(specialty ? [`specialty:${specialty.code}`] : []),
-        ],
+        scopes: eigeneZielgruppen({
+          locationCode: location.code,
+          departmentCode: department.code,
+          specialtyCode: specialty?.code,
+        }),
         roles: { create: seedUser.roles.map((key) => ({ roleId: roleByKey.get(key)!.id })) },
       },
     });
@@ -390,7 +389,8 @@ async function seedTenant(tenantId: string, platformAdmin: boolean) {
       status: "published",
       pinned: true,
       publishedAt: days(-2),
-      audienceScopes: ["department:SRV", "specialty:EMOB"],
+      // Der Schnitt: die Werkstatt am Hauptbetrieb, nicht der Service überall.
+      audienceScopes: ["location:HB+department:SRV", "specialty:EMOB"],
       author: { connect: { id: jana.id } },
     },
     {

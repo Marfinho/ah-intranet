@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import type { DocumentFileType, DocumentItem, WikiArticle } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
+import { ZielgruppenService } from "../../core/zielgruppen.service";
 import { AuditService } from "../../core/audit.service";
 import { audienceFilter, displayName } from "../../core/mappers";
 import { can, type RequestUser } from "../../core/request-user";
@@ -22,6 +23,7 @@ export interface WikiInput {
   content: string;
   tags: string[];
   isPublished?: boolean;
+  audienceScopes?: string[];
 }
 
 @Injectable()
@@ -29,6 +31,7 @@ export class DocumentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly zielgruppen: ZielgruppenService,
   ) {}
 
   async list(user: RequestUser, filter: { search?: string; category?: string } = {}) {
@@ -73,7 +76,7 @@ export class DocumentsService {
         description: input.description ?? null,
         fileType: input.fileType,
         url: input.url,
-        audienceScopes: input.audienceScopes.length ? input.audienceScopes : ["global"],
+        audienceScopes: await this.zielgruppen.pruefe(input.audienceScopes),
         isActive: input.isActive ?? true,
         ownerId: user.id,
       },
@@ -101,7 +104,9 @@ export class DocumentsService {
         ...(input.description !== undefined ? { description: input.description } : {}),
         ...(input.fileType !== undefined ? { fileType: input.fileType } : {}),
         ...(input.url !== undefined ? { url: input.url } : {}),
-        ...(input.audienceScopes !== undefined ? { audienceScopes: input.audienceScopes } : {}),
+        ...(input.audienceScopes !== undefined
+          ? { audienceScopes: await this.zielgruppen.pruefe(input.audienceScopes) }
+          : {}),
         ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
       },
       include: { owner: { select: { firstName: true, lastName: true } } },
@@ -134,7 +139,9 @@ export class DocumentsService {
 
   async listWiki(user: RequestUser, filter: { search?: string; category?: string } = {}) {
     const where: Prisma.WikiArticleWhereInput = {
-      ...(can(user, "wiki.manage") ? {} : { isPublished: true }),
+      // Wer das Wissen pflegt, sieht alles - sonst wären fremde Zielgruppen
+      // beim Bearbeiten unsichtbar und würden beim Speichern überschrieben.
+      ...(can(user, "wiki.manage") ? {} : { isPublished: true, ...audienceFilter(user) }),
       ...(filter.category && filter.category !== "all" ? { category: filter.category } : {}),
       ...(filter.search
         ? {
@@ -167,9 +174,14 @@ export class DocumentsService {
     };
   }
 
-  async wikiDetail(slug: string): Promise<WikiArticle> {
+  async wikiDetail(user: RequestUser, slug: string): Promise<WikiArticle> {
     const article = await this.prisma.wikiArticle.findFirst({
-      where: { slug },
+      where: {
+        slug,
+        // Ohne diese Bedingung wäre die Zielgruppe nur eine Sortierhilfe: der
+        // Slug steht in jeder Suchtreffer-Liste und wäre der Weg daran vorbei.
+        ...(can(user, "wiki.manage") ? {} : { isPublished: true, ...audienceFilter(user) }),
+      },
       include: { author: { select: { firstName: true, lastName: true } } },
     });
     if (!article) {
@@ -187,6 +199,7 @@ export class DocumentsService {
         content: input.content,
         tags: input.tags.map((tag) => tag.toLowerCase()),
         isPublished: input.isPublished ?? true,
+        audienceScopes: await this.zielgruppen.pruefe(input.audienceScopes),
         authorId: user.id,
       },
       include: { author: { select: { firstName: true, lastName: true } } },
@@ -212,6 +225,9 @@ export class DocumentsService {
         ...(input.content !== undefined ? { content: input.content } : {}),
         ...(input.tags !== undefined ? { tags: input.tags.map((tag) => tag.toLowerCase()) } : {}),
         ...(input.isPublished !== undefined ? { isPublished: input.isPublished } : {}),
+        ...(input.audienceScopes !== undefined
+          ? { audienceScopes: await this.zielgruppen.pruefe(input.audienceScopes) }
+          : {}),
       },
       include: { author: { select: { firstName: true, lastName: true } } },
     });
@@ -303,6 +319,7 @@ export class DocumentsService {
       author: displayName(article.author),
       updatedAt: article.updatedAt.toISOString(),
       isPublished: article.isPublished,
+      audienceScopes: article.audienceScopes,
     };
   }
 }

@@ -4,8 +4,9 @@ import { FilterBar } from "@/components/filter-bar";
 import { ActionButton } from "@/components/forms";
 import { EmptyState, Section } from "@/components/ui";
 import { EventComposer } from "./event-composer";
+import { ZielgruppeAnzeige } from "@/components/zielgruppe-anzeige";
 import { apiGet } from "@/lib/api";
-import { can, requireModule } from "@/lib/session";
+import { can, getZielgruppen, requireModule } from "@/lib/session";
 import { deleteEventAction } from "@/lib/actions";
 import { formatRange } from "@/lib/utils";
 
@@ -24,6 +25,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: { c
   if (searchParams.category) query.set("category", searchParams.category);
 
   const events = await apiGet<CalendarEvent[]>(`/calendar?${query.toString()}`);
+  const katalog = await getZielgruppen();
   const canCreate = can(session, "calendar.manage");
 
   // Nach Monat gruppieren, damit lange Listen lesbar bleiben.
@@ -37,7 +39,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: { c
     <AppShell title="Kalender" subtitle="Schulungen, Aktionen, Wartungsfenster und interne Termine">
       {canCreate ? (
         <Section title="Termin anlegen" subtitle="Sichtbarkeit über Zielgruppen steuern">
-          <EventComposer />
+          <EventComposer katalog={katalog} />
         </Section>
       ) : null}
 
@@ -83,9 +85,14 @@ export default async function CalendarPage({ searchParams }: { searchParams: { c
                             {event.description ? (
                               <p className="mt-1 text-sm text-slate-600">{event.description}</p>
                             ) : null}
-                            <p className="mt-2 text-xs text-slate-500">
+                            <p className="mt-2 text-xs text-slate-600">
                               {event.location ?? "ohne Ort"} · {event.organizer}
                             </p>
+                            <ZielgruppeAnzeige
+                              scopes={event.audienceScopes}
+                              katalog={katalog}
+                              className="mt-1 inline-flex items-center gap-1 text-xs text-slate-600"
+                            />
                           </div>
 
                           {canCreate ? (

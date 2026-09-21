@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { GLOBAL_SCOPE } from "@ah-intranet/shared";
 import { ApiError, SESSION_COOKIE, apiBaseUrl, apiSend } from "./api";
 
 export interface ActionState {
@@ -18,6 +19,15 @@ export interface ActionState {
  * Diese Datei ist ein "use server"-Modul und darf deshalb ausschließlich
  * async-Funktionen exportieren - Konstanten oder Objekte brechen den Build.
  */
+/**
+ * Die gewählten Zielgruppen eines Formulars. Ohne Auswahl gilt die ganze
+ * Gruppe - dieselbe Regel prüft die API noch einmal, hier ist sie Bequemlichkeit.
+ */
+function zielgruppen(formData: FormData): string[] {
+  const gewaehlt = formData.getAll("audienceScopes").map(String).filter(Boolean);
+  return gewaehlt.length ? gewaehlt : [GLOBAL_SCOPE];
+}
+
 async function run(operation: () => Promise<unknown>, paths: string[], detail?: string): Promise<ActionState> {
   try {
     await operation();
@@ -229,13 +239,9 @@ export async function createNewsAction(_previous: ActionState, formData: FormDat
     priority: String(formData.get("priority") ?? "normal"),
     status: String(formData.get("status") ?? "draft"),
     pinned: formData.get("pinned") === "on",
-    audienceScopes: formData.getAll("audienceScopes").map(String).filter(Boolean),
+    audienceScopes: zielgruppen(formData),
     expiresAt: String(formData.get("expiresAt") ?? "") || null,
   };
-
-  if (payload.audienceScopes.length === 0) {
-    payload.audienceScopes = ["global"];
-  }
 
   return run(() => apiSend("POST", "/news", payload), ["/aktuelles", "/admin/news", "/"], "Beitrag gespeichert.");
 }
@@ -401,11 +407,8 @@ export async function createEventAction(_previous: ActionState, formData: FormDa
     endsAt: new Date(String(formData.get("endsAt") ?? "")).toISOString(),
     location: String(formData.get("location") ?? "") || undefined,
     description: String(formData.get("description") ?? "") || undefined,
-    audienceScopes: formData.getAll("audienceScopes").map(String).filter(Boolean),
+    audienceScopes: zielgruppen(formData),
   };
-  if (payload.audienceScopes.length === 0) {
-    payload.audienceScopes = ["global"];
-  }
   return run(() => apiSend("POST", "/calendar", payload), ["/kalender", "/"], "Termin angelegt.");
 }
 
@@ -467,6 +470,7 @@ export async function createPollAction(_previous: ActionState, formData: FormDat
     closesAt: String(formData.get("closesAt") ?? "")
       ? new Date(String(formData.get("closesAt"))).toISOString()
       : undefined,
+    audienceScopes: zielgruppen(formData),
   };
   return run(() => apiSend("POST", "/polls", payload), ["/umfragen", "/"], "Umfrage gestartet.");
 }
@@ -672,11 +676,8 @@ export async function createDocumentAction(_previous: ActionState, formData: For
     description: String(formData.get("description") ?? "") || undefined,
     fileType: String(formData.get("fileType") ?? "pdf"),
     url: String(formData.get("url") ?? ""),
-    audienceScopes: formData.getAll("audienceScopes").map(String).filter(Boolean),
+    audienceScopes: zielgruppen(formData),
   };
-  if (payload.audienceScopes.length === 0) {
-    payload.audienceScopes = ["global"];
-  }
   return run(() => apiSend("POST", "/documents", payload), ["/dokumente", "/admin/dokumente"], "Dokument gespeichert.");
 }
 
@@ -693,6 +694,7 @@ export async function createWikiAction(_previous: ActionState, formData: FormDat
       .split(",")
       .map((tag) => tag.trim())
       .filter(Boolean),
+    audienceScopes: zielgruppen(formData),
   };
   return run(() => apiSend("POST", "/wiki", payload), ["/wissen"], "Artikel gespeichert.");
 }

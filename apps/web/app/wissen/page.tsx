@@ -4,8 +4,9 @@ import { AppShell } from "@/components/app-shell";
 import { FilterBar } from "@/components/filter-bar";
 import { EmptyState, Section, Tag } from "@/components/ui";
 import { WikiComposer } from "./wiki-composer";
+import { ZielgruppeAnzeige } from "@/components/zielgruppe-anzeige";
 import { apiGet } from "@/lib/api";
-import { can, requireModule } from "@/lib/session";
+import { can, getZielgruppen, requireModule } from "@/lib/session";
 import { formatDate } from "@/lib/utils";
 
 interface WikiResponse {
@@ -21,6 +22,7 @@ export default async function WikiPage({ searchParams }: { searchParams: { searc
   if (searchParams.category) query.set("category", searchParams.category);
 
   const data = await apiGet<WikiResponse>(`/wiki?${query.toString()}`);
+  const katalog = await getZielgruppen();
 
   return (
     <AppShell title="Wissensdatenbank" subtitle="Anleitungen, Prozessbeschreibungen und interne Standards">
@@ -53,6 +55,7 @@ export default async function WikiPage({ searchParams }: { searchParams: { searc
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="badge bg-brand-50 text-brand-700">{article.category}</span>
                       {!article.isPublished ? <span className="badge bg-slate-200 text-slate-700">Entwurf</span> : null}
+                      <ZielgruppeAnzeige scopes={article.audienceScopes} katalog={katalog} />
                     </div>
                     <p className="mt-3 font-semibold text-slate-900">{article.title}</p>
                     <p className="mt-1 text-sm text-slate-600">{article.excerpt} …</p>
@@ -74,7 +77,7 @@ export default async function WikiPage({ searchParams }: { searchParams: { searc
 
       {can(session, "wiki.manage") ? (
         <Section title="Neuen Artikel anlegen" subtitle="Wissen dokumentieren und für alle auffindbar machen">
-          <WikiComposer categories={data.categories} />
+          <WikiComposer categories={data.categories} katalog={katalog} />
         </Section>
       ) : null}
     </AppShell>

@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/commo
 import { Prisma } from "@prisma/client";
 import type { NewsItem, NewsPriority, NewsStatus } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
+import { ZielgruppenService } from "../../core/zielgruppen.service";
 import { requireTenantId } from "../../core/tenant-context";
 import { AuditService } from "../../core/audit.service";
 import { NotificationsService } from "../../core/notifications.service";
@@ -39,6 +40,7 @@ export class NewsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly notifications: NotificationsService,
+    private readonly zielgruppen: ZielgruppenService,
   ) {}
 
   /**
@@ -162,7 +164,7 @@ export class NewsService {
         priority: input.priority,
         status: input.status,
         pinned: input.pinned ?? false,
-        audienceScopes: input.audienceScopes.length ? input.audienceScopes : ["global"],
+        audienceScopes: await this.zielgruppen.pruefe(input.audienceScopes),
         publishedAt: publish ? new Date() : null,
         expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
         authorId: user.id,
@@ -202,7 +204,9 @@ export class NewsService {
         ...(input.priority !== undefined ? { priority: input.priority } : {}),
         ...(input.status !== undefined ? { status: input.status } : {}),
         ...(input.pinned !== undefined ? { pinned: input.pinned } : {}),
-        ...(input.audienceScopes !== undefined ? { audienceScopes: input.audienceScopes } : {}),
+        ...(input.audienceScopes !== undefined
+          ? { audienceScopes: await this.zielgruppen.pruefe(input.audienceScopes) }
+          : {}),
         ...(input.expiresAt !== undefined ? { expiresAt: input.expiresAt ? new Date(input.expiresAt) : null } : {}),
         ...(goesLive ? { publishedAt: new Date() } : {}),
       },

@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import type { QuickLink } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
+import { ZielgruppenService } from "../../core/zielgruppen.service";
 import { AuditService } from "../../core/audit.service";
 import { audienceFilter } from "../../core/mappers";
 import { can, type RequestUser } from "../../core/request-user";
@@ -20,6 +21,7 @@ export class QuickLinksService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly zielgruppen: ZielgruppenService,
   ) {}
 
   async list(user: RequestUser, includeInactive = false): Promise<QuickLink[]> {
@@ -49,7 +51,7 @@ export class QuickLinksService {
         icon: input.icon ?? "Link2",
         sortOrder: input.sortOrder ?? 0,
         isActive: input.isActive ?? true,
-        audienceScopes: input.audienceScopes?.length ? input.audienceScopes : ["global"],
+        audienceScopes: await this.zielgruppen.pruefe(input.audienceScopes),
       },
     });
 

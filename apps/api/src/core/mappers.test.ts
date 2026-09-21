@@ -57,13 +57,19 @@ describe("buildScopes", () => {
     expect(buildScopes({})).toEqual(["global"]);
   });
 
-  it("bildet Standort, Abteilung und Fachbereich als Tokens ab", () => {
-    expect(buildScopes({ locationCode: "HB", departmentCode: "SRV", specialtyCode: "EMOB" })).toEqual([
-      "global",
-      "location:HB",
-      "department:SRV",
-      "specialty:EMOB",
-    ]);
+  it("bildet jede Stufe und jeden Schnitt daraus ab", () => {
+    // Der Schnitt ist der Grund: "Service in Bremen" muss adressierbar sein,
+    // ohne dass die Abfrage dafür mehr als ein hasSome braucht.
+    expect(buildScopes({ locationCode: "HB", departmentCode: "SRV", specialtyCode: "EMOB" })).toEqual(
+      expect.arrayContaining([
+        "global",
+        "location:HB",
+        "department:SRV",
+        "specialty:EMOB",
+        "location:HB+department:SRV",
+        "location:HB+department:SRV+specialty:EMOB",
+      ]),
+    );
   });
 
   it("überspringt leere Angaben, statt leere Tokens zu erzeugen", () => {

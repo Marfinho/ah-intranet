@@ -182,6 +182,13 @@ zweimal abstimmt – es bedeutet aber:
   Freiwilligkeit im Arbeitsverhältnis nach § 26 Abs. 2 BDSG erst belegt werden
   muss.
 - **Mitbestimmung:** § 87 Abs. 1 Nr. 1 und Nr. 6.
+- **Kleine Zielgruppen verschärfen das.** Eine Umfrage lässt sich bis auf eine
+  Abteilung an einem Standort eingrenzen. Bei drei Beschäftigten im Zuschnitt
+  ist die Auswertung faktisch eine Namensliste – auch ohne Blick in die
+  Datenbank. Wer so zuschneidet, sollte die Frage danach aussuchen: eine
+  Terminabstimmung ist unproblematisch, eine Frage zur Zufriedenheit mit der
+  Leitung ist es nicht. Die Oberfläche nennt die Zielgruppe deshalb im Klartext
+  an jeder Umfrage, für die Abstimmenden sichtbar.
 - **Empfehlung:** Nehmen Sie in die Betriebsvereinbarung auf, welche Fragen
   zulässig sind, und weisen Sie in der Umfrage sichtbar darauf hin, dass die
   Stimme nicht anonym ist.

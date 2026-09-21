@@ -1,9 +1,10 @@
 import type { DocumentItem } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
 import { FilterBar } from "@/components/filter-bar";
-import { EmptyState, Section, Tag } from "@/components/ui";
+import { EmptyState, Section } from "@/components/ui";
+import { ZielgruppeAnzeige } from "@/components/zielgruppe-anzeige";
 import { apiGet } from "@/lib/api";
-import { requireModule } from "@/lib/session";
+import { getZielgruppen, requireModule } from "@/lib/session";
 import { formatDate } from "@/lib/utils";
 
 interface DocumentsResponse {
@@ -25,6 +26,7 @@ export default async function DocumentsPage({
   if (searchParams.category) query.set("category", searchParams.category);
 
   const data = await apiGet<DocumentsResponse>(`/documents?${query.toString()}`);
+  const katalog = await getZielgruppen();
 
   return (
     <AppShell title="Dokumente & Vorlagen" subtitle="Freigegebene Unterlagen, Formulare und Richtlinien">
@@ -61,10 +63,8 @@ export default async function DocumentsPage({
                     {document.category} · {document.owner} · aktualisiert {formatDate(document.updatedAt)}
                   </p>
 
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    {document.audienceScopes.map((scope) => (
-                      <Tag key={scope}>{scope === "global" ? "Alle" : scope}</Tag>
-                    ))}
+                  <div className="mt-3">
+                    <ZielgruppeAnzeige scopes={document.audienceScopes} katalog={katalog} />
                   </div>
 
                   <a

@@ -833,24 +833,27 @@ model Document {
 }
 
 model WikiArticle {
-  id          String   @id @default(cuid())
-  tenantId    String   @default("")
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  slug        String
-  title       String
-  category    String
-  content     String
-  tags        String[] @default([])
-  isPublished Boolean  @default(true)
-  authorId    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(cuid())
+  tenantId       String   @default("")
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  slug           String
+  title          String
+  category       String
+  content        String
+  tags           String[] @default([])
+  isPublished    Boolean  @default(true)
+  /// Zielgruppen-Tokens, siehe packages/shared/src/zielgruppen.ts.
+  audienceScopes String[] @default(["global"])
+  authorId       String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   author User @relation("WikiAuthor", fields: [authorId], references: [id])
 
   @@unique([tenantId, slug])
   @@index([category])
   @@index([tags], type: Gin)
+  @@index([audienceScopes], type: Gin)
   @@index([tenantId])
 }
 
@@ -1093,21 +1096,24 @@ model IdeaVote {
 }
 
 model Poll {
-  id          String    @id @default(cuid())
-  tenantId    String    @default("")
-  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  question    String
-  description String?
-  closesAt    DateTime?
-  isActive    Boolean   @default(true)
-  authorId    String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  tenantId       String    @default("")
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  question       String
+  description    String?
+  closesAt       DateTime?
+  isActive       Boolean   @default(true)
+  /// Zielgruppen-Tokens, siehe packages/shared/src/zielgruppen.ts.
+  audienceScopes String[]  @default(["global"])
+  authorId       String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   author  User         @relation("PollAuthor", fields: [authorId], references: [id])
   options PollOption[]
   votes   PollVote[]
 
+  @@index([audienceScopes], type: Gin)
   @@index([tenantId])
 }
 

@@ -1,5 +1,5 @@
 import type { AppRole, Presence } from "@ah-intranet/shared";
-import { GLOBAL_SCOPE } from "@ah-intranet/shared";
+import { GLOBAL_SCOPE, eigeneZielgruppen } from "@ah-intranet/shared";
 import type { RequestUser } from "./request-user";
 
 /** Minimale Benutzerfelder, die für Anzeigezwecke überall selektiert werden. */
@@ -32,19 +32,16 @@ export const PRESENCE_VALUES: Record<Presence, "vor_ort" | "mobil" | "abwesend">
 };
 
 /**
- * Baut die Zielgruppen-Tokens eines Benutzers. `global` ist immer dabei, damit
- * Sichtbarkeitsprüfungen mit einer einzigen `hasSome`-Abfrage auskommen.
+ * Die Zielgruppen-Tokens eines Kontos. Aufbau und Kaskade stehen in
+ * `@ah-intranet/shared`; hier bleibt nur der Aufruf, damit Sitzung,
+ * Benutzerpflege und Mandantenanlage dieselbe Wahrheit benutzen.
  */
 export function buildScopes(input: {
   locationCode?: string | null;
   departmentCode?: string | null;
   specialtyCode?: string | null;
 }): string[] {
-  const scopes = [GLOBAL_SCOPE];
-  if (input.locationCode) scopes.push(`location:${input.locationCode}`);
-  if (input.departmentCode) scopes.push(`department:${input.departmentCode}`);
-  if (input.specialtyCode) scopes.push(`specialty:${input.specialtyCode}`);
-  return scopes;
+  return eigeneZielgruppen(input);
 }
 
 /** Prisma-Filterfragment für zielgruppengesteuerte Inhalte. */

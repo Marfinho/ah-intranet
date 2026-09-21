@@ -1,12 +1,14 @@
 "use client";
 
 import { useFormState } from "react-dom";
+import type { ZielgruppenKatalog } from "@ah-intranet/shared";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
+import { ZielgruppenAuswahl } from "@/components/zielgruppen-auswahl";
 import { createPollAction, type ActionState } from "@/lib/actions";
 
 const initialState: ActionState = { ok: true };
 
-export function PollComposer() {
+export function PollComposer({ katalog }: { katalog: ZielgruppenKatalog }) {
   const [state, formAction] = useFormState(createPollAction, initialState);
 
   return (
@@ -37,6 +39,12 @@ export function PollComposer() {
 
       <Field label="Läuft bis">
         <input name="closesAt" type="date" className={inputClass} />
+      </Field>
+
+      <Field label="Zielgruppe" wide hint="Vorsicht bei kleinen Zielgruppen - Umfragen sind nicht anonym">
+        <div className="mt-2">
+          <ZielgruppenAuswahl katalog={katalog} />
+        </div>
       </Field>
 
       <div className="md:col-span-2">

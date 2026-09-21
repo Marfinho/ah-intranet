@@ -2,10 +2,11 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { Prisma, type IdeaStatus, type Priority, type TicketCategory, type TicketStatus } from "@prisma/client";
 import type { Idea, Poll, TicketSummary } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
+import { ZielgruppenService } from "../../core/zielgruppen.service";
 import { requireTenantId } from "../../core/tenant-context";
 import { AuditService } from "../../core/audit.service";
 import { NotificationsService } from "../../core/notifications.service";
-import { buildNumber, displayName } from "../../core/mappers";
+import { audienceFilter, buildNumber, displayName } from "../../core/mappers";
 import { can, type RequestUser } from "../../core/request-user";
 
 const ticketInclude = {
@@ -34,6 +35,7 @@ export class ServiceDeskService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly notifications: NotificationsService,
+    private readonly zielgruppen: ZielgruppenService,
   ) {}
 
   /* ---------------------------------------------------------- Tickets */
@@ -301,7 +303,10 @@ export class ServiceDeskService {
 
   async polls(user: RequestUser, includeClosed = false) {
     const polls = await this.prisma.poll.findMany({
-      where: includeClosed ? {} : { isActive: true, OR: [{ closesAt: null }, { closesAt: { gte: new Date() } }] },
+      where: {
+        ...(includeClosed ? {} : { isActive: true, OR: [{ closesAt: null }, { closesAt: { gte: new Date() } }] }),
+        ...(can(user, "tickets.manage") ? {} : audienceFilter(user)),
+      },
       include: { ...pollInclude, votes: { where: { userId: user.id }, select: { optionId: true } } },
       orderBy: { createdAt: "desc" },
     });
@@ -314,7 +319,7 @@ export class ServiceDeskService {
 
   async createPoll(
     user: RequestUser,
-    input: { question: string; description?: string; options: string[]; closesAt?: string },
+    input: { question: string; description?: string; options: string[]; closesAt?: string; audienceScopes?: string[] },
   ): Promise<Poll> {
     const options = input.options.map((option) => option.trim()).filter(Boolean);
     if (options.length < 2) {
@@ -326,6 +331,7 @@ export class ServiceDeskService {
         question: input.question,
         description: input.description ?? null,
         closesAt: input.closesAt ? new Date(input.closesAt) : null,
+        audienceScopes: await this.zielgruppen.pruefe(input.audienceScopes),
         authorId: user.id,
         options: { create: options.map((label, index) => ({ label, sortOrder: index })) },
       },
@@ -345,8 +351,11 @@ export class ServiceDeskService {
 
   /** Eine Stimme pro Person; erneutes Abstimmen ändert die Auswahl. */
   async vote(user: RequestUser, pollId: string, optionId: string): Promise<Poll> {
-    const poll = await this.prisma.poll.findUnique({
-      where: { id: pollId },
+    const poll = await this.prisma.poll.findFirst({
+      // Die Zielgruppe gilt auch beim Abstimmen: sonst wäre sie eine
+      // Anzeigeregel, an der eine bekannte Kennung vorbeiführt - und die
+      // Auswertung einer Abteilungsumfrage enthielte fremde Stimmen.
+      where: { id: pollId, ...audienceFilter(user) },
       include: { options: { select: { id: true } } },
     });
     if (!poll) {
@@ -453,6 +462,7 @@ export class ServiceDeskService {
       })),
       totalVotes: poll._count.votes,
       myOptionId,
+      audienceScopes: poll.audienceScopes,
     };
   }
 }

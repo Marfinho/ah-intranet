@@ -4,12 +4,13 @@ import { AppShell } from "@/components/app-shell";
 import { DataGrid, EmptyState, MetricCard, PriorityBadge, Section, StatusBadge } from "@/components/ui";
 import { PollCard } from "@/components/poll-card";
 import { apiGet } from "@/lib/api";
-import { requireSession } from "@/lib/session";
+import { getZielgruppen, requireSession } from "@/lib/session";
 import { formatDate, formatDateTime } from "@/lib/utils";
 
 export default async function DashboardPage() {
   const session = await requireSession();
   const data = await apiGet<DashboardPayload>("/dashboard");
+  const katalog = await getZielgruppen();
 
   return (
     <AppShell title="Dashboard" subtitle="Ihre Übersicht über News, Aufgaben, Termine und Services">
@@ -215,7 +216,7 @@ export default async function DashboardPage() {
         <Section title="Aktuelle Umfrage" subtitle="Ihre Stimme zählt">
           <div className="space-y-4">
             {data.polls.map((poll) => (
-              <PollCard key={poll.id} poll={poll} canManage={false} />
+              <PollCard key={poll.id} poll={poll} canManage={false} katalog={katalog} />
             ))}
           </div>
         </Section>

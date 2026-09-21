@@ -1,13 +1,15 @@
 "use client";
 
 import { useFormState } from "react-dom";
+import type { ZielgruppenKatalog } from "@ah-intranet/shared";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
+import { ZielgruppenAuswahl } from "@/components/zielgruppen-auswahl";
 import { createEventAction, type ActionState } from "@/lib/actions";
 import { toLocalInput } from "@/lib/utils";
 
 const initialState: ActionState = { ok: true };
 
-export function EventComposer() {
+export function EventComposer({ katalog }: { katalog: ZielgruppenKatalog }) {
   const [state, formAction] = useFormState(createEventAction, initialState);
 
   const start = new Date();
@@ -52,8 +54,10 @@ export function EventComposer() {
         <textarea name="description" rows={2} className={inputClass} />
       </Field>
 
-      <Field label="Zielgruppe" wide hint="Leer lassen für alle Mitarbeitenden">
-        <input name="audienceScopes" className={inputClass} placeholder="z. B. department:SRV" />
+      <Field label="Zielgruppe" wide hint="Von allen Häusern der Gruppe bis hinunter zur Abteilung">
+        <div className="mt-2">
+          <ZielgruppenAuswahl katalog={katalog} />
+        </div>
       </Field>
 
       <div className="md:col-span-2">
