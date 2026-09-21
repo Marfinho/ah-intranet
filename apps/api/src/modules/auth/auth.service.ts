@@ -10,7 +10,7 @@ import type { JwtPayload } from "../../core/guards";
 import type { RequestUser } from "../../core/request-user";
 
 const userWithContext = {
-  tenant: { select: { slug: true, name: true } },
+  tenant: { select: { slug: true, name: true, logoUrl: true } },
   location: { select: { name: true, code: true } },
   department: { select: { name: true, code: true } },
   specialtyArea: { select: { name: true, code: true } },
@@ -189,7 +189,7 @@ export class AuthService {
     jobTitle: string;
     mustChangePassword: boolean;
     isPlatformAdmin: boolean;
-    tenant: { slug: string; name: string };
+    tenant: { slug: string; name: string; logoUrl: string | null };
     location: { name: string; code: string } | null;
     department: { name: string; code: string } | null;
     specialtyArea: { name: string; code: string } | null;
@@ -221,7 +221,7 @@ export class AuthService {
       }),
       permissions,
       mustChangePassword: user.mustChangePassword,
-      tenant: { slug: user.tenant.slug, name: user.tenant.name },
+      tenant: { slug: user.tenant.slug, name: user.tenant.name, logoUrl: user.tenant.logoUrl },
       isPlatformAdmin: user.isPlatformAdmin,
     };
   }

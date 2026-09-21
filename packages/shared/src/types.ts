@@ -78,6 +78,8 @@ export interface SessionUser {
 export interface TenantRef {
   slug: string;
   name: string;
+  /** Data-URL. Ersetzt in der Kopfzeile die Wortmarke "AHOI", wenn gesetzt. */
+  logoUrl: string | null;
 }
 
 /** Vollbild eines Mandanten für die Plattformverwaltung. */
@@ -89,6 +91,9 @@ export interface TenantSummary extends TenantRef {
   userCount: number;
   createdAt: string;
 }
+
+/** Obergrenze für ein hochgeladenes Mandanten-Logo (Data-URL, roh als Zeichen). */
+export const TENANT_LOGO_MAX_LENGTH = 280_000;
 
 export interface LoginResponse {
   user: SessionUser;

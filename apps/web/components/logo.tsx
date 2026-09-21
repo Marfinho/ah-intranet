@@ -19,7 +19,32 @@ export function Signet({ className = "h-7 w-7" }: { className?: string }) {
   );
 }
 
-export function Logo({ className = "", signetClass = "h-7 w-7" }: { className?: string; signetClass?: string }) {
+/**
+ * Ist für das Haus ein Logo hinterlegt, tritt es an die Stelle der Wortmarke -
+ * deutlich größer als das Signet, sonst wäre es auf den ersten Blick nicht als
+ * Logo zu erkennen. Ohne Logo bleibt es bei "AHOI".
+ */
+export function Logo({
+  className = "",
+  signetClass = "h-7 w-7",
+  logoUrl,
+  hausName,
+}: {
+  className?: string;
+  signetClass?: string;
+  logoUrl?: string | null;
+  hausName?: string;
+}) {
+  if (logoUrl) {
+    return (
+      <img
+        src={logoUrl}
+        alt={hausName ? `Logo ${hausName}` : "Logo"}
+        className={`h-10 w-auto max-w-[220px] object-contain ${className}`}
+      />
+    );
+  }
+
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <Signet className={signetClass} />

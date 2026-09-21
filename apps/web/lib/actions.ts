@@ -219,6 +219,11 @@ export async function setTenantActiveAction(id: string, isActive: boolean): Prom
   return run(() => apiSend("PATCH", `/tenants/${id}/aktiv`, { isActive }), ["/admin/mandanten"]);
 }
 
+/** `logoUrl: null` nimmt ein hinterlegtes Logo zurück. */
+export async function setTenantLogoAction(id: string, logoUrl: string | null): Promise<ActionState> {
+  return run(() => apiSend("PATCH", `/tenants/${id}/logo`, { logoUrl }), ["/admin/mandanten"]);
+}
+
 /* -------------------------------------------------------------- News */
 
 export async function createNewsAction(_previous: ActionState, formData: FormData): Promise<ActionState> {

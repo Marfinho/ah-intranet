@@ -63,7 +63,12 @@ export async function AppShell({
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 lg:px-8 xl:flex-row xl:items-center xl:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-3">
-              <Logo signetClass="h-6 w-6" className="text-slate-900" />
+              <Logo
+                signetClass="h-6 w-6"
+                className="text-slate-900"
+                logoUrl={session.tenant.logoUrl}
+                hausName={session.tenant.name}
+              />
               <span className="truncate text-sm font-semibold text-slate-500">{session.tenant.name}</span>
             </div>
             <h1 className="truncate text-xl font-bold text-slate-900">{title}</h1>

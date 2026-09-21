@@ -161,6 +161,7 @@ export class TenantService implements OnModuleInit {
       domain: tenant.domain,
       isActive: tenant.isActive,
       notes: tenant.notes,
+      logoUrl: tenant.logoUrl,
       userCount: tenant._count.users,
       createdAt: tenant.createdAt.toISOString(),
     }));
@@ -291,5 +292,15 @@ export class TenantService implements OnModuleInit {
     const updated = await this.client.tenant.update({ where: { id }, data: { isActive } });
     this.invalidate();
     return updated;
+  }
+
+  /** `logoUrl: null` nimmt ein Logo zurück - die Kopfzeile zeigt dann wieder die Wortmarke "AHOI". */
+  async setLogo(id: string, logoUrl: string | null) {
+    const tenant = await this.client.tenant.findUnique({ where: { id } });
+    if (!tenant) {
+      throw new NotFoundException("Mandant nicht gefunden");
+    }
+
+    return this.client.tenant.update({ where: { id }, data: { logoUrl } });
   }
 }

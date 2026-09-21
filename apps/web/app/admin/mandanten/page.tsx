@@ -6,6 +6,7 @@ import { apiGet } from "@/lib/api";
 import { requireSession } from "@/lib/session";
 import { formatDateTime } from "@/lib/utils";
 import { TenantComposer } from "./tenant-composer";
+import { TenantLogoUpload } from "./tenant-logo-upload";
 import { TenantRowActions } from "./tenant-row-actions";
 
 export default async function TenantsAdminPage() {
@@ -29,6 +30,7 @@ export default async function TenantsAdminPage() {
             <table className="w-full text-sm">
               <thead className="text-left text-xs uppercase tracking-wide text-slate-500">
                 <tr>
+                  <th className="pb-2">Logo</th>
                   <th className="pb-2">Haus</th>
                   <th className="pb-2">Kennung</th>
                   <th className="pb-2">Adresse</th>
@@ -40,6 +42,9 @@ export default async function TenantsAdminPage() {
               <tbody className="divide-y divide-slate-100">
                 {tenants.map((tenant) => (
                   <tr key={tenant.id}>
+                    <td className="py-3">
+                      <TenantLogoUpload tenant={tenant} />
+                    </td>
                     <td className="py-3 font-medium text-slate-900">
                       {tenant.name}
                       {tenant.notes ? <p className="text-xs font-normal text-slate-500">{tenant.notes}</p> : null}

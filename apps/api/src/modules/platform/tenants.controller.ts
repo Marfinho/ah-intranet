@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
-import { IsBoolean, IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from "class-validator";
+import { IsBoolean, IsEmail, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, MinLength } from "class-validator";
+import { TENANT_LOGO_MAX_LENGTH } from "@ah-intranet/shared";
 import { AuditService } from "../../core/audit.service";
 import { CurrentUser, PlatformAdmin } from "../../core/decorators";
 import type { RequestUser } from "../../core/request-user";
@@ -46,6 +47,17 @@ class CreateTenantDto {
 class SetActiveDto {
   @IsBoolean()
   isActive!: boolean;
+}
+
+class SetLogoDto {
+  /** `null` entfernt das Logo. Fehlt es ganz, bleibt das bisherige Logo unangetastet. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(TENANT_LOGO_MAX_LENGTH, { message: "Das Logo ist zu groß (maximal rund 200 KB)" })
+  @Matches(/^data:image\/(png|jpeg|jpg|svg\+xml|webp);base64,/, {
+    message: "Das Logo muss als PNG, JPEG, WebP oder SVG hochgeladen werden",
+  })
+  logoUrl?: string | null;
 }
 
 /**
@@ -96,6 +108,25 @@ export class TenantsController {
       entityType: "tenant",
       entityId: id,
       detail: `Mandant "${tenant.name}" ${dto.isActive ? "freigeschaltet" : "gesperrt"}`,
+    });
+
+    return tenant;
+  }
+
+  /**
+   * Tritt in der Kopfzeile des Hauses an die Stelle der Wortmarke "AHOI".
+   * `logoUrl: null` nimmt das Logo zurück.
+   */
+  @Patch(":id/logo")
+  async setLogo(@Param("id") id: string, @Body() dto: SetLogoDto, @CurrentUser() user: RequestUser) {
+    const tenant = await this.tenants.setLogo(id, dto.logoUrl ?? null);
+
+    await this.audit.log({
+      actor: user,
+      action: dto.logoUrl ? "tenant.logo.set" : "tenant.logo.clear",
+      entityType: "tenant",
+      entityId: id,
+      detail: dto.logoUrl ? `Logo für "${tenant.name}" hinterlegt` : `Logo für "${tenant.name}" entfernt`,
     });
 
     return tenant;
