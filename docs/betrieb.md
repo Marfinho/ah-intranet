@@ -17,13 +17,14 @@ nötigen Schlüssel gesetzt sind. Er eignet sich als Ziel für einen Monitor; ei
 
 ## Umgebungsvariablen
 
-| Variable       | Bedeutung                              | Bei Verlust                   |
-| -------------- | -------------------------------------- | ----------------------------- |
-| `DATABASE_URL` | Verbindung zur Datenbank               | –                             |
-| `JWT_SECRET`   | signiert die Sitzungen                 | alle müssen sich neu anmelden |
-| `SECRET_KEY`   | verschlüsselt hinterlegte Geheimnisse  | Geheimnisse sind unlesbar     |
-| `FRONTEND_URL` | erlaubte Herkunft für CORS und Cookies | –                             |
-| `NODE_ENV`     | `production` schärft Cookie und Header | –                             |
+| Variable              | Bedeutung                              | Bei Verlust                   |
+| --------------------- | -------------------------------------- | ----------------------------- |
+| `DATABASE_URL`        | Verbindung zur Datenbank               | –                             |
+| `JWT_SECRET`          | signiert die Sitzungen                 | alle müssen sich neu anmelden |
+| `SECRET_KEY`          | verschlüsselt hinterlegte Geheimnisse  | Geheimnisse sind unlesbar     |
+| `FRONTEND_URL`        | erlaubte Herkunft für CORS und Cookies | –                             |
+| `NODE_ENV`            | `production` schaltet HSTS ein         | –                             |
+| `AHOI_SECURE_COOKIES` | `true` schärft das Sitzungscookie      | –                             |
 
 `JWT_SECRET` ist der einzige Wert, dessen Verlust spürbar ist – und er kostet
 nur eine neue Anmeldung. Ein gestohlenes Backup enthält trotzdem alle
@@ -40,16 +41,28 @@ Plattformverwaltung. Erzeugen mit:
 openssl rand -base64 48
 ```
 
-### HTTPS ist im Produktivbetrieb Voraussetzung
+### `AHOI_SECURE_COOKIES` – beide Dienste, derselbe Wert
 
-Mit `NODE_ENV=production` heißt das Sitzungscookie `__Host-ah_session`. Der
-Präfix ist eine Zusage, die der Browser durchsetzt: Er nimmt ein solches Cookie
-**nur über HTTPS** an. Läuft die Anwendung dann hinter reinem HTTP, verwirft der
-Browser das Cookie, und niemand kann sich anmelden.
+Mit `AHOI_SECURE_COOKIES=true` heißt das Sitzungscookie `__Host-ah_session` und
+trägt `Secure`. Der Präfix ist eine Zusage, die der Browser durchsetzt: Er nimmt
+ein solches Cookie **nur über HTTPS** an, nur mit `Path=/` und ohne
+`Domain`-Angabe. Der Gegenwert: Kein Dienst auf einer Nachbardomain kann ein
+Cookie für unseren Ursprung unterschieben.
 
-Das ist gewollt. Eine Sitzung im Klartext über das Netz ist nichts, was die
-Anwendung stillschweigend mittragen sollte. Der Gegenwert: Kein Dienst auf einer
-Nachbardomain kann ein Cookie für unseren Ursprung unterschieben.
+**Zwei Regeln, beide unnachgiebig:**
+
+1. **API und Oberfläche brauchen denselben Wert.** Es sind zwei Prozesse. Weicht
+   einer ab, setzt die API `ah_session`, während die Oberfläche
+   `__Host-ah_session` sucht – die Anmeldung endet mit „Die Sitzung konnte nicht
+   gesetzt werden". Die Variable gibt es genau deshalb: `next start` setzt
+   `NODE_ENV=production` von sich aus, die API tut das nicht. Ohne einen
+   gemeinsamen, ausdrücklichen Schalter liefen die beiden auseinander.
+2. **`true` nur hinter HTTPS.** Sonst verwirft der Browser das Cookie, und
+   niemand kann sich anmelden. Das ist gewollt: eine Sitzung im Klartext über
+   das Netz ist nichts, was die Anwendung stillschweigend mittragen sollte.
+
+Ohne gesetzte Variable entscheidet `NODE_ENV` – als Rückfallebene für
+Einzelprozess-Aufbauten, nicht als Empfehlung.
 
 ### Protokolle und ihre Frist
 

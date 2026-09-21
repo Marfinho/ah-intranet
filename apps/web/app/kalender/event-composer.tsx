@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
 import { createEventAction, type ActionState } from "@/lib/actions";
 import { toLocalInput } from "@/lib/utils";
@@ -8,7 +8,7 @@ import { toLocalInput } from "@/lib/utils";
 const initialState: ActionState = { ok: true };
 
 export function EventComposer() {
-  const [state, formAction] = useFormState(createEventAction, initialState);
+  const [state, formAction] = useActionState(createEventAction, initialState);
 
   const start = new Date();
   start.setHours(start.getHours() + 25, 0, 0, 0);

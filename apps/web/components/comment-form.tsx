@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { FormAlert, SubmitButton, inputClass } from "@/components/forms";
 import type { ActionState } from "@/lib/actions";
 
@@ -16,7 +16,7 @@ export function CommentForm({
   placeholder?: string;
   label?: string;
 }) {
-  const [state, formAction] = useFormState(action, initialState);
+  const [state, formAction] = useActionState(action, initialState);
 
   return (
     <form action={formAction} className="space-y-3">

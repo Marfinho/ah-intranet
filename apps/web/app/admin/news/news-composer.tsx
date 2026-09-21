@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
 import { createNewsAction, type ActionState } from "@/lib/actions";
 
@@ -25,7 +25,7 @@ const AUDIENCES = [
 ];
 
 export function NewsComposer() {
-  const [state, formAction] = useFormState(createNewsAction, initialState);
+  const [state, formAction] = useActionState(createNewsAction, initialState);
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

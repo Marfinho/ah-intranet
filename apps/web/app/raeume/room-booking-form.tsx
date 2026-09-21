@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import type { Room } from "@ah-intranet/shared";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
 import { bookRoomAction, type ActionState } from "@/lib/actions";
@@ -9,7 +9,7 @@ import { toLocalInput } from "@/lib/utils";
 const initialState: ActionState = { ok: true };
 
 export function RoomBookingForm({ rooms }: { rooms: Room[] }) {
-  const [state, formAction] = useFormState(bookRoomAction, initialState);
+  const [state, formAction] = useActionState(bookRoomAction, initialState);
 
   const start = new Date();
   start.setHours(start.getHours() + 1, 0, 0, 0);

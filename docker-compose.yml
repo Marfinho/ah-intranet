@@ -35,6 +35,10 @@ services:
       # Ohne diesen Schlüssel lassen sich keine Geheimnisse hinterlegen; die
       # Anwendung läuft, weist das Speichern aber ab.
       SECRET_KEY: ${SECRET_KEY:-}
+      # Muss bei API und Oberfläche **gleich** sein, sonst suchen die beiden
+      # verschiedene Cookies und niemand kommt hinein. `true` nur hinter HTTPS:
+      # der `__Host-`-Präfix verlangt es, sonst verwirft der Browser das Cookie.
+      AHOI_SECURE_COOKIES: ${AHOI_SECURE_COOKIES:-false}
     ports:
       - "3001:3001"
     depends_on:
@@ -49,6 +53,8 @@ services:
       NEXT_PUBLIC_API_URL: http://localhost:3001/api
       # Server Components sprechen die API im Docker-Netz direkt an.
       API_URL: http://api:3001/api
+      # Derselbe Wert wie beim Dienst `api` - siehe dort.
+      AHOI_SECURE_COOKIES: ${AHOI_SECURE_COOKIES:-false}
     ports:
       - "3000:3000"
     depends_on:

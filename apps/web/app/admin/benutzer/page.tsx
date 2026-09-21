@@ -13,7 +13,12 @@ interface Organisation {
   specialties: { id: string; name: string }[];
 }
 
-export default async function UsersAdminPage({ searchParams }: { searchParams: { search?: string; status?: string } }) {
+export default async function UsersAdminPage({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<{ search?: string; status?: string }>;
+}) {
+  const searchParams = await searchParamsPromise;
   await requirePermission("users.manage");
 
   const query = new URLSearchParams();

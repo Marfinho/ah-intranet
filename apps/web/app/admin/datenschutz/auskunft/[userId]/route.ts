@@ -9,7 +9,8 @@ import { getSession } from "@/lib/session";
  * herausgehen, die man der Person unverändert aushändigen kann - nicht als
  * Bildschirmansicht, aus der jemand abtippt.
  */
-export async function GET(_request: Request, { params }: { params: { userId: string } }) {
+export async function GET(_request: Request, { params: paramsPromise }: { params: Promise<{ userId: string }> }) {
+  const params = await paramsPromise;
   const session = await getSession();
   if (!session?.permissions.includes("privacy.manage")) {
     return NextResponse.json({ message: "Nicht berechtigt" }, { status: 403 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import type { RoleSummary } from "@ah-intranet/shared";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
 import { createUserAction, type ActionState } from "@/lib/actions";
@@ -19,7 +19,7 @@ export function UserComposer({
   /** Rollen dieses Hauses - der Code kennt sie nicht, er zeigt sie nur an. */
   roles: RoleSummary[];
 }) {
-  const [state, formAction] = useFormState(createUserAction, initialState);
+  const [state, formAction] = useActionState(createUserAction, initialState);
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

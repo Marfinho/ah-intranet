@@ -1,13 +1,13 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
 import { createPollAction, type ActionState } from "@/lib/actions";
 
 const initialState: ActionState = { ok: true };
 
 export function PollComposer() {
-  const [state, formAction] = useFormState(createPollAction, initialState);
+  const [state, formAction] = useActionState(createPollAction, initialState);
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

@@ -1,13 +1,13 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
 import { upsertCycleAction, type ActionState } from "@/lib/actions";
 
 const initialState: ActionState = { ok: true };
 
 export function CycleForm() {
-  const [state, formAction] = useFormState(upsertCycleAction, initialState);
+  const [state, formAction] = useActionState(upsertCycleAction, initialState);
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

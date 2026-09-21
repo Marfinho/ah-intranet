@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { useState } from "react";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
 import { createCustodyAction, type ActionState } from "@/lib/actions";
@@ -8,7 +8,7 @@ import { createCustodyAction, type ActionState } from "@/lib/actions";
 const initialState: ActionState = { ok: true };
 
 export function CustodyComposer({ organisation }: { organisation: { locations: { id: string; name: string }[] } }) {
-  const [state, formAction] = useFormState(createCustodyAction, initialState);
+  const [state, formAction] = useActionState(createCustodyAction, initialState);
   const [kind, setKind] = useState<"fundsache" | "schluessel">("fundsache");
 
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import type { BusinessCardFieldDefinition } from "@ah-intranet/shared";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
 import { createBusinessCardOrderAction, type ActionState } from "@/lib/actions";
@@ -18,7 +18,7 @@ export function BusinessCardForm({
   fields: BusinessCardFieldDefinition[];
   defaults: Record<string, string>;
 }) {
-  const [state, formAction] = useFormState(createBusinessCardOrderAction, initialState);
+  const [state, formAction] = useActionState(createBusinessCardOrderAction, initialState);
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

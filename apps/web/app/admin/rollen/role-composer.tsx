@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import type { PermissionSummary } from "@ah-intranet/shared";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
 import { createRoleAction, type ActionState } from "@/lib/actions";
@@ -9,7 +9,7 @@ const initialState: ActionState = { ok: true };
 
 /** Eigene Rolle anlegen: Name, Beschreibung, Rangfolge, angeklickte Rechte. */
 export function RoleComposer({ permissions, bereiche }: { permissions: PermissionSummary[]; bereiche: string[] }) {
-  const [state, formAction] = useFormState(createRoleAction, initialState);
+  const [state, formAction] = useActionState(createRoleAction, initialState);
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

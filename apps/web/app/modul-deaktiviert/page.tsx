@@ -4,7 +4,12 @@ import { AppShell } from "@/components/app-shell";
 import { EmptyState, Section } from "@/components/ui";
 import { can, requireSession } from "@/lib/session";
 
-export default async function ModuleDisabledPage({ searchParams }: { searchParams: { m?: string } }) {
+export default async function ModuleDisabledPage({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<{ m?: string }>;
+}) {
+  const searchParams = await searchParamsPromise;
   const session = await requireSession();
   const module = searchParams.m ? getModule(searchParams.m) : undefined;
   const isAdmin = can(session, "modules.manage");

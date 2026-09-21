@@ -1,13 +1,13 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
 import { createWikiAction, type ActionState } from "@/lib/actions";
 
 const initialState: ActionState = { ok: true };
 
 export function WikiComposer({ categories }: { categories: string[] }) {
-  const [state, formAction] = useFormState(createWikiAction, initialState);
+  const [state, formAction] = useActionState(createWikiAction, initialState);
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

@@ -15,7 +15,8 @@ function euro(cents: number): string {
  * Jemand muss die Tüten verteilen - deshalb stehen hier Namen, und deshalb
  * hängt die Seite am Recht statt am Modul allein.
  */
-export default async function SammellistePage({ params }: { params: { id: string } }) {
+export default async function SammellistePage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   await requireModule("meals");
   await requirePermission("meals.manage");
 

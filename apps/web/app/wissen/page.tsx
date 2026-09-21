@@ -13,7 +13,12 @@ interface WikiResponse {
   categories: string[];
 }
 
-export default async function WikiPage({ searchParams }: { searchParams: { search?: string; category?: string } }) {
+export default async function WikiPage({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<{ search?: string; category?: string }>;
+}) {
+  const searchParams = await searchParamsPromise;
   const session = await requireModule("wiki");
 
   const query = new URLSearchParams();

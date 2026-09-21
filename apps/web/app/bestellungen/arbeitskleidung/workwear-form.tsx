@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import type { WorkwearCatalogItem } from "@ah-intranet/shared";
 import { FormAlert, SubmitButton } from "@/components/forms";
 import { createWorkwearOrderAction, type ActionState } from "@/lib/actions";
@@ -14,7 +14,7 @@ const initialState: ActionState = { ok: true };
  * zusätzliches Schema wieder zusammensetzen kann.
  */
 export function WorkwearForm({ catalog }: { catalog: WorkwearCatalogItem[] }) {
-  const [state, formAction] = useFormState(createWorkwearOrderAction, initialState);
+  const [state, formAction] = useActionState(createWorkwearOrderAction, initialState);
   const [sizes, setSizes] = useState<Record<string, string>>(() =>
     Object.fromEntries(catalog.map((item) => [item.id, item.sizes[0] ?? ""])),
   );

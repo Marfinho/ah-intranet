@@ -8,7 +8,12 @@ import { requireSession } from "@/lib/session";
 import { markAllNotificationsReadAction, markNotificationReadAction } from "@/lib/actions";
 import { cn, formatDateTime } from "@/lib/utils";
 
-export default async function NotificationsPage({ searchParams }: { searchParams: { unread?: string } }) {
+export default async function NotificationsPage({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<{ unread?: string }>;
+}) {
+  const searchParams = await searchParamsPromise;
   await requireSession();
 
   const onlyUnread = searchParams.unread === "true";

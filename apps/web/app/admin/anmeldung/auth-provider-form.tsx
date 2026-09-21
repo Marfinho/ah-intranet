@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { useTransition } from "react";
 import type { AuthProviderDefinition, AuthProviderSummary } from "@ah-intranet/shared";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
@@ -26,7 +26,7 @@ export function AuthProviderForm({
   art: AuthProviderDefinition;
   eintrag: AuthProviderSummary | null;
 }) {
-  const [state, formAction] = useFormState(saveAuthProviderAction, initialState);
+  const [state, formAction] = useActionState(saveAuthProviderAction, initialState);
   const [pending, startTransition] = useTransition();
 
   const melde = (result: ActionState) => {

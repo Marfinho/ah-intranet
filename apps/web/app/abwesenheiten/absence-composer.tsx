@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
 import { createAbsenceAction, type ActionState } from "@/lib/actions";
 import { toDateInput } from "@/lib/utils";
@@ -8,7 +8,7 @@ import { toDateInput } from "@/lib/utils";
 const initialState: ActionState = { ok: true };
 
 export function AbsenceComposer() {
-  const [state, formAction] = useFormState(createAbsenceAction, initialState);
+  const [state, formAction] = useActionState(createAbsenceAction, initialState);
   const today = toDateInput(new Date());
 
   return (

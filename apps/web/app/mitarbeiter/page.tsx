@@ -18,10 +18,11 @@ const PRESENCE_STYLES: Record<string, string> = {
 };
 
 export default async function DirectoryPage({
-  searchParams,
+  searchParams: searchParamsPromise,
 }: {
-  searchParams: { search?: string; location?: string; department?: string };
+  searchParams: Promise<{ search?: string; location?: string; department?: string }>;
 }) {
+  const searchParams = await searchParamsPromise;
   await requireModule("directory");
 
   const query = new URLSearchParams();

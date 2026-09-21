@@ -26,7 +26,12 @@ interface LaufStatus {
   hinweis: string;
 }
 
-export default async function DatenschutzPage({ searchParams }: { searchParams: { search?: string } }) {
+export default async function DatenschutzPage({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<{ search?: string }>;
+}) {
+  const searchParams = await searchParamsPromise;
   await requirePermission("privacy.manage");
 
   const query = new URLSearchParams();

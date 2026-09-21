@@ -20,7 +20,12 @@ function tag(wert: string): string {
   return new Date(wert).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
 }
 
-export default async function SchichtplanPage({ searchParams }: { searchParams: { mine?: string } }) {
+export default async function SchichtplanPage({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<{ mine?: string }>;
+}) {
+  const searchParams = await searchParamsPromise;
   const session = await requireModule("shifts");
   const darfPflegen = can(session, "shifts.manage");
 

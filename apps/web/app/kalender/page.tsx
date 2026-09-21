@@ -17,7 +17,12 @@ const CATEGORY_STYLES: Record<string, string> = {
   bestellung: "bg-emerald-100 text-emerald-800",
 };
 
-export default async function CalendarPage({ searchParams }: { searchParams: { category?: string } }) {
+export default async function CalendarPage({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<{ category?: string }>;
+}) {
+  const searchParams = await searchParamsPromise;
   const session = await requireModule("calendar");
 
   const query = new URLSearchParams();

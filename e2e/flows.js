@@ -34,14 +34,29 @@ async function login(page, username) {
   });
 
   try {
-    // 1. Falsche Zugangsdaten
-    await page.goto(`${BASE}/login`, { waitUntil: "networkidle" });
-    await page.fill('input[name="username"]', "admin");
-    await page.fill('input[name="tenant"]', TENANT);
-    await page.fill('input[name="password"]', "falsch");
-    await page.click('form button[type="submit"]');
-    await page.waitForSelector('[role="status"]', { timeout: 10000 });
-    check("Falsches Passwort wird abgewiesen", (await page.textContent('[role="status"]')).includes("Ungültige"));
+    // 1. Falsche Zugangsdaten - und zwar auf drei verschiedene Arten.
+    //
+    // Geprüft wird nicht nur, dass abgewiesen wird, sondern dass die Absage
+    // **dieselbe** ist. Unterschiedliche Meldungen für "Kennung unbekannt",
+    // "Benutzer unbekannt" und "Passwort falsch" sind eine Auskunft, mit der
+    // sich Konten und Mandanten von aussen aufzählen lassen.
+    const absagen = [];
+    for (const [benutzer, haus, passwort] of [
+      ["admin", TENANT, "falsch"],
+      ["gibtesnicht", TENANT, "falsch"],
+      ["admin", "haus-gibtesnicht", "falsch"],
+    ]) {
+      await page.goto(`${BASE}/login`, { waitUntil: "networkidle" });
+      await page.fill('input[name="username"]', benutzer);
+      await page.fill('input[name="tenant"]', haus);
+      await page.fill('input[name="password"]', passwort);
+      await page.click('form button[type="submit"]');
+      await page.waitForSelector('[role="status"]', { timeout: 10000 });
+      absagen.push((await page.textContent('[role="status"]')).trim());
+    }
+
+    check("Falsches Passwort wird abgewiesen", absagen[0].includes("Anmeldung fehlgeschlagen"));
+    check("Absage verrät nicht, ob Konto oder Haus existiert", new Set(absagen).size === 1, absagen.join(" | "));
 
     // 2. Login als Mitarbeiter
     await login(page, "p.hansen");

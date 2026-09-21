@@ -20,10 +20,11 @@ const CATEGORIES = [
 ];
 
 export default async function TicketsPage({
-  searchParams,
+  searchParams: searchParamsPromise,
 }: {
-  searchParams: { scope?: string; status?: string; category?: string; search?: string; von?: string };
+  searchParams: Promise<{ scope?: string; status?: string; category?: string; search?: string; von?: string }>;
 }) {
+  const searchParams = await searchParamsPromise;
   const session = await requireModule("tickets");
 
   const query = new URLSearchParams();

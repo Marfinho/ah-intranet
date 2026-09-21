@@ -1,8 +1,9 @@
 import { cookies } from "next/headers";
-import { sitzungsCookieName } from "@ah-intranet/shared";
+import { sichereCookiesAktiv, sitzungsCookieName } from "@ah-intranet/shared";
 
 /** Muss mit dem Namen übereinstimmen, den die API setzt - daher dieselbe Quelle. */
-export const SESSION_COOKIE = sitzungsCookieName(process.env.NODE_ENV === "production");
+export const SICHERE_COOKIES = sichereCookiesAktiv(process.env);
+export const SESSION_COOKIE = sitzungsCookieName(SICHERE_COOKIES);
 
 /** Serverseitige Basis-URL; im Container zeigt sie auf den API-Service. */
 const API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
@@ -26,8 +27,9 @@ export class ApiError extends Error {
   }
 }
 
-function authHeader(): Record<string, string> {
-  const token = cookies().get(SESSION_COOKIE)?.value;
+/** Seit Next 15 sind die Request-APIs asynchron - `cookies()` liefert ein Promise. */
+async function authHeader(): Promise<Record<string, string>> {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
   return token ? { cookie: `${SESSION_COOKIE}=${token}` } : {};
 }
 
@@ -51,7 +53,7 @@ async function parseError(response: Response): Promise<string> {
 export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
-    headers: { ...authHeader(), ...(init?.headers ?? {}) },
+    headers: { ...(await authHeader()), ...(init?.headers ?? {}) },
     cache: "no-store",
   });
 
@@ -80,7 +82,7 @@ export async function apiSend<T>(
 ): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     method,
-    headers: { "Content-Type": "application/json", ...authHeader() },
+    headers: { "Content-Type": "application/json", ...(await authHeader()) },
     body: body === undefined ? undefined : JSON.stringify(body),
     cache: "no-store",
   });

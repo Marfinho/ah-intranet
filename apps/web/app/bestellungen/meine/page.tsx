@@ -7,7 +7,12 @@ import { apiGet } from "@/lib/api";
 import { requireModule } from "@/lib/session";
 import { formatDate } from "@/lib/utils";
 
-export default async function MyOrdersPage({ searchParams }: { searchParams: { status?: string; search?: string } }) {
+export default async function MyOrdersPage({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<{ status?: string; search?: string }>;
+}) {
+  const searchParams = await searchParamsPromise;
   await requireModule("orders");
 
   const query = new URLSearchParams({ mine: "true" });

@@ -14,10 +14,11 @@ interface DocumentsResponse {
 const FILE_LABELS: Record<string, string> = { pdf: "PDF", docx: "Word", xlsx: "Excel", link: "Link" };
 
 export default async function DocumentsPage({
-  searchParams,
+  searchParams: searchParamsPromise,
 }: {
-  searchParams: { search?: string; category?: string };
+  searchParams: Promise<{ search?: string; category?: string }>;
 }) {
+  const searchParams = await searchParamsPromise;
   await requireModule("documents");
 
   const query = new URLSearchParams();

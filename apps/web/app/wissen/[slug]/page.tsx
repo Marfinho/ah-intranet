@@ -7,7 +7,8 @@ import { ApiError, apiGet } from "@/lib/api";
 import { requireModule } from "@/lib/session";
 import { formatDate } from "@/lib/utils";
 
-export default async function WikiDetailPage({ params }: { params: { slug: string } }) {
+export default async function WikiDetailPage({ params: paramsPromise }: { params: Promise<{ slug: string }> }) {
+  const params = await paramsPromise;
   await requireModule("wiki");
 
   let article: WikiArticle;

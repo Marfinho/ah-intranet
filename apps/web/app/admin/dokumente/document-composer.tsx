@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
 import { createDocumentAction, type ActionState } from "@/lib/actions";
 
@@ -19,7 +19,7 @@ const AUDIENCES = [
 ];
 
 export function DocumentComposer({ categories }: { categories: string[] }) {
-  const [state, formAction] = useFormState(createDocumentAction, initialState);
+  const [state, formAction] = useActionState(createDocumentAction, initialState);
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

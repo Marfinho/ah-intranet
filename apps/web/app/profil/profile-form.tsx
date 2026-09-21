@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
 import { updateProfileAction, type ActionState } from "@/lib/actions";
 
@@ -13,7 +13,7 @@ export function ProfileForm({
   defaults: Record<string, string>;
   mobileInDirectory: boolean;
 }) {
-  const [state, formAction] = useFormState(updateProfileAction, initialState);
+  const [state, formAction] = useActionState(updateProfileAction, initialState);
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

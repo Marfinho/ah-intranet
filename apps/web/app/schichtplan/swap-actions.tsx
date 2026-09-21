@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { useTransition } from "react";
 import type { ShiftSwapItem } from "@ah-intranet/shared";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
@@ -22,7 +22,7 @@ export function SwapComposer({
   shifts: { id: string; label: string }[];
   people: { id: string; name: string }[];
 }) {
-  const [state, formAction] = useFormState(requestSwapAction, initialState);
+  const [state, formAction] = useActionState(requestSwapAction, initialState);
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

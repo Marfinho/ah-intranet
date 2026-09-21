@@ -1,13 +1,13 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
 import { changePasswordAction, type ActionState } from "@/lib/actions";
 
 const initialState: ActionState = { ok: true };
 
 export function PasswordForm() {
-  const [state, formAction] = useFormState(changePasswordAction, initialState);
+  const [state, formAction] = useActionState(changePasswordAction, initialState);
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

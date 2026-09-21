@@ -6,7 +6,12 @@ import { apiGet } from "@/lib/api";
 import { requireModule, requirePermission } from "@/lib/session";
 import { formatDateTime } from "@/lib/utils";
 
-export default async function AuditPage({ searchParams }: { searchParams: { search?: string; action?: string } }) {
+export default async function AuditPage({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<{ search?: string; action?: string }>;
+}) {
+  const searchParams = await searchParamsPromise;
   await requireModule("audit");
   await requirePermission("audit.read");
 

@@ -5,7 +5,12 @@ import { EmptyState, Section } from "@/components/ui";
 import { apiGet } from "@/lib/api";
 import { requireModule } from "@/lib/session";
 
-export default async function SearchPage({ searchParams }: { searchParams: { q?: string } }) {
+export default async function SearchPage({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const searchParams = await searchParamsPromise;
   await requireModule("search");
 
   const query = (searchParams.q ?? "").trim();

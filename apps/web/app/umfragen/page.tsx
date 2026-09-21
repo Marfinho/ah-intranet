@@ -11,7 +11,12 @@ interface PollsResponse {
   canManage: boolean;
 }
 
-export default async function PollsPage({ searchParams }: { searchParams: { all?: string } }) {
+export default async function PollsPage({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<{ all?: string }>;
+}) {
+  const searchParams = await searchParamsPromise;
   await requireModule("polls");
 
   const showAll = searchParams.all === "true";

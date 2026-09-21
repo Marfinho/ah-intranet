@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
 import { createShiftAction, type ActionState } from "@/lib/actions";
 
@@ -13,7 +13,7 @@ export function ShiftComposer({
   organisation: { locations: { id: string; name: string }[]; departments: { id: string; name: string }[] };
   people: { id: string; name: string }[];
 }) {
-  const [state, formAction] = useFormState(createShiftAction, initialState);
+  const [state, formAction] = useActionState(createShiftAction, initialState);
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

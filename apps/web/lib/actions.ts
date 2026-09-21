@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { ApiError, SESSION_COOKIE, apiBaseUrl, apiSend } from "./api";
+import { ApiError, SESSION_COOKIE, SICHERE_COOKIES, apiBaseUrl, apiSend } from "./api";
 
 export interface ActionState {
   ok: boolean;
@@ -72,10 +72,10 @@ export async function loginAction(_previous: ActionState, formData: FormData): P
     return { ok: false, message: "Die Sitzung konnte nicht gesetzt werden." };
   }
 
-  cookies().set(SESSION_COOKIE, token, {
+  (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: SICHERE_COOKIES,
     maxAge: 12 * 60 * 60,
     path: "/",
   });
@@ -89,7 +89,7 @@ export async function logoutAction(): Promise<void> {
   } catch {
     // Auch bei API-Fehler lokal abmelden.
   }
-  cookies().delete(SESSION_COOKIE);
+  (await cookies()).delete(SESSION_COOKIE);
   redirect("/login");
 }
 

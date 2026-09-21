@@ -4,7 +4,7 @@ import { IsNotEmpty, IsOptional, IsString, MinLength } from "class-validator";
 import type { Response } from "express";
 import { AuthService } from "./auth.service";
 import { CurrentUser, Public } from "../../core/decorators";
-import { SESSION_COOKIE } from "../../core/guards";
+import { SESSION_COOKIE, SICHERE_COOKIES } from "../../core/guards";
 import type { RequestUser } from "../../core/request-user";
 
 class LoginDto {
@@ -54,7 +54,9 @@ export class AuthController {
     response.cookie(SESSION_COOKIE, token, {
       httpOnly: true,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      // Muss zum Namen passen: ein `__Host-`-Cookie ohne `Secure` verwirft der
+      // Browser wortlos. Beides kommt deshalb aus derselben Entscheidung.
+      secure: SICHERE_COOKIES,
       maxAge: TWELVE_HOURS_MS,
       path: "/",
     });

@@ -8,10 +8,11 @@ import { can, requireModule } from "@/lib/session";
 import { formatDate } from "@/lib/utils";
 
 export default async function NewsPage({
-  searchParams,
+  searchParams: searchParamsPromise,
 }: {
-  searchParams: { search?: string; priority?: string; status?: string; unread?: string };
+  searchParams: Promise<{ search?: string; priority?: string; status?: string; unread?: string }>;
 }) {
+  const searchParams = await searchParamsPromise;
   const session = await requireModule("news");
 
   const query = new URLSearchParams();

@@ -17,7 +17,8 @@ function isBusinessCard(order: OrderDetail): order is BusinessCardOrderDetail {
   return order.type === "business_card";
 }
 
-export default async function OrderDetailPage({ params }: { params: { id: string } }) {
+export default async function OrderDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   const session = await requireModule("orders");
 
   let order: OrderDetail;

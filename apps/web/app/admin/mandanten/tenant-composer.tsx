@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
 import { createTenantAction, type ActionState } from "@/lib/actions";
 
@@ -14,7 +14,7 @@ const initialState: ActionState = { ok: true };
  * erfahrungsgemäß liegen.
  */
 export function TenantComposer() {
-  const [state, formAction] = useFormState(createTenantAction, initialState);
+  const [state, formAction] = useActionState(createTenantAction, initialState);
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

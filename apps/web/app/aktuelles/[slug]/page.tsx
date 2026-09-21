@@ -10,7 +10,8 @@ import { requireModule } from "@/lib/session";
 import { commentNewsAction } from "@/lib/actions";
 import { formatDate, formatDateTime } from "@/lib/utils";
 
-export default async function NewsDetailPage({ params }: { params: { slug: string } }) {
+export default async function NewsDetailPage({ params: paramsPromise }: { params: Promise<{ slug: string }> }) {
+  const params = await paramsPromise;
   await requireModule("news");
 
   let article: NewsItem;

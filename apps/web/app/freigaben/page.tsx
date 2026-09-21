@@ -9,7 +9,12 @@ import { requireModule, requirePermission } from "@/lib/session";
 import { bulkOrderAction, orderTransitionAction } from "@/lib/actions";
 import { formatDate } from "@/lib/utils";
 
-export default async function ApprovalsPage({ searchParams }: { searchParams: { status?: string; search?: string } }) {
+export default async function ApprovalsPage({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<{ status?: string; search?: string }>;
+}) {
+  const searchParams = await searchParamsPromise;
   await requireModule("approvals");
   await requirePermission("orders.approve");
 

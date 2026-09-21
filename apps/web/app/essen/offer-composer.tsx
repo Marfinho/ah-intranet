@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { useState } from "react";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
 import { createMealOfferAction, type ActionState } from "@/lib/actions";
@@ -8,7 +8,7 @@ import { createMealOfferAction, type ActionState } from "@/lib/actions";
 const initialState: ActionState = { ok: true };
 
 export function MealOfferComposer({ organisation }: { organisation: { locations: { id: string; name: string }[] } }) {
-  const [state, formAction] = useFormState(createMealOfferAction, initialState);
+  const [state, formAction] = useActionState(createMealOfferAction, initialState);
   // Drei Zeilen reichen für den Alltag; mehr fügt das Haus selbst hinzu.
   const [zeilen, setZeilen] = useState(3);
 

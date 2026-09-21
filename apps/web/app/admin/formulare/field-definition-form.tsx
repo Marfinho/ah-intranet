@@ -1,13 +1,13 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
 import { upsertFieldDefinitionAction, type ActionState } from "@/lib/actions";
 
 const initialState: ActionState = { ok: true };
 
 export function FieldDefinitionForm({ nextSortOrder }: { nextSortOrder: number }) {
-  const [state, formAction] = useFormState(upsertFieldDefinitionAction, initialState);
+  const [state, formAction] = useActionState(upsertFieldDefinitionAction, initialState);
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
