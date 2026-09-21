@@ -11,7 +11,7 @@
     "format": "prettier --write .",
     "seed": "pnpm --filter api prisma:seed",
     "migrate": "pnpm --filter api prisma:migrate",
-    "e2e": "node e2e/smoke.js && node e2e/flows.js",
+    "e2e": "node e2e/smoke.js && node e2e/flows.js && node e2e/einrichtung.js",
     "lint:fix": "eslint . --fix",
     "format:check": "prettier --check .",
     "test": "pnpm -r test"

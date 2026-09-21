@@ -21,12 +21,12 @@ import type { RequestUser } from "../../core/request-user";
  * Migrations-Datenscript, das für jeden bestehenden Nutzer nachträglich einen
  * Datensatz anlegt - das würde bei künftigen Migrationen wiederholt geprüft
  * werden müssen, ob es schon lief. Stattdessen entscheidet dieser Dienst beim
- * ersten `GET /einrichtung/me` je Nutzer selbst: wer bereits vor der
- * Einführung dieser Funktion aktiv war (erkennbar an `lastLoginAt`, das nur
- * eine echte vorherige Anmeldung setzt), bekommt sofort einen abgeschlossenen
- * Status - der Dialog erscheint nur für Nutzer, deren erste Anmeldung nach
- * der Einführung liegt. Das ist idempotent (ein zweiter Aufruf ändert nichts)
- * und braucht keinen festen Stichtag im Code.
+ * ersten `GET /einrichtung/me` je Nutzer selbst anhand von `User.createdAt`
+ * gegen den festen Einführungszeitpunkt der Tabelle (siehe `EINFUEHRUNG`
+ * unten): wer schon vorher ein Konto hatte, bekommt sofort einen
+ * abgeschlossenen Status, der Dialog erscheint nur für neu angelegte Konten.
+ * Das ist idempotent (ein zweiter Aufruf ändert nichts) und lazy - kein Skript
+ * muss über den gesamten Bestand laufen.
  */
 @Injectable()
 export class EinrichtungService {
@@ -179,6 +179,17 @@ export class EinrichtungService {
     };
   }
 
+  /**
+   * Zeitpunkt, zu dem die Tabelle `EinrichtungStatus` eingeführt wurde
+   * (siehe Migration `20260921115821_einrichtung_status`). Konten, die es zu
+   * diesem Zeitpunkt schon gab, sind Bestandsnutzer und bekommen keinen
+   * Dialog mehr - `lastLoginAt` taugt dafür nicht, weil die Anmeldung selbst
+   * es bereits auf "jetzt" setzt, bevor dieser Dienst zum ersten Mal läuft.
+   * `createdAt` ist der einzige Zeitstempel, der zum Zeitpunkt dieser Prüfung
+   * noch den ursprünglichen Wert trägt.
+   */
+  private static readonly EINFUEHRUNG = new Date("2026-09-21T11:58:21.000Z");
+
   /** Legt bei Bedarf den Status an - Bestandsnutzer werden dabei sofort als abgeschlossen markiert. */
   private async findOrCreate(user: RequestUser) {
     const tenantId = requireTenantId();
@@ -191,13 +202,9 @@ export class EinrichtungService {
 
     const account = await this.prisma.user.findUnique({
       where: { id: user.id },
-      select: { lastLoginAt: true },
+      select: { createdAt: true },
     });
-    // `lastLoginAt` war beim allerersten Login nach Einführung dieser Funktion
-    // noch nicht gesetzt (das Feld existiert schon vorher, wird aber erst bei
-    // erfolgreicher Anmeldung geschrieben) - ein bereits vorhandener Wert
-    // beweist also eine Anmeldung, die es schon vor dieser Funktion gab.
-    const warBereitsAktiv = account?.lastLoginAt != null;
+    const warBereitsAktiv = (account?.createdAt ?? new Date(0)) < EinrichtungService.EINFUEHRUNG;
 
     return this.prisma.einrichtungStatus.create({
       data: {

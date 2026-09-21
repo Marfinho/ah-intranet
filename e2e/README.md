@@ -24,6 +24,7 @@ Ist Chromium bereits vorhanden (z. B. `PLAYWRIGHT_BROWSERS_PATH`), kann der Pfad
 ```bash
 node e2e/smoke.js         # lädt alle 32 Seiten und meldet Render-Fehler
 node e2e/flows.js         # 33 Prüfungen über die wichtigsten Fachprozesse
+node e2e/einrichtung.js   # Ersteinrichtungs-Assistent: Admin-Flow eines neuen Hauses
 ```
 
 Alle Skripte beenden sich mit Exit-Code 1, sobald eine Prüfung fehlschlägt.
@@ -44,6 +45,15 @@ Alle Skripte beenden sich mit Exit-Code 1, sobald eine Prüfung fehlschlägt.
 - Audit-Log auf protokollierte Aktionen
 - Mandantentrennung: Anmeldung im zweiten Haus, getrennte Inhalte, Schutz der
   Mandantenverwaltung
+
+## Was `einrichtung.js` abdeckt
+
+Legt über die Plattformverwaltung ein frisches Haus an und durchläuft als dessen
+erste Administration den Ersteinrichtungs-Assistenten: Willkommensdialog,
+Mandantenprofil, erster Standort, erste Mitarbeiterin, erste News - und prüft,
+dass sich der Fortschritt im Dashboard live aktualisiert und über "Mein Profil"
+jederzeit erneut aufrufbar bleibt. Legt dabei ein neues Haus mit eindeutiger,
+zeitstempelbasierter Kennung an; wiederholte Läufe kollidieren daher nicht.
 
 ## Hinweis zum Zustand
 
