@@ -9,7 +9,7 @@ import { buildScopes, displayName, scopeLabel, sortiereRollen } from "../../core
 import type { JwtPayload } from "../../core/guards";
 import type { RequestUser } from "../../core/request-user";
 
-const userWithContext = {
+export const userWithContext = {
   tenant: { select: { slug: true, name: true, logoUrl: true } },
   location: { select: { name: true, code: true } },
   department: { select: { name: true, code: true } },
@@ -27,6 +27,27 @@ const userWithContext = {
     },
   },
 } as const;
+
+/** Form eines Benutzerdatensatzes mit den Beziehungen aus `userWithContext`. */
+export interface UserWithContext {
+  id: string;
+  tenantId: string;
+  username: string;
+  email: string | null;
+  firstName: string;
+  lastName: string;
+  jobTitle: string;
+  mustChangePassword: boolean;
+  isPlatformAdmin: boolean;
+  locationId: string | null;
+  departmentId: string | null;
+  tokenVersion: number;
+  tenant: { slug: string; name: string; logoUrl: string | null };
+  location: { name: string; code: string } | null;
+  department: { name: string; code: string } | null;
+  specialtyArea: { name: string; code: string } | null;
+  roles: { role: { key: string; name: string; rank: number; permissions: { permission: { key: string } }[] } }[];
+}
 
 @Injectable()
 export class AuthService {
@@ -91,6 +112,27 @@ export class AuthService {
       data: { lastLoginAt: new Date(), failedLoginCount: 0, lockedUntil: null },
     });
 
+    const result = await this.issueSession(user);
+
+    await this.audit.log({
+      actor: { id: user.id, username: user.username },
+      action: "auth.login",
+      entityType: "user",
+      entityId: user.id,
+      detail: `Anmeldung erfolgreich für ${result.user.displayName}`,
+    });
+
+    return result;
+  }
+
+  /**
+   * Stellt für ein bereits geprüftes Konto eine Sitzung aus.
+   *
+   * Trägt selbst kein Audit-Log ein - `lastLoginAt`, Art der Anmeldung und der
+   * Log-Eintrag unterscheiden sich je Anmeldeweg und bleiben Sache der
+   * aufrufenden Stelle (Passwort hier, Entra ID in `EntraService`).
+   */
+  async issueSession(user: UserWithContext): Promise<{ token: string; user: SessionUser }> {
     const session = this.toSessionUser(user);
     const payload: JwtPayload = {
       sub: session.id,
@@ -106,14 +148,6 @@ export class AuthService {
       tokenVersion: user.tokenVersion,
       isPlatformAdmin: user.isPlatformAdmin,
     };
-
-    await this.audit.log({
-      actor: { id: user.id, username: user.username },
-      action: "auth.login",
-      entityType: "user",
-      entityId: user.id,
-      detail: `Anmeldung erfolgreich für ${session.displayName}`,
-    });
 
     return { token: await this.jwt.signAsync(payload), user: session };
   }
@@ -180,21 +214,7 @@ export class AuthService {
     });
   }
 
-  private toSessionUser(user: {
-    id: string;
-    username: string;
-    email: string | null;
-    firstName: string;
-    lastName: string;
-    jobTitle: string;
-    mustChangePassword: boolean;
-    isPlatformAdmin: boolean;
-    tenant: { slug: string; name: string; logoUrl: string | null };
-    location: { name: string; code: string } | null;
-    department: { name: string; code: string } | null;
-    specialtyArea: { name: string; code: string } | null;
-    roles: { role: { key: string; name: string; rank: number; permissions: { permission: { key: string } }[] } }[];
-  }): SessionUser {
+  private toSessionUser(user: UserWithContext): SessionUser {
     const sortiert = sortiereRollen(user.roles.map((entry) => entry.role));
     const effectiveRoles = sortiert.length ? sortiert : [{ key: "mitarbeiter", name: "Mitarbeitende", rank: 0 }];
     const permissions = [

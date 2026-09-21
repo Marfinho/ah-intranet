@@ -352,6 +352,31 @@ export interface CalendarEvent {
   organizer: string;
 }
 
+/**
+ * Live von Microsoft Graph geholt, nie in AHOI gespeichert - deshalb ohne
+ * eigene ID im Sinn eines Datensatzes und ohne Aufbewahrungsfrist in
+ * `retention.ts`. Nur zu sehen für Konten, die sich mindestens einmal über
+ * Entra ID angemeldet haben.
+ */
+export interface OutlookCalendarEvent {
+  id: string;
+  title: string;
+  startsAt: string;
+  endsAt: string;
+  isAllDay: boolean;
+  location: string | null;
+  organizer: string | null;
+  /** Öffnet den Termin in Outlook im Web. */
+  webLink: string;
+}
+
+export interface OutlookCalendarState {
+  /** False heißt: noch nie über Microsoft angemeldet, oder der Zugriff wurde entzogen. */
+  verbunden: boolean;
+  events: OutlookCalendarEvent[];
+  fehler?: string;
+}
+
 export interface TicketComment {
   id: string;
   author: string;
@@ -570,14 +595,17 @@ export const AUTH_PROVIDER_DEFINITIONS: readonly AuthProviderDefinition[] = [
     kind: "entra",
     name: "Microsoft Entra ID",
     description:
-      "Anmeldung mit dem Firmenkonto über OpenID Connect. Auf Entra-beigetretenen Rechnern läuft sie ohne Eingabe " +
-      "durch, auf allen anderen Geräten über das Microsoft-Anmeldefenster.",
-    inBetrieb: false,
+      "Anmeldung mit dem Firmenkonto über OpenID Connect. Zusätzlich zeigt der Kalender dann die Termine aus dem " +
+      "verknüpften Outlook-Kalender an (lesend, nichts wird in AHOI gespeichert).",
+    inBetrieb: true,
     voraussetzungen: [
-      "Verzeichnis-ID des Hauses aus dem Entra-Portal",
-      "App-Registrierung mit Umleitungs-URI auf diese Installation",
-      "Clientschlüssel der App-Registrierung",
-      "Zuordnung der Konten: die Kennung im Intranet muss zum Konto im Verzeichnis passen",
+      "Verzeichnis-ID (Tenant-ID) des Hauses aus dem Entra-Portal",
+      "App-Registrierung vom Typ „Web“ mit Umleitungs-URI genau auf " +
+        "„<Adresse dieser API>/auth/entra/callback“ (z. B. https://intranet.beispiel-ah.de/api/auth/entra/callback)",
+      "Clientschlüssel (Secret) dieser App-Registrierung",
+      "API-Berechtigungen (delegiert) „User.Read“ und „Calendars.Read“, mit Administratoreinwilligung",
+      "Zuordnung der Konten: Beim ersten Anmelden über Microsoft wird über die E-Mail-Adresse ein bestehendes " +
+        "AHOI-Konto verknüpft - ohne passende E-Mail-Adresse im Haus entsteht kein neues Konto",
     ],
   },
 ];

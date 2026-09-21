@@ -172,9 +172,16 @@ Erfolg des Restores.
   an der Domäne des Kunden hängen.
 - Zusätzliche Anmeldearten je Haus in `TenantAuthProvider`, Katalog in
   `packages/shared/src/types.ts` (`AUTH_PROVIDER_DEFINITIONS`).
-- **Entra ID ist vorbereitet, nicht in Betrieb.** Zugangsdaten lassen sich
-  hinterlegen, freischalten nicht – solange der Austausch fehlt, wäre ein Knopf
-  im Anmeldeformular eine Lüge. Der Schalter weist das mit Begründung ab.
+- **Entra ID ist in Betrieb.** Anmeldung per OpenID Connect
+  (`core/microsoft-identity.ts`, `modules/auth/entra.*`), Verknüpfung eines
+  bestehenden Kontos über die E-Mail-Adresse beim ersten Anmelden – es entsteht
+  dabei nie ein neues Konto. Mit `offline_access` zusätzlich lesender Zugriff
+  auf den Outlook-Kalender über Microsoft Graph
+  (`modules/resources/outlook-calendar.service.ts`): live abgerufen, nirgends
+  gespeichert, deshalb ohne eigene Aufbewahrungsfrist. Das ID-Token wird nur
+  über `aud`/`iss`(`tid`)/`exp` geprüft, nicht gegen die JWKS-Signatur – vertretbar,
+  weil die API es selbst, mit Clientschlüssel authentifiziert, direkt vom
+  Token-Endpunkt abholt statt es vom Browser durchgereicht zu bekommen.
 - Geheimnisse verschlüsselt (`core/geheimnis.ts`, AES-256-GCM, `SECRET_KEY`).
   Ohne Schlüssel wird nichts gespeichert – lieber eine Absage als Klartext.
 - **Kerberos/SPNEGO bleibt draußen:** nur auf domänenbeigetretenen Rechnern,

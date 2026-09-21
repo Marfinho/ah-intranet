@@ -352,6 +352,14 @@ model User {
   failedLoginCount   Int        @default(0)
   /// Gesetzt, solange das Konto nach zu vielen Fehlversuchen gesperrt ist.
   lockedUntil        DateTime?
+  /// Objekt-ID des verknüpften Kontos in Microsoft Entra ID. Verknüpft wird
+  /// beim ersten Anmelden über Entra, anhand der E-Mail-Adresse - danach
+  /// entscheidet nur noch diese ID, nicht mehr die (änderbare) E-Mail-Adresse.
+  entraObjectId      String?
+  /// Verschlüsselt (AES-256-GCM); für den lesenden Zugriff auf den
+  /// Outlook-Kalender. Verlässt die API nie im Klartext.
+  msRefreshToken     String?
+  msTokenUpdatedAt   DateTime?
   locationId         String?
   departmentId       String?
   specialtyAreaId    String?
@@ -403,6 +411,7 @@ model User {
 
   @@unique([tenantId, username])
   @@unique([tenantId, email])
+  @@unique([tenantId, entraObjectId])
   @@index([status])
   @@index([locationId, departmentId])
   @@index([tenantId])

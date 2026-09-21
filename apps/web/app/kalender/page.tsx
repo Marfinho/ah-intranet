@@ -1,13 +1,15 @@
-import type { CalendarEvent } from "@ah-intranet/shared";
+import type { CalendarEvent, OutlookCalendarState } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
 import { FilterBar } from "@/components/filter-bar";
 import { ActionButton } from "@/components/forms";
 import { EmptyState, Section } from "@/components/ui";
 import { EventComposer } from "./event-composer";
-import { apiGet } from "@/lib/api";
+import { apiGet, apiGetSafe } from "@/lib/api";
 import { can, requireModule } from "@/lib/session";
 import { deleteEventAction } from "@/lib/actions";
 import { formatRange } from "@/lib/utils";
+
+const KEIN_OUTLOOK: OutlookCalendarState = { verbunden: false, events: [] };
 
 const CATEGORY_STYLES: Record<string, string> = {
   schulung: "bg-sky-100 text-sky-800",
@@ -23,7 +25,10 @@ export default async function CalendarPage({ searchParams }: { searchParams: { c
   const query = new URLSearchParams();
   if (searchParams.category) query.set("category", searchParams.category);
 
-  const events = await apiGet<CalendarEvent[]>(`/calendar?${query.toString()}`);
+  const [events, outlook] = await Promise.all([
+    apiGet<CalendarEvent[]>(`/calendar?${query.toString()}`),
+    apiGetSafe<OutlookCalendarState>("/calendar/outlook", KEIN_OUTLOOK),
+  ]);
   const canCreate = can(session, "calendar.manage");
 
   // Nach Monat gruppieren, damit lange Listen lesbar bleiben.
@@ -38,6 +43,46 @@ export default async function CalendarPage({ searchParams }: { searchParams: { c
       {canCreate ? (
         <Section title="Termin anlegen" subtitle="Sichtbarkeit über Zielgruppen steuern">
           <EventComposer />
+        </Section>
+      ) : null}
+
+      {outlook.verbunden || outlook.fehler ? (
+        <Section
+          title={`${outlook.events.length} Termine aus Outlook`}
+          subtitle="Lesend, die nächsten 30 Tage - hier nicht gespeichert"
+        >
+          {outlook.fehler ? (
+            <p className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+              {outlook.fehler}
+            </p>
+          ) : outlook.events.length === 0 ? (
+            <p className="text-sm text-slate-600">Für die nächsten 30 Tage steht dort nichts.</p>
+          ) : (
+            <ul className="space-y-3">
+              {outlook.events.map((event) => (
+                <li key={event.id} className="rounded-2xl border border-slate-200 p-5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="badge bg-sky-50 text-sky-700">Outlook</span>
+                    <span className="text-xs text-slate-500">
+                      {event.isAllDay ? "ganztägig" : formatRange(event.startsAt, event.endsAt)}
+                    </span>
+                  </div>
+                  <a
+                    href={event.webLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 block font-semibold text-slate-900 hover:text-brand-700 hover:underline"
+                  >
+                    {event.title}
+                  </a>
+                  <p className="mt-2 text-xs text-slate-500">
+                    {event.location ?? "ohne Ort"}
+                    {event.organizer ? ` · ${event.organizer}` : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
         </Section>
       ) : null}
 

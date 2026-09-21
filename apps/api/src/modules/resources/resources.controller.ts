@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query } from "@ne
 import { IsArray, IsIn, IsOptional, IsString, MinLength } from "class-validator";
 import type { CalendarCategory } from "@prisma/client";
 import { ResourcesService } from "./resources.service";
+import { OutlookCalendarService } from "./outlook-calendar.service";
 import { CurrentUser, Feature, Permission } from "../../core/decorators";
 import type { RequestUser } from "../../core/request-user";
 
@@ -25,7 +26,10 @@ class RoomBookingDto {
 @Controller("calendar")
 @Feature("calendar")
 export class CalendarController {
-  constructor(private readonly resources: ResourcesService) {}
+  constructor(
+    private readonly resources: ResourcesService,
+    private readonly outlook: OutlookCalendarService,
+  ) {}
 
   @Get()
   list(
@@ -35,6 +39,15 @@ export class CalendarController {
     @Query("category") category?: string,
   ) {
     return this.resources.events(user, { from, to, category });
+  }
+
+  /**
+   * Nur für Konten, die sich mindestens einmal über Entra ID angemeldet
+   * haben - erst dabei entsteht der Refresh-Token für den Kalenderzugriff.
+   */
+  @Get("outlook")
+  outlookEvents(@CurrentUser() user: RequestUser) {
+    return this.outlook.getEvents(user);
   }
 
   @Post()
