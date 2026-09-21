@@ -286,6 +286,11 @@ export interface EmployeeDirectoryEntry {
   specialtyArea?: string | null;
   phone?: string | null;
   mobile?: string | null;
+  /**
+   * Ob die Mobilnummer im offenen Verzeichnis erscheint. Sie ist häufig eine
+   * private Nummer; das Verzeichnis steht jedem angemeldeten Konto offen.
+   */
+  mobileInDirectory?: boolean;
   email?: string | null;
   responsibilities: string[];
   presence: Presence;

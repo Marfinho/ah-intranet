@@ -31,6 +31,7 @@ const directorySelect = {
   jobTitle: true,
   phone: true,
   mobile: true,
+  mobileInDirectory: true,
   email: true,
   presence: true,
   responsibilities: true,
@@ -69,7 +70,7 @@ export class PeopleService {
 
   /* ------------------------------------------------------ Verzeichnis */
 
-  async directory(filter: { search?: string; location?: string; department?: string } = {}) {
+  async directory(betrachterId: string, filter: { search?: string; location?: string; department?: string } = {}) {
     const where: Prisma.UserWhereInput = {
       status: "active",
       ...(filter.location && filter.location !== "all" ? { location: { name: filter.location } } : {}),
@@ -98,7 +99,10 @@ export class PeopleService {
     ]);
 
     return {
-      items: users.map((user) => this.toDirectoryEntry(user)),
+      // Das offene Verzeichnis steht jedem angemeldeten Konto offen. Wer seine
+      // Mobilnummer dort nicht sehen möchte, wird hier übergangen - sie selbst
+      // sieht sie weiterhin, die Personalverwaltung über `listUsers` auch.
+      items: users.map((user) => this.toDirectoryEntry(user, { mobilAusblenden: user.id !== betrachterId })),
       locations: locations.map((entry) => entry.name),
       departments: departments.map((entry) => entry.name),
     };
@@ -107,13 +111,20 @@ export class PeopleService {
   /** Eigenes Profil pflegen - Kontaktdaten und Anwesenheit, keine Rollen. */
   async updateOwnProfile(
     user: RequestUser,
-    input: { phone?: string | null; mobile?: string | null; presence?: Presence; responsibilities?: string[] },
+    input: {
+      phone?: string | null;
+      mobile?: string | null;
+      mobileInDirectory?: boolean;
+      presence?: Presence;
+      responsibilities?: string[];
+    },
   ): Promise<EmployeeDirectoryEntry> {
     const updated = await this.prisma.user.update({
       where: { id: user.id },
       data: {
         ...(input.phone !== undefined ? { phone: input.phone } : {}),
         ...(input.mobile !== undefined ? { mobile: input.mobile } : {}),
+        ...(input.mobileInDirectory !== undefined ? { mobileInDirectory: input.mobileInDirectory } : {}),
         ...(input.presence !== undefined ? { presence: PRESENCE_VALUES[input.presence] } : {}),
         ...(input.responsibilities !== undefined ? { responsibilities: input.responsibilities } : {}),
       },
@@ -241,6 +252,13 @@ export class PeopleService {
         ...(input.responsibilities !== undefined ? { responsibilities: input.responsibilities } : {}),
         ...(input.annualLeaveDays !== undefined ? { annualLeaveDays: input.annualLeaveDays } : {}),
         ...(input.status !== undefined ? { status: input.status } : {}),
+        // Beginn der Frist, nach der ausgeschiedene Konten anonymisiert werden
+        // (`retention.ts`, employment_inactive). Nur beim tatsächlichen
+        // Wechsel setzen: ein erneutes Speichern desselben Status darf die
+        // Frist nicht von vorn beginnen lassen.
+        ...(input.status !== undefined && input.status !== existing.status
+          ? { inactiveSince: input.status === "inactive" ? new Date() : null }
+          : {}),
         // Sperre und Rollenwechsel müssen sofort greifen, nicht erst nach
         // Ablauf des Tokens - deshalb werden laufende Sitzungen verworfen.
         ...(input.status !== undefined || input.roles !== undefined ? { tokenVersion: { increment: 1 } } : {}),
@@ -622,7 +640,10 @@ export class PeopleService {
     });
   }
 
-  private toDirectoryEntry(user: Prisma.UserGetPayload<{ select: typeof directorySelect }>): EmployeeDirectoryEntry {
+  private toDirectoryEntry(
+    user: Prisma.UserGetPayload<{ select: typeof directorySelect }>,
+    optionen: { mobilAusblenden?: boolean } = {},
+  ): EmployeeDirectoryEntry {
     const rollen = sortiereRollen(user.roles.map((entry) => entry.role));
     return {
       id: user.id,
@@ -635,7 +656,8 @@ export class PeopleService {
       department: user.department?.name ?? null,
       specialtyArea: user.specialtyArea?.name ?? null,
       phone: user.phone,
-      mobile: user.mobile,
+      mobile: optionen.mobilAusblenden && !user.mobileInDirectory ? null : user.mobile,
+      mobileInDirectory: user.mobileInDirectory,
       email: user.email,
       responsibilities: user.responsibilities,
       presence: PRESENCE_LABELS[user.presence] ?? "vor Ort",

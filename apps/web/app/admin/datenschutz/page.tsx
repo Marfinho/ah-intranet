@@ -4,6 +4,7 @@ import { ActionButton } from "@/components/forms";
 import { FilterBar } from "@/components/filter-bar";
 import { EmptyState, Section } from "@/components/ui";
 import { apiGet } from "@/lib/api";
+import { formatDateTime } from "@/lib/utils";
 import { requirePermission } from "@/lib/session";
 import { aufbewahrungAusfuehrenAction } from "@/lib/actions";
 import { PersonActions } from "./person-actions";
@@ -14,6 +15,15 @@ interface Vorschau {
   days: number;
   cutoff: string;
   entfernt: number;
+  behandlung?: "anonymisiert";
+}
+
+interface LaufStatus {
+  zuletzt: string | null;
+  stundenHer: number | null;
+  ueberfaellig: boolean;
+  ausgeloestVon: string | null;
+  hinweis: string;
 }
 
 export default async function DatenschutzPage({ searchParams }: { searchParams: { search?: string } }) {
@@ -22,9 +32,10 @@ export default async function DatenschutzPage({ searchParams }: { searchParams: 
   const query = new URLSearchParams();
   if (searchParams.search) query.set("search", searchParams.search);
 
-  const [fristen, vorschau, personen] = await Promise.all([
+  const [fristen, vorschau, status, personen] = await Promise.all([
     apiGet<RetentionRule[]>("/datenschutz/aufbewahrung"),
     apiGet<Vorschau[]>("/datenschutz/aufbewahrung/vorschau"),
+    apiGet<LaufStatus>("/datenschutz/aufbewahrung/status"),
     apiGet<EmployeeDirectoryEntry[]>(`/users?${query.toString()}`),
   ]);
 
@@ -38,19 +49,43 @@ export default async function DatenschutzPage({ searchParams }: { searchParams: 
         subtitle={
           betroffen === 0
             ? "Derzeit ist kein Datensatz überfällig."
-            : `${betroffen} Datensätze sind überfällig und würden beim nächsten Lauf gelöscht.`
+            : `${betroffen} Datensätze sind überfällig und würden beim nächsten Lauf gelöscht oder anonymisiert.`
         }
         action={
           <ActionButton
             variant={betroffen > 0 ? "primary" : "ghost"}
-            confirm={`Aufbewahrungslauf jetzt ausführen? ${betroffen} Datensätze werden endgültig gelöscht.`}
+            confirm={`Aufbewahrungslauf jetzt ausführen? ${betroffen} Datensätze werden endgültig gelöscht oder anonymisiert.`}
             action={aufbewahrungAusfuehrenAction}
           >
             Lauf jetzt ausführen
           </ActionButton>
         }
       >
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+        {/*
+          Ohne diese Anzeige bliebe ein ausgefallener Cron unbemerkt - und dann
+          greift keine der unten aufgeführten Fristen, ohne dass es jemandem
+          auffällt.
+        */}
+        <div
+          className={
+            status.ueberfaellig
+              ? "rounded-2xl border border-rose-300 bg-rose-50 p-4 text-sm text-rose-900"
+              : "rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"
+          }
+        >
+          <p className="font-semibold">
+            {status.ueberfaellig ? "Der Aufbewahrungslauf ist überfällig" : "Der Aufbewahrungslauf ist aktuell"}
+          </p>
+          <p className="mt-1">{status.hinweis}</p>
+          {status.zuletzt ? (
+            <p className="mt-1 text-xs">
+              Zuletzt am {formatDateTime(status.zuletzt)}
+              {status.ausgeloestVon ? ` durch ${status.ausgeloestVon}` : ""}.
+            </p>
+          ) : null}
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
           <p>
             Der Lauf läuft üblich nachts per Cron (<code>node dist/scripts/aufbewahrung.js</code>). Die Schaltfläche
             oben ist für den Einzelfall gedacht, nicht für den Regelbetrieb.
@@ -86,12 +121,14 @@ export default async function DatenschutzPage({ searchParams }: { searchParams: 
                   <td className="py-3 align-top">
                     {rule.mode === "delete" ? (
                       <span className="badge bg-emerald-100 text-emerald-800">wird gelöscht</span>
+                    ) : rule.mode === "anonymize" ? (
+                      <span className="badge bg-sky-100 text-sky-900">wird anonymisiert</span>
                     ) : (
                       <span className="badge bg-amber-100 text-amber-900">aufbewahrungspflichtig</span>
                     )}
                   </td>
                   <td className="py-3 align-top text-right font-semibold text-slate-900">
-                    {rule.mode === "delete" ? (vorschauByKey.get(rule.key)?.entfernt ?? 0) : "–"}
+                    {rule.mode === "keep" ? "–" : (vorschauByKey.get(rule.key)?.entfernt ?? 0)}
                   </td>
                 </tr>
               ))}

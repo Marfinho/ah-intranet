@@ -20,6 +20,28 @@ class LoeschungDto {
 }
 
 /**
+ * Auskunft über die eigenen Daten.
+ *
+ * Bewusst ein eigener Controller **ohne** `privacy.manage`: Art. 15 DSGVO ist
+ * ein Recht der betroffenen Person, kein Vorgang der Verwaltung. `docs/
+ * datenschutz.md` verlangt unter "Mitbestimmung" ohnehin einen benannten
+ * Auskunftsweg - der über einen Antrag bei der Administration läuft, solange
+ * es diesen Weg nicht gibt.
+ *
+ * Es gibt hier keinen Parameter: die Auskunft betrifft immer das angemeldete
+ * Konto. Ein `:userId` wäre eine Einladung, fremde Kennungen auszuprobieren.
+ */
+@Controller("meine-daten")
+export class SelbstauskunftController {
+  constructor(private readonly privacy: PrivacyService) {}
+
+  @Get("auskunft")
+  auskunft(@CurrentUser() user: RequestUser) {
+    return this.privacy.auskunft(user, user.id);
+  }
+}
+
+/**
  * Datenschutzfunktionen der Administration.
  *
  * Bewusst **kein** abschaltbares Modul: Auskunft und Löschung sind gesetzliche
@@ -42,6 +64,15 @@ export class PrivacyController {
     return this.privacy.vorschau();
   }
 
+  /**
+   * Wann der Lauf zuletzt stattfand. Ohne diese Anzeige bliebe ein
+   * ausgefallener Cron unbemerkt - und damit jede Frist wirkungslos.
+   */
+  @Get("aufbewahrung/status")
+  laufStatus() {
+    return this.privacy.laufStatus();
+  }
+
   @Post("aufbewahrung/ausfuehren")
   @HttpCode(200)
   ausfuehren(@CurrentUser() user: RequestUser) {
@@ -49,8 +80,8 @@ export class PrivacyController {
   }
 
   @Get("auskunft/:userId")
-  auskunft(@Param("userId") userId: string) {
-    return this.privacy.auskunft(userId);
+  auskunft(@Param("userId") userId: string, @CurrentUser() user: RequestUser) {
+    return this.privacy.auskunft(user, userId);
   }
 
   @Delete("person/:userId")

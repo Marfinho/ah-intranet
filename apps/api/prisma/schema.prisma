@@ -329,6 +329,10 @@ model User {
   jobTitle           String     @default("Mitarbeitende:r")
   phone              String?
   mobile             String?
+  /// Ob die Mobilnummer im offenen Verzeichnis erscheint. Die Nummer ist
+  /// häufig eine private; jedes Konto entscheidet darüber selbst. Die
+  /// Personalverwaltung sieht sie unabhängig davon.
+  mobileInDirectory  Boolean    @default(true)
   presence           Presence   @default(vor_ort)
   responsibilities   String[]   @default([])
   status             UserStatus @default(active)
@@ -340,6 +344,12 @@ model User {
   /// Zeitpunkt der Anonymisierung nach Art. 17 DSGVO. Gesetzt heißt: die
   /// identifizierenden Felder sind ersetzt, der Vorgangsbezug bleibt erhalten.
   anonymizedAt       DateTime?
+  /// Seit wann das Konto nicht mehr aktiv ist - gesetzt beim Wechsel auf
+  /// `inactive`, geleert bei der Rückkehr auf `active`. Grundlage der Frist,
+  /// nach der ausgeschiedene Konten anonymisiert werden. Bewusst ein eigenes
+  /// Feld: `updatedAt` verschiebt jede Nebensächlichkeit, und die Frist liefe
+  /// dann still immer weiter.
+  inactiveSince      DateTime?
   /// Darf Mandanten anlegen und sperren - betrifft alle Häuser, nicht nur das eigene.
   isPlatformAdmin    Boolean    @default(false)
   /// Wird bei Sperre und Passwortwechsel erhöht und macht alle bis dahin
@@ -399,6 +409,7 @@ model User {
   @@unique([tenantId, username])
   @@unique([tenantId, email])
   @@index([status])
+  @@index([status, inactiveSince])
   @@index([locationId, departmentId])
   @@index([tenantId])
 }

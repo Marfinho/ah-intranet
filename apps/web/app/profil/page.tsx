@@ -61,7 +61,22 @@ export default async function ProfilePage() {
             presence: me?.presence ?? "vor Ort",
             responsibilities: (me?.responsibilities ?? []).join(", "),
           }}
+          mobileInDirectory={me?.mobileInDirectory ?? true}
         />
+      </Section>
+
+      <Section title="Meine Daten" subtitle="Auskunft nach Art. 15 DSGVO – alles, was das Intranet über Sie hält">
+        <p className="text-sm text-slate-600">
+          Die Datei enthält Ihre Stammdaten und alle Vorgänge, die Ihnen über ein Datenfeld zugeordnet sind –
+          Bestellungen, Abwesenheiten, Serviceanfragen, Lesebestätigungen und Protokolleinträge. Freitexte anderer
+          Personen können Sie nennen, ohne dass ein Feld darauf zeigt; welche Stellen das sind, führt die Datei auf.
+        </p>
+        <a
+          href="/profil/auskunft"
+          className="mt-4 inline-flex items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+        >
+          Auskunft herunterladen
+        </a>
       </Section>
 
       <Section

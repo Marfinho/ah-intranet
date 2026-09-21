@@ -28,6 +28,7 @@ import type { RequestUser } from "../../core/request-user";
 class ProfileDto {
   @IsOptional() @IsString() phone?: string | null;
   @IsOptional() @IsString() mobile?: string | null;
+  @IsOptional() @IsBoolean() mobileInDirectory?: boolean;
   @IsOptional() @IsIn(["vor Ort", "mobil", "abwesend"]) presence?: Presence;
   @IsOptional() @IsArray() @IsString({ each: true }) responsibilities?: string[];
 }
@@ -136,11 +137,12 @@ export class DirectoryController {
 
   @Get()
   list(
+    @CurrentUser() user: RequestUser,
     @Query("search") search?: string,
     @Query("location") location?: string,
     @Query("department") department?: string,
   ) {
-    return this.people.directory({ search, location, department });
+    return this.people.directory(user.id, { search, location, department });
   }
 }
 

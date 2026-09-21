@@ -85,6 +85,14 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      # Ohne diese Stufe fällt eine bekannte Lücke in einer Abhängigkeit erst
+      # auf, wenn jemand von Hand nachsieht. Genau so blieb next@14.2.21 mit
+      # dem Middleware-Bypass über Monate stehen.
+      # `--audit-level high`: niedrigere Meldungen betreffen fast immer
+      # Werkzeuge des Baus und würden die Pipeline zum Rauschen machen.
+      - name: Bekannte Lücken in Abhängigkeiten
+        run: pnpm audit --audit-level high --prod
+
       - name: Typen prüfen
         run: pnpm typecheck
 

@@ -21,11 +21,51 @@ nötigen Schlüssel gesetzt sind. Er eignet sich als Ziel für einen Monitor; ei
 | -------------- | -------------------------------------- | ----------------------------- |
 | `DATABASE_URL` | Verbindung zur Datenbank               | –                             |
 | `JWT_SECRET`   | signiert die Sitzungen                 | alle müssen sich neu anmelden |
+| `SECRET_KEY`   | verschlüsselt hinterlegte Geheimnisse  | Geheimnisse sind unlesbar     |
 | `FRONTEND_URL` | erlaubte Herkunft für CORS und Cookies | –                             |
+| `NODE_ENV`     | `production` schärft Cookie und Header | –                             |
 
 `JWT_SECRET` ist der einzige Wert, dessen Verlust spürbar ist – und er kostet
 nur eine neue Anmeldung. Ein gestohlenes Backup enthält trotzdem alle
 Personendaten des Hauses; es gehört verschlüsselt abgelegt.
+
+**Die API startet nicht mit einem untauglichen `JWT_SECRET`.** Abgewiesen werden
+die Beispielwerte aus diesem Repository (`bitte-aendern-langer-zufallswert` und
+Verwandte) sowie – mit `NODE_ENV=production` – alles unter 32 Zeichen. Ein
+Startabbruch ist unbequem und genau deshalb richtig: mit einem Schlüssel, der
+im Repository nachzulesen ist, ließe sich jede Sitzung fälschen, bis hin zur
+Plattformverwaltung. Erzeugen mit:
+
+```bash
+openssl rand -base64 48
+```
+
+### HTTPS ist im Produktivbetrieb Voraussetzung
+
+Mit `NODE_ENV=production` heißt das Sitzungscookie `__Host-ah_session`. Der
+Präfix ist eine Zusage, die der Browser durchsetzt: Er nimmt ein solches Cookie
+**nur über HTTPS** an. Läuft die Anwendung dann hinter reinem HTTP, verwirft der
+Browser das Cookie, und niemand kann sich anmelden.
+
+Das ist gewollt. Eine Sitzung im Klartext über das Netz ist nichts, was die
+Anwendung stillschweigend mittragen sollte. Der Gegenwert: Kein Dienst auf einer
+Nachbardomain kann ein Cookie für unseren Ursprung unterschieben.
+
+### Protokolle und ihre Frist
+
+Die Anwendung schreibt je Anfrage eine JSON-Zeile mit Haus, Route, Status, Dauer
+und **Benutzername** auf die Standardausgabe; Ausfälle des Audit-Protokolls
+gehen als `art: "audit-ausfall"` auf die Standardfehlerausgabe.
+
+Diese Zeilen liegen außerhalb der Reichweite von `retention.ts` – die Frist muss
+die Protokolleinsammlung des Betriebs durchsetzen. **Vorgabe: höchstens drei
+Jahre, entsprechend dem Audit-Log, eher kürzer.** Ein Anfrageprotokoll ohne
+Frist ist eine zweite, unkontrollierte Personendatenhaltung und nach § 87 Abs. 1
+Nr. 6 BetrVG mitbestimmungspflichtig – siehe
+[`datenschutz.md`](datenschutz.md).
+
+Zwei Zeilen lohnen einen Alarm: `art: "audit-ausfall"` (das Protokoll hat
+Lücken) und ein Healthcheck mit `checks.audit.ok: false`.
 
 ## Sicherung
 

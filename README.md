@@ -150,15 +150,25 @@ Mehrere Autohäuser teilen sich eine Installation, ohne einander zu sehen.
 
 ## Datenschutz
 
+Jedes Konto findet unter **Profil → Meine Daten** die eigene **Auskunft nach
+Art. 15 DSGVO** – ohne Antrag und ohne Umweg über die Verwaltung. Jeder Abruf
+steht im Audit-Log.
+
 Unter **Administration → Datenschutz**:
 
-- **Auskunft nach Art. 15 DSGVO** als Datei, die sich unverändert aushändigen
-  lässt – samt Hinweis auf Freitexte, die maschinell nicht erfassbar sind.
+- **Auskunft nach Art. 15 DSGVO** für schriftliche Anträge und ausgeschiedene
+  Konten, als Datei, die sich unverändert aushändigen lässt – samt Hinweis auf
+  Freitexte, die maschinell nicht erfassbar sind.
 - **Löschung nach Art. 17 DSGVO** als Anonymisierung: das Konto verliert seine
   Identität, aufbewahrungspflichtige Bestellungen und Freigaben bleiben erhalten
   (§ 147 AO, § 257 HGB). Rein persönliche Spuren werden wirklich entfernt.
 - **Aufbewahrungsfristen** je Datenart mit Begründung, dazu eine Vorschau, was
-  ein Lauf heute entfernen würde.
+  ein Lauf heute entfernen oder anonymisieren würde – und die Anzeige, **wann
+  der Lauf zuletzt stattfand**. Bleibt er aus, greift keine Frist; ohne diese
+  Anzeige fiele das niemandem auf.
+- Ausgeschiedene Konten werden nach drei Jahren von selbst anonymisiert.
+  Krankmeldungen haben als Gesundheitsdatum nach Art. 9 eine eigene, kürzere
+  Frist.
 
 Der Aufräumlauf läuft per Cron:
 

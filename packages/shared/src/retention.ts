@@ -11,7 +11,7 @@
  * abgeglichen - siehe `docs/datenschutz.md`.
  */
 
-export type RetentionMode = "delete" | "keep";
+export type RetentionMode = "delete" | "anonymize" | "keep";
 
 export interface RetentionRule {
   key: string;
@@ -20,7 +20,10 @@ export interface RetentionRule {
   description: string;
   /**
    * `delete`: Der Aufräumlauf entfernt Datensätze nach `days` Tagen.
-   * `keep`: Wird bewusst nicht automatisch gelöscht - die Begründung steht in
+   * `anonymize`: Der Datensatz bleibt, verliert aber seinen Personenbezug -
+   * für Anker aufbewahrungspflichtiger Vorgänge, die ein hartes Löschen
+   * mitreißen würde.
+   * `keep`: Wird bewusst nicht automatisch angefasst - die Begründung steht in
    * `reason`. Ohne diese Unterscheidung entstünde der Eindruck, es werde alles
    * gelöscht, während Bestellungen zehn Jahre liegen bleiben müssen.
    */
@@ -78,12 +81,21 @@ export const RETENTION_RULES: readonly RetentionRule[] = [
   },
   {
     key: "absence",
-    label: "Abwesenheiten",
-    description: "Urlaub, Gleitzeit, Krankmeldungen ohne Diagnose.",
+    label: "Abwesenheiten (ohne Krankmeldungen)",
+    description: "Urlaub, Gleitzeit, Sonderurlaub, Fortbildung.",
     mode: "delete",
     days: 3 * JAHR,
     reason:
       "Urlaubsansprüche verjähren regelmäßig in drei Jahren. Aufzeichnungen zur Arbeitszeit verlangt § 16 Abs. 2 ArbZG zwei Jahre - die längere Frist gilt.",
+  },
+  {
+    key: "absence_sick",
+    label: "Krankmeldungen",
+    description: "Die Tatsache der Arbeitsunfähigkeit, ohne Diagnose.",
+    mode: "delete",
+    days: JAHR,
+    reason:
+      "Auch ohne Diagnose ist die Arbeitsunfähigkeit ein Gesundheitsdatum nach Art. 9 Abs. 1 DSGVO und verlangt die strengere Behandlung. Die Begründung der übrigen Abwesenheiten - Verjährung von Urlaubsansprüchen - trägt hier nicht: ein Krankheitstag begründet keinen Anspruch, der in drei Jahren verjährt. Ein Jahr deckt die Zuordnung innerhalb des Entgeltfortzahlungszeitraums und den Jahresvergleich ab; danach überwiegt der Personenbezug deutlich.",
   },
   {
     key: "order",
@@ -123,12 +135,21 @@ export const RETENTION_RULES: readonly RetentionRule[] = [
   },
   {
     key: "employment",
-    label: "Personalstammdaten",
-    description: "Name, Kontakt, Standort, Abteilung, Rollen.",
+    label: "Personalstammdaten aktiver Konten",
+    description: "Name, Kontakt, Standort, Abteilung, Rollen von Beschäftigten im Haus.",
     mode: "keep",
     days: 10 * JAHR,
     reason:
-      "Solange das Arbeitsverhältnis besteht, ist die Verarbeitung für dessen Durchführung erforderlich. Danach greifen die Fristen der Lohnunterlagen; das Intranet anonymisiert und hält keine Personalakte.",
+      "Solange das Arbeitsverhältnis besteht, ist die Verarbeitung für dessen Durchführung erforderlich (§ 26 Abs. 1 BDSG). Eine Frist greift deshalb erst, wenn das Konto auf inaktiv gesetzt wird - siehe die folgende Regel.",
+  },
+  {
+    key: "employment_inactive",
+    label: "Personalstammdaten ausgeschiedener Konten",
+    description: "Konten, die auf inaktiv gesetzt wurden - Austritt, Elternzeit, längeres Ruhen.",
+    mode: "anonymize",
+    days: 3 * JAHR,
+    reason:
+      "Mit dem Ende des Beschäftigungsverhältnisses endet der Zweck nach § 26 Abs. 1 BDSG; die Fristen der Lohnunterlagen betreffen die Lohnbuchhaltung, nicht das Intranet. Drei Jahre decken die regelmäßige Verjährung ab und laufen mit dem Audit-Log gleich. Anonymisiert statt gelöscht, weil Bestellungen und Freigaben dieser Person zehn Jahre nachvollziehbar bleiben müssen - das Konto bleibt als Anker ohne Identität.",
   },
 ];
 
@@ -141,6 +162,16 @@ export function getRetentionRule(key: string): RetentionRule | undefined {
 /** Datenarten, die der Aufräumlauf tatsächlich löscht. */
 export function deletableRules(): RetentionRule[] {
   return RETENTION_RULES.filter((rule) => rule.mode === "delete");
+}
+
+/** Datenarten, die der Aufräumlauf anonymisiert statt löscht. */
+export function anonymizableRules(): RetentionRule[] {
+  return RETENTION_RULES.filter((rule) => rule.mode === "anonymize");
+}
+
+/** Alles, was der Aufräumlauf anfasst - gleich auf welche Weise. */
+export function enforcedRules(): RetentionRule[] {
+  return RETENTION_RULES.filter((rule) => rule.mode !== "keep");
 }
 
 /**

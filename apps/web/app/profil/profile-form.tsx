@@ -6,7 +6,13 @@ import { updateProfileAction, type ActionState } from "@/lib/actions";
 
 const initialState: ActionState = { ok: true };
 
-export function ProfileForm({ defaults }: { defaults: Record<string, string> }) {
+export function ProfileForm({
+  defaults,
+  mobileInDirectory,
+}: {
+  defaults: Record<string, string>;
+  mobileInDirectory: boolean;
+}) {
   const [state, formAction] = useFormState(updateProfileAction, initialState);
 
   return (
@@ -17,6 +23,20 @@ export function ProfileForm({ defaults }: { defaults: Record<string, string> }) 
 
       <Field label="Mobil">
         <input name="mobile" defaultValue={defaults.mobile} className={inputClass} placeholder="0171 0000000" />
+        {/*
+          Die Mobilnummer ist oft eine private. Das Verzeichnis steht jedem
+          angemeldeten Konto offen - wer die Nummer dort nicht haben möchte,
+          soll sie nicht löschen müssen, um sie der Verwaltung vorzuenthalten.
+        */}
+        <label className="mt-2 flex items-center gap-2 text-sm text-slate-600">
+          <input
+            type="checkbox"
+            name="mobileInDirectory"
+            defaultChecked={mobileInDirectory}
+            className="h-4 w-4 rounded border-slate-300"
+          />
+          Im Mitarbeiterverzeichnis anzeigen
+        </label>
       </Field>
 
       <Field label="Anwesenheit">

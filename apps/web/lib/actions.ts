@@ -431,6 +431,9 @@ export async function updateProfileAction(_previous: ActionState, formData: Form
   const payload = {
     phone: String(formData.get("phone") ?? ""),
     mobile: String(formData.get("mobile") ?? ""),
+    // Ein nicht angehaktes Kontrollkästchen schickt gar nichts mit - das
+    // Fehlen ist hier die Aussage "nicht im Verzeichnis zeigen".
+    mobileInDirectory: formData.get("mobileInDirectory") === "on",
     presence: String(formData.get("presence") ?? "vor Ort"),
     responsibilities: String(formData.get("responsibilities") ?? "")
       .split(",")

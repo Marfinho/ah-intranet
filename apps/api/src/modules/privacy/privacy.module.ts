@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
-import { PrivacyController } from "./privacy.controller";
+import { PrivacyController, SelbstauskunftController } from "./privacy.controller";
 import { PrivacyService } from "./privacy.service";
 
 @Module({
-  controllers: [PrivacyController],
+  controllers: [PrivacyController, SelbstauskunftController],
   providers: [PrivacyService],
   exports: [PrivacyService],
 })
