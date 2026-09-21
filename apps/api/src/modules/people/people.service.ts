@@ -18,7 +18,7 @@ import type {
 } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
 import { AuditService } from "../../core/audit.service";
-import { PRESENCE_LABELS, PRESENCE_VALUES, buildScopes, displayName, sortiereRollen } from "../../core/mappers";
+import { PRESENCE_LABELS, PRESENCE_VALUES, displayName, resolveUserScopes, sortiereRollen } from "../../core/mappers";
 import type { RequestUser } from "../../core/request-user";
 
 const directorySelect = {
@@ -152,12 +152,13 @@ export class PeopleService {
   }
 
   async organisation() {
-    const [locations, departments, specialties] = await Promise.all([
+    const [locations, departments, specialties, brands] = await Promise.all([
       this.prisma.location.findMany({ orderBy: { name: "asc" } }),
       this.prisma.department.findMany({ orderBy: { name: "asc" } }),
       this.prisma.specialtyArea.findMany({ orderBy: { name: "asc" } }),
+      this.prisma.brand.findMany({ orderBy: { name: "asc" } }),
     ]);
-    return { locations, departments, specialties };
+    return { locations, departments, specialties, brands };
   }
 
   async createUser(
@@ -170,7 +171,7 @@ export class PeopleService {
     }
 
     const initialPassword = input.password ?? this.generatePassword();
-    const scopes = await this.resolveScopes(input);
+    const scopes = await resolveUserScopes(this.prisma, input);
 
     const created = await this.prisma.user.create({
       data: {
@@ -213,7 +214,7 @@ export class PeopleService {
       throw new NotFoundException("Benutzer nicht gefunden");
     }
 
-    const scopes = await this.resolveScopes({
+    const scopes = await resolveUserScopes(this.prisma, {
       locationId: input.locationId !== undefined ? input.locationId : existing.locationId,
       departmentId: input.departmentId !== undefined ? input.departmentId : existing.departmentId,
       specialtyAreaId: input.specialtyAreaId !== undefined ? input.specialtyAreaId : existing.specialtyAreaId,
@@ -563,30 +564,6 @@ export class PeopleService {
       throw new BadRequestException(`Unbekannte Rolle: ${unbekannt.join(", ")}`);
     }
     return rows.map((row) => ({ roleId: row.id }));
-  }
-
-  private async resolveScopes(input: {
-    locationId?: string | null;
-    departmentId?: string | null;
-    specialtyAreaId?: string | null;
-  }): Promise<string[]> {
-    const [location, department, specialty] = await Promise.all([
-      input.locationId
-        ? this.prisma.location.findUnique({ where: { id: input.locationId }, select: { code: true } })
-        : null,
-      input.departmentId
-        ? this.prisma.department.findUnique({ where: { id: input.departmentId }, select: { code: true } })
-        : null,
-      input.specialtyAreaId
-        ? this.prisma.specialtyArea.findUnique({ where: { id: input.specialtyAreaId }, select: { code: true } })
-        : null,
-    ]);
-
-    return buildScopes({
-      locationCode: location?.code,
-      departmentCode: department?.code,
-      specialtyCode: specialty?.code,
-    });
   }
 
   private generatePassword(): string {
