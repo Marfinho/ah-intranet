@@ -13,8 +13,10 @@ export type AppRole = string;
 
 /**
  * Zielgruppen werden als flache Tokens abgebildet: `global`, `location:<code>`,
- * `department:<code>` oder `specialty:<code>`. Das erlaubt eine einzige
- * Array-Überlappungsabfrage statt mehrerer Joins.
+ * `department:<code>`, `specialty:<code>` oder `brand:<code>`. Das erlaubt eine
+ * einzige Array-Überlappungsabfrage statt mehrerer Joins. `brand:<code>` trägt
+ * jeder Person, deren Standort diese Marke führt - ein Standort kann mehrere
+ * Marken tragen, entsprechend auch mehrere brand-Tokens.
  */
 export type AudienceScope = string;
 

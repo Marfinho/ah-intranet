@@ -152,6 +152,8 @@ model Tenant {
   departments                  Department[]
   specialtyAreas               SpecialtyArea[]
   locationDepartments          LocationDepartment[]
+  brands                       Brand[]
+  locationBrands               LocationBrand[]
   users                        User[]
   roles                        Role[]
   permissions                  Permission[]
@@ -257,10 +259,33 @@ model Location {
   users               User[]
   orderCycles         OrderCycle[]
   locationDepartments LocationDepartment[]
+  locationBrands      LocationBrand[]
   rooms               Room[]
   shifts              Shift[]
   custodyItems        CustodyItem[]
   mealOffers          MealOffer[]
+
+  @@unique([tenantId, name])
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+/// Marke, der ein Standort zugeordnet werden kann (z. B. VW, Audi, Skoda).
+/// Frei durch das Haus angelegt - kein Registry-Eintrag, sondern Stammdaten
+/// wie Standort und Abteilung. Ein Standort kann mehrere Marken führen, eine
+/// Marke mehrere Standorte tragen (m:n über LocationBrand).
+model Brand {
+  id        String   @id @default(cuid())
+  tenantId  String   @default("")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  code      String
+  /// Verweis auf das Markenlogo, kein Datei-Upload (siehe Document.url).
+  logoUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  locationBrands LocationBrand[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, code])
@@ -313,6 +338,21 @@ model LocationDepartment {
   department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, locationId, departmentId])
+  @@index([tenantId])
+}
+
+model LocationBrand {
+  id         String   @id @default(cuid())
+  tenantId   String   @default("")
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  locationId String
+  brandId    String
+  createdAt  DateTime @default(now())
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  brand    Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, locationId, brandId])
   @@index([tenantId])
 }
 

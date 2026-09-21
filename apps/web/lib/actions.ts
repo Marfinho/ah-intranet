@@ -589,6 +589,46 @@ export async function deleteRoleAction(roleId: string): Promise<ActionState> {
   return run(() => apiSend("DELETE", `/roles/${roleId}`), ["/admin/rollen", "/admin/benutzer"]);
 }
 
+/* ------------------------------------------------- Standorte & Marken */
+
+export async function createLocationAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const payload = {
+    name: String(formData.get("name") ?? ""),
+    code: String(formData.get("code") ?? ""),
+    address: String(formData.get("address") ?? "") || undefined,
+    brandIds: formData.getAll("brandIds").map(String),
+  };
+  return run(() => apiSend("POST", "/standorte", payload), ["/admin/standorte"], "Standort angelegt.");
+}
+
+export async function updateLocationAction(
+  locationId: string,
+  input: { name?: string; code?: string; address?: string | null; brandIds?: string[] },
+): Promise<ActionState> {
+  return run(() => apiSend("PATCH", `/standorte/${locationId}`, input), ["/admin/standorte", "/admin/news"]);
+}
+
+export async function deleteLocationAction(locationId: string): Promise<ActionState> {
+  return run(() => apiSend("DELETE", `/standorte/${locationId}`), ["/admin/standorte"]);
+}
+
+export async function createBrandAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const payload = {
+    name: String(formData.get("name") ?? ""),
+    code: String(formData.get("code") ?? ""),
+    logoUrl: String(formData.get("logoUrl") ?? "") || undefined,
+  };
+  return run(() => apiSend("POST", "/marken", payload), ["/admin/standorte"], "Marke angelegt.");
+}
+
+export async function updateBrandLogoAction(brandId: string, logoUrl: string): Promise<ActionState> {
+  return run(() => apiSend("PATCH", `/marken/${brandId}`, { logoUrl }), ["/admin/standorte"]);
+}
+
+export async function deleteBrandAction(brandId: string): Promise<ActionState> {
+  return run(() => apiSend("DELETE", `/marken/${brandId}`), ["/admin/standorte", "/admin/news"]);
+}
+
 export async function upsertCycleAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
   const payload = {
     id: String(formData.get("id") ?? "") || undefined,
