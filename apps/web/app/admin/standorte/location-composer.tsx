@@ -10,6 +10,7 @@ interface Brand {
   id: string;
   name: string;
   code: string;
+  logoUrl: string | null;
 }
 
 /** Neuen Standort anlegen - Marken werden angeklickt wie Tags. */
@@ -41,6 +42,10 @@ export function LocationComposer({ brands }: { brands: Brand[] }) {
                 className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm"
               >
                 <input type="checkbox" name="brandIds" value={brand.id} className="h-4 w-4" />
+                {brand.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- Logo liegt als freie URL vor, kein eigenes Asset.
+                  <img src={brand.logoUrl} alt="" className="h-4 w-4 shrink-0 rounded-sm object-contain grayscale" />
+                ) : null}
                 {brand.name}
               </label>
             ))}

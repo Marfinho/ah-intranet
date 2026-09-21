@@ -10,6 +10,7 @@ interface Brand {
   id: string;
   name: string;
   code: string;
+  logoUrl: string | null;
 }
 
 interface LocationSummary {

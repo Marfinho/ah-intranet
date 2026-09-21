@@ -616,8 +616,13 @@ export async function createBrandAction(_previous: ActionState, formData: FormDa
   const payload = {
     name: String(formData.get("name") ?? ""),
     code: String(formData.get("code") ?? ""),
+    logoUrl: String(formData.get("logoUrl") ?? "") || undefined,
   };
   return run(() => apiSend("POST", "/marken", payload), ["/admin/standorte"], "Marke angelegt.");
+}
+
+export async function updateBrandLogoAction(brandId: string, logoUrl: string): Promise<ActionState> {
+  return run(() => apiSend("PATCH", `/marken/${brandId}`, { logoUrl }), ["/admin/standorte"]);
 }
 
 export async function deleteBrandAction(brandId: string): Promise<ActionState> {

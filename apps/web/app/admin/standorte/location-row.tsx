@@ -8,6 +8,7 @@ interface Brand {
   id: string;
   name: string;
   code: string;
+  logoUrl: string | null;
 }
 
 interface LocationSummary {
@@ -42,7 +43,21 @@ export function LocationRow({ location, allBrands }: { location: LocationSummary
     <div className="rounded-2xl border border-slate-200 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-semibold text-slate-900">{location.name}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-semibold text-slate-900">{location.name}</p>
+            {location.brands
+              .filter((brand) => brand.logoUrl)
+              .map((brand) => (
+                // eslint-disable-next-line @next/next/no-img-element -- Logo liegt als freie URL vor, kein eigenes Asset.
+                <img
+                  key={brand.id}
+                  src={brand.logoUrl!}
+                  alt={`Logo ${brand.name}`}
+                  title={brand.name}
+                  className="h-4 w-4 shrink-0 rounded-sm object-contain grayscale"
+                />
+              ))}
+          </div>
           <p className="mt-1 text-sm text-slate-600">{location.address ?? "Keine Adresse hinterlegt"}</p>
           <p className="mt-1 font-mono text-xs text-slate-400">{location.code}</p>
         </div>

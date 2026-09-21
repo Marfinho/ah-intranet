@@ -21,11 +21,13 @@ class LocationPatchDto {
 class BrandBodyDto {
   @IsString() @MinLength(2) name!: string;
   @IsString() @MinLength(2) code!: string;
+  @IsOptional() @IsString() logoUrl?: string;
 }
 
 class BrandPatchDto {
   @IsOptional() @IsString() @MinLength(2) name?: string;
   @IsOptional() @IsString() @MinLength(2) code?: string;
+  @IsOptional() @IsString() logoUrl?: string;
 }
 
 @Controller("standorte")

@@ -16,6 +16,8 @@ export interface LocationInput {
 export interface BrandInput {
   name: string;
   code: string;
+  /** Verweis auf das Markenlogo - kein Datei-Upload, wie bei Dokumenten (Document.url). */
+  logoUrl?: string | null;
 }
 
 const locationWithBrands = {
@@ -139,7 +141,11 @@ export class OrgService {
 
   async createBrand(actor: RequestUser, input: BrandInput) {
     const brand = await this.prisma.brand.create({
-      data: { name: input.name.trim(), code: this.normalizeCode(input.code) },
+      data: {
+        name: input.name.trim(),
+        code: this.normalizeCode(input.code),
+        logoUrl: input.logoUrl?.trim() || null,
+      },
     });
 
     await this.audit.log({
@@ -164,6 +170,7 @@ export class OrgService {
       data: {
         ...(input.name !== undefined ? { name: input.name.trim() } : {}),
         ...(input.code !== undefined ? { code: this.normalizeCode(input.code) } : {}),
+        ...(input.logoUrl !== undefined ? { logoUrl: input.logoUrl?.trim() || null } : {}),
       },
     });
 
@@ -258,6 +265,7 @@ export class OrgService {
         id: entry.brand.id,
         name: entry.brand.name,
         code: entry.brand.code,
+        logoUrl: entry.brand.logoUrl,
       })),
     };
   }
