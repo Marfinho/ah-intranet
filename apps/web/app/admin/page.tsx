@@ -38,7 +38,8 @@ const ADMIN_LINKS = [
 
 /** Nur für die Plattformverwaltung des Betreibers, nicht für Admins im Haus. */
 const PLATFORM_LINKS = [
-  { href: "/admin/mandanten", label: "Autohäuser", detail: "Mandanten anlegen und freischalten" },
+  { href: "/admin/mandanten", label: "Autohäuser", detail: "Mandanten anlegen, freischalten, Lizenzen und Module" },
+  { href: "/admin/status", label: "Systemstatus", detail: "Zustand der Anwendung und der Datenbank" },
 ];
 
 export default async function AdminPage() {

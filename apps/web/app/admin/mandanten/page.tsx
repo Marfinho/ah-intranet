@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { TenantSummary } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
@@ -32,7 +33,7 @@ export default async function TenantsAdminPage() {
                   <th className="pb-2">Haus</th>
                   <th className="pb-2">Kennung</th>
                   <th className="pb-2">Adresse</th>
-                  <th className="pb-2">Konten</th>
+                  <th className="pb-2">Lizenzen</th>
                   <th className="pb-2">Angelegt</th>
                   <th className="pb-2 text-right">Status</th>
                 </tr>
@@ -41,12 +42,19 @@ export default async function TenantsAdminPage() {
                 {tenants.map((tenant) => (
                   <tr key={tenant.id}>
                     <td className="py-3 font-medium text-slate-900">
-                      {tenant.name}
+                      <Link href={`/admin/mandanten/${tenant.id}`} className="hover:underline">
+                        {tenant.name}
+                      </Link>
                       {tenant.notes ? <p className="text-xs font-normal text-slate-500">{tenant.notes}</p> : null}
                     </td>
                     <td className="py-3 font-mono text-xs text-slate-600">{tenant.slug}</td>
                     <td className="py-3 text-slate-600">{tenant.domain ?? "–"}</td>
-                    <td className="py-3 text-slate-600">{tenant.userCount}</td>
+                    <td className="py-3 text-slate-600">
+                      {tenant.activeUserCount} {tenant.licensedSeats !== null ? `von ${tenant.licensedSeats}` : ""}
+                      {tenant.licensedSeats !== null && tenant.activeUserCount >= tenant.licensedSeats ? (
+                        <span className="ml-2 badge bg-amber-100 text-amber-800">ausgeschöpft</span>
+                      ) : null}
+                    </td>
                     <td className="py-3 text-slate-600">{formatDateTime(tenant.createdAt)}</td>
                     <td className="py-3">
                       <div className="flex items-center justify-end gap-3">

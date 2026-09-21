@@ -172,16 +172,90 @@ export class TenantService implements OnModuleInit {
       include: { _count: { select: { users: true } } },
     });
 
-    return tenants.map((tenant) => ({
+    return Promise.all(
+      tenants.map(async (tenant) => ({
+        id: tenant.id,
+        slug: tenant.slug,
+        name: tenant.name,
+        domain: tenant.domain,
+        isActive: tenant.isActive,
+        notes: tenant.notes,
+        userCount: tenant._count.users,
+        activeUserCount: await this.client.user.count({ where: { tenantId: tenant.id, status: "active" } }),
+        licensedSeats: tenant.licensedSeats,
+        createdAt: tenant.createdAt.toISOString(),
+      })),
+    );
+  }
+
+  /**
+   * Nicht-personenbezogene Kennzahlen eines Hauses für die Plattformübersicht.
+   *
+   * Bewusst nur Zählwerte, keine Inhalte: solange kein
+   * Auftragsverarbeitungsvertrag mit dem Haus steht, darf die
+   * Plattformverwaltung dessen Personendaten nicht einsehen - Zahlen ohne
+   * Personenbezug sind unproblematisch, ein Blick in Bestellungen oder
+   * Tickets wäre es nicht.
+   */
+  async stats(id: string) {
+    const tenant = await this.client.tenant.findUnique({ where: { id } });
+    if (!tenant) {
+      throw new NotFoundException("Mandant nicht gefunden");
+    }
+
+    const [activeUsers, totalUsers, orders, tickets, news, letzterEintrag] = await Promise.all([
+      this.client.user.count({ where: { tenantId: id, status: "active" } }),
+      this.client.user.count({ where: { tenantId: id } }),
+      this.client.order.count({ where: { tenantId: id } }),
+      this.client.ticket.count({ where: { tenantId: id } }),
+      this.client.newsPost.count({ where: { tenantId: id } }),
+      this.client.auditLog.findFirst({
+        where: { tenantId: id },
+        orderBy: { createdAt: "desc" },
+        select: { createdAt: true },
+      }),
+    ]);
+
+    return {
       id: tenant.id,
       slug: tenant.slug,
       name: tenant.name,
-      domain: tenant.domain,
-      isActive: tenant.isActive,
-      notes: tenant.notes,
-      userCount: tenant._count.users,
-      createdAt: tenant.createdAt.toISOString(),
-    }));
+      licensedSeats: tenant.licensedSeats,
+      activeUsers,
+      totalUsers,
+      orders,
+      tickets,
+      news,
+      lastActivityAt: letzterEintrag?.createdAt.toISOString() ?? null,
+    };
+  }
+
+  /**
+   * Setzt das Lizenzkontingent - die Höchstzahl aktiver Konten. `null` hebt
+   * die Begrenzung auf.
+   */
+  async setLicense(id: string, licensedSeats: number | null) {
+    const tenant = await this.client.tenant.findUnique({ where: { id } });
+    if (!tenant) {
+      throw new NotFoundException("Mandant nicht gefunden");
+    }
+    if (licensedSeats !== null && licensedSeats < 1) {
+      throw new BadRequestException("Das Lizenzkontingent muss mindestens 1 sein - oder leer für unbegrenzt.");
+    }
+
+    const updated = await this.client.tenant.update({ where: { id }, data: { licensedSeats } });
+    this.invalidate();
+    return updated;
+  }
+
+  /**
+   * Mandantenkontext unabhängig vom Freischaltstatus - nur für die
+   * Plattformverwaltung, die auch ein gesperrtes Haus noch einsehen darf,
+   * um z. B. Kennzahlen zu prüfen, bevor sie es wieder freischaltet.
+   */
+  async context(id: string): Promise<TenantContext | null> {
+    const tenant = await this.client.tenant.findUnique({ where: { id }, select: { id: true, slug: true } });
+    return tenant ? { tenantId: tenant.id, slug: tenant.slug } : null;
   }
 
   /**
@@ -201,6 +275,7 @@ export class TenantService implements OnModuleInit {
     adminFirstName?: string;
     adminLastName?: string;
     adminEmail?: string;
+    licensedSeats?: number | null;
   }) {
     const slug = input.slug.trim().toLowerCase();
     if (!/^[a-z0-9][a-z0-9-]{1,40}$/.test(slug)) {
@@ -231,6 +306,7 @@ export class TenantService implements OnModuleInit {
           name: input.name.trim(),
           domain: input.domain?.trim() || null,
           notes: input.notes?.trim() || null,
+          licensedSeats: input.licensedSeats ?? null,
         },
       });
       const tenantId = tenant.id;

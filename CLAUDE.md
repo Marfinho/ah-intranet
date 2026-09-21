@@ -62,6 +62,17 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
   anlegen darf, meldet sich dort an, nicht bei einem Kunden mit.
 - Auflösung des Hauses: eigene Domain oder Subdomain, sonst die Kennung im
   Anmeldeformular. Nur bei genau einem Haus entfällt die Angabe.
+- **Lizenzkontingent** (`Tenant.licensedSeats`, `null` = unbegrenzt): Höchstzahl
+  aktiver Konten, von der Plattformverwaltung gesetzt. Geprüft beim Anlegen und
+  beim Reaktivieren eines Kontos (`PeopleService.pruefeLizenzkontingent`) – ein
+  erreichtes Kontingent blockt hart, statt nur zu warnen.
+- **Fremdes Haus aus der Plattformverwaltung heraus bedienen** (Module,
+  Kennzahlen): `runWithTenant(context, …)` setzt für die Dauer eines Aufrufs
+  den Kontext auf ein fremdes Haus, obwohl die Plattformperson dort kein
+  eigenes Konto hat. Genau der dokumentierte Zweck dieser Funktion – kein
+  Sonderfall, keine Umgehung der Trennung. Gilt nur für Zählwerte und
+  Einstellungen, nie für Personendaten: die fehlen der Plattformverwaltung
+  ohne Auftragsverarbeitungsvertrag mit dem Haus zu Recht.
 - Ein neues Haus entsteht samt Rollen, Rechten und erstem Administrationskonto
   in einer Transaktion – ein halb eingerichteter Mandant wäre nicht benutzbar.
 

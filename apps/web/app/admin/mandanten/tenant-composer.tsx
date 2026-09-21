@@ -40,6 +40,10 @@ export function TenantComposer() {
         <input name="notes" className={inputClass} placeholder="Vertrag, Ansprechpartner …" />
       </Field>
 
+      <Field label="Lizenzkontingent" hint="Höchstzahl aktiver Konten. Leer lassen für unbegrenzt.">
+        <input name="licensedSeats" type="number" min={1} className={inputClass} placeholder="z. B. 25" />
+      </Field>
+
       <div className="md:col-span-2 mt-2 border-t border-slate-200 pt-4">
         <p className="text-sm font-semibold text-slate-900">Erstes Administrationskonto</p>
         <p className="mt-1 text-sm text-slate-600">

@@ -20,6 +20,7 @@ import { PrismaService } from "../../core/prisma.service";
 import { AuditService } from "../../core/audit.service";
 import { PRESENCE_LABELS, PRESENCE_VALUES, buildScopes, displayName, sortiereRollen } from "../../core/mappers";
 import type { RequestUser } from "../../core/request-user";
+import { requireTenantId } from "../../core/tenant-context";
 
 const directorySelect = {
   id: true,
@@ -222,6 +223,29 @@ export class PeopleService {
     return this.locations();
   }
 
+  /**
+   * Weist ein erreichtes Lizenzkontingent ab, bevor ein weiteres aktives
+   * Konto entsteht. `licensedSeats: null` heißt unbegrenzt - nicht jedes Haus
+   * hat ein Lizenzmodell, ein erfundenes Limit wäre schlimmer als keins.
+   */
+  private async pruefeLizenzkontingent(): Promise<void> {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: requireTenantId() },
+      select: { licensedSeats: true },
+    });
+    if (tenant.licensedSeats === null) {
+      return;
+    }
+
+    const aktiveKonten = await this.prisma.user.count({ where: { status: "active" } });
+    if (aktiveKonten >= tenant.licensedSeats) {
+      throw new BadRequestException(
+        `Das Lizenzkontingent ist erreicht (${tenant.licensedSeats} aktive Konten). ` +
+          "Bitte ein Konto deaktivieren oder das Kontingent erweitern lassen.",
+      );
+    }
+  }
+
   async createUser(
     actor: RequestUser,
     input: UserInput,
@@ -229,6 +253,9 @@ export class PeopleService {
     const username = input.username.trim().toLowerCase();
     if (await this.prisma.user.findFirst({ where: { username }, select: { id: true } })) {
       throw new BadRequestException(`Der Benutzername "${username}" ist bereits vergeben.`);
+    }
+    if ((input.status ?? "active") === "active") {
+      await this.pruefeLizenzkontingent();
     }
 
     const initialPassword = input.password ?? this.generatePassword();
@@ -273,6 +300,9 @@ export class PeopleService {
     const existing = await this.prisma.user.findUnique({ where: { id } });
     if (!existing) {
       throw new NotFoundException("Benutzer nicht gefunden");
+    }
+    if (input.status === "active" && existing.status !== "active") {
+      await this.pruefeLizenzkontingent();
     }
 
     const scopes = await this.resolveScopes({

@@ -149,6 +149,9 @@ model Tenant {
   /// Eigene Domain, falls der Mandant nicht über die Subdomain kommt.
   domain    String?  @unique
   isActive  Boolean  @default(true)
+  /// Höchstzahl aktiver Konten. `null` heißt unbegrenzt - nicht jedes Haus
+  /// hat ein Lizenzmodell, und ein erfundenes Limit wäre schlimmer als keins.
+  licensedSeats Int?
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

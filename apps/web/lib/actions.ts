@@ -244,6 +244,10 @@ export async function createTenantAction(_previous: ActionState, formData: FormD
     adminFirstName: String(formData.get("adminFirstName") ?? "") || undefined,
     adminLastName: String(formData.get("adminLastName") ?? "") || undefined,
     adminEmail: String(formData.get("adminEmail") ?? "") || undefined,
+    licensedSeats: (() => {
+      const wert = String(formData.get("licensedSeats") ?? "").trim();
+      return wert ? Number(wert) : undefined;
+    })(),
   };
 
   return run(() => apiSend("POST", "/tenants", payload), ["/admin/mandanten"], `Haus "${payload.name}" eingerichtet.`);
@@ -251,6 +255,17 @@ export async function createTenantAction(_previous: ActionState, formData: FormD
 
 export async function setTenantActiveAction(id: string, isActive: boolean): Promise<ActionState> {
   return run(() => apiSend("PATCH", `/tenants/${id}/aktiv`, { isActive }), ["/admin/mandanten"]);
+}
+
+export async function setTenantLicenseAction(id: string, licensedSeats: number | null): Promise<ActionState> {
+  return run(() => apiSend("PATCH", `/tenants/${id}/lizenz`, { licensedSeats }), ["/admin/mandanten"]);
+}
+
+export async function setTenantModuleAction(tenantId: string, key: string, enabled: boolean): Promise<ActionState> {
+  return run(() => apiSend("PUT", `/tenants/${tenantId}/module/${key}`, { enabled }), [
+    "/admin/mandanten",
+    `/admin/mandanten/${tenantId}`,
+  ]);
 }
 
 /* -------------------------------------------------------------- News */

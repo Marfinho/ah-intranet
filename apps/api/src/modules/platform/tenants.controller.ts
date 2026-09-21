@@ -1,9 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
-import { IsBoolean, IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from "class-validator";
+import { Body, Controller, Get, NotFoundException, Param, Patch, Post, Put } from "@nestjs/common";
+import { IsBoolean, IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, Min, MinLength } from "class-validator";
+import { Type } from "class-transformer";
 import { AuditService } from "../../core/audit.service";
 import { CurrentUser, PlatformAdmin } from "../../core/decorators";
+import { ModuleRegistryService } from "../../core/module-registry.service";
 import type { RequestUser } from "../../core/request-user";
 import { TenantService } from "../../core/tenant.service";
+import { runWithTenant } from "../../core/tenant-context";
 
 class CreateTenantDto {
   @IsString()
@@ -41,11 +44,32 @@ class CreateTenantDto {
   @IsOptional()
   @IsEmail({}, { message: "Bitte eine gültige E-Mail-Adresse angeben" })
   adminEmail?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  licensedSeats?: number;
 }
 
 class SetActiveDto {
   @IsBoolean()
   isActive!: boolean;
+}
+
+class SetLicenseDto {
+  // Leer/`null` heißt unbegrenzt - deshalb kein @IsInt allein, sondern die
+  // Prüfung im Dienst, der zwischen "nicht angegeben" und "aufheben" trennt.
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  licensedSeats?: number | null;
+}
+
+class ToggleModuleDto {
+  @IsBoolean()
+  enabled!: boolean;
 }
 
 /**
@@ -59,12 +83,18 @@ class SetActiveDto {
 export class TenantsController {
   constructor(
     private readonly tenants: TenantService,
+    private readonly modules: ModuleRegistryService,
     private readonly audit: AuditService,
   ) {}
 
   @Get()
   list() {
     return this.tenants.list();
+  }
+
+  @Get(":id/kennzahlen")
+  stats(@Param("id") id: string) {
+    return this.tenants.stats(id);
   }
 
   @Post()
@@ -99,5 +129,52 @@ export class TenantsController {
     });
 
     return tenant;
+  }
+
+  @Patch(":id/lizenz")
+  async setLicense(@Param("id") id: string, @Body() dto: SetLicenseDto, @CurrentUser() user: RequestUser) {
+    const tenant = await this.tenants.setLicense(id, dto.licensedSeats ?? null);
+
+    await this.audit.log({
+      actor: user,
+      action: "tenant.license",
+      entityType: "tenant",
+      entityId: id,
+      detail:
+        tenant.licensedSeats === null
+          ? `Lizenzkontingent für "${tenant.name}" aufgehoben`
+          : `Lizenzkontingent für "${tenant.name}" auf ${tenant.licensedSeats} gesetzt`,
+    });
+
+    return tenant;
+  }
+
+  /**
+   * Modulsteuerung eines fremden Hauses - die Plattformverwaltung hat dort
+   * kein eigenes Konto. `runWithTenant` setzt für die Dauer des Aufrufs den
+   * Kontext auf das gewählte Haus; `ModuleRegistryService` merkt davon nichts
+   * und arbeitet wie immer auf "dem aktuellen Mandanten".
+   */
+  @Get(":id/module")
+  async listModules(@Param("id") id: string) {
+    const context = await this.tenants.context(id);
+    if (!context) {
+      throw new NotFoundException("Mandant nicht gefunden");
+    }
+    return runWithTenant(context, async () => await this.modules.list());
+  }
+
+  @Put(":id/module/:key")
+  async setModule(
+    @Param("id") id: string,
+    @Param("key") key: string,
+    @Body() dto: ToggleModuleDto,
+    @CurrentUser() user: RequestUser,
+  ) {
+    const context = await this.tenants.context(id);
+    if (!context) {
+      throw new NotFoundException("Mandant nicht gefunden");
+    }
+    return runWithTenant(context, async () => await this.modules.setEnabled(key, dto.enabled, user));
   }
 }
