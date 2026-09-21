@@ -72,6 +72,12 @@ export const PERMISSION_DEFINITIONS: readonly PermissionDefinition[] = [
     bereich: "Verwaltung",
   },
   {
+    key: "branding.manage",
+    name: "Erscheinungsbild verwalten",
+    description: "Eigenes Logo hinterlegen - ersetzt das AHOI-Zeichen in diesem Haus",
+    bereich: "Verwaltung",
+  },
+  {
     key: "privacy.manage",
     name: "Datenschutz bearbeiten",
     description: "Auskunft erteilen, Konten anonymisieren, Fristen ausführen",

@@ -108,3 +108,22 @@ export async function apiSend<T>(
 export function apiBaseUrl() {
   return API_URL;
 }
+
+/** Wie `apiSend`, aber für Multipart-Uploads - kein `Content-Type` von Hand, `fetch` setzt die Grenze selbst. */
+export async function apiSendFile<T>(path: string, formData: FormData): Promise<T> {
+  const response = await fetch(`${API_URL}${path}`, {
+    method: "POST",
+    headers: authHeader(),
+    body: formData,
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new ApiError(response.status, await parseError(response));
+  }
+  if (response.status === 204) {
+    return undefined as T;
+  }
+  const text = await response.text();
+  return (text ? JSON.parse(text) : undefined) as T;
+}

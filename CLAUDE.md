@@ -244,5 +244,9 @@ Offen vor dem Produktivbetrieb:
   und ist **anwaltlich zu prüfen**, bevor sie unterschrieben wird.
 - **Dateiupload:** Dokumente und Anhänge sind Verweise (`Document.url`), keine
   hochgeladenen Dateien. Das kann so bleiben, wenn das Haus ein Laufwerk hat –
-  es ist eine Entscheidung, keine Selbstverständlichkeit.
+  es ist eine Entscheidung, keine Selbstverständlichkeit. **Ausnahme:** das
+  Logo eines Hauses (`Tenant.logo`, `core/…/branding.*`) liegt als Bytea in
+  der Datenbank, nicht auf einem Dateisystem – ein einzelnes kleines Bild je
+  Haus braucht keinen eigenen Speicherort und läuft so in derselben Sicherung
+  wie der Rest der Daten mit.
 - **Arbeitszeitgrenzen im Schichtplan** (siehe Datenschutz).

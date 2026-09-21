@@ -153,6 +153,13 @@ model Tenant {
   /// hat ein Lizenzmodell, und ein erfundenes Limit wäre schlimmer als keins.
   licensedSeats Int?
   notes     String?
+  /// Eigenes Logo des Hauses (Weißmarke) - ersetzt das AHOI-Zeichen in
+  /// Kopfzeile und Anmeldeseite dieses Mandanten. In der Datenbank statt auf
+  /// einem eigenen Dateisystem: ein einzelnes kleines Bild je Haus, damit
+  /// gesichert von denselben Skripten wie der Rest der Daten (`scripts/`),
+  /// ohne einen zweiten Aufbewahrungsweg zu brauchen.
+  logo      Bytes?
+  logoMime  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

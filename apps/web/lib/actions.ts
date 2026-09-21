@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { ApiError, SESSION_COOKIE, apiBaseUrl, apiSend, tenantHostHeader } from "./api";
+import { ApiError, SESSION_COOKIE, apiBaseUrl, apiSend, apiSendFile, tenantHostHeader } from "./api";
 
 /**
  * `next start` setzt `NODE_ENV` immer auf "production" - als Maßstab für
@@ -189,6 +189,23 @@ export async function setModuleEnabledAction(key: string, enabled: boolean): Pro
 
 export async function resetModulesAction(): Promise<ActionState> {
   return run(() => apiSend("POST", "/modules/reset"), ["/", "/admin", "/admin/module"]);
+}
+
+/* -------------------------------------------------------- Erscheinungsbild */
+
+export async function uploadLogoAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const datei = formData.get("file");
+  if (!(datei instanceof File) || datei.size === 0) {
+    return { ok: false, message: "Bitte eine Bilddatei auswählen." };
+  }
+
+  const upload = new FormData();
+  upload.set("file", datei);
+  return run(() => apiSendFile("/branding/logo", upload), ["/", "/admin", "/admin/erscheinungsbild"], "Logo hinterlegt.");
+}
+
+export async function removeLogoAction(): Promise<ActionState> {
+  return run(() => apiSend("DELETE", "/branding/logo"), ["/", "/admin", "/admin/erscheinungsbild"]);
 }
 
 /* ------------------------------------------------------- Datenschutz */

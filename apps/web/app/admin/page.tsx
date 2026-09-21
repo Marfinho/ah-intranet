@@ -18,6 +18,12 @@ const ADMIN_LINKS = [
     recht: "organisation.manage",
   },
   { href: "/admin/anmeldung", label: "Anmeldung", detail: "Anmeldearten des Hauses", recht: "auth.manage" },
+  {
+    href: "/admin/erscheinungsbild",
+    label: "Erscheinungsbild",
+    detail: "Eigenes Logo statt des AHOI-Zeichens",
+    recht: "branding.manage",
+  },
   { href: "/admin/news", label: "News", detail: "Beiträge verfassen und steuern", recht: "news.publish" },
   { href: "/admin/dokumente", label: "Dokumente", detail: "Vorlagen und Richtlinien", recht: "documents.manage" },
   { href: "/admin/katalog", label: "Arbeitskleidung", detail: "Artikel und Größen", recht: "catalog.manage" },
