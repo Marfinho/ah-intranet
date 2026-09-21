@@ -170,6 +170,11 @@ pnpm --filter api aufbewahrung            # löscht
 Verarbeitungsverzeichnis, Mitbestimmung nach § 87 BetrVG und die offenen Punkte:
 [`docs/datenschutz.md`](docs/datenschutz.md).
 
+**Was je Modul rechtlich gilt** – Rechtsgrundlage, Mitbestimmung, Frist und
+Fallstricke – steht in [`docs/recht.md`](docs/recht.md). Vorlagen für den
+Auftragsverarbeitungsvertrag und eine Betriebsvereinbarung liegen in
+[`docs/vorlagen/`](docs/vorlagen/); beide sind Vorarbeit, kein Rechtsrat.
+
 ## Rollen und Rechte
 
 **Rechte gehören dem Code, Rollen dem Haus.** Der Katalog der 21 Berechtigungen
