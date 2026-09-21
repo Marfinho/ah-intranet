@@ -203,6 +203,7 @@ model Tenant {
   mealOffers                   MealOffer[]
   mealOptions                  MealOption[]
   mealOrders                   MealOrder[]
+  einrichtungStatus            EinrichtungStatus[]
 
   @@index([isActive])
 }
@@ -395,6 +396,7 @@ model User {
   custodyBooked     CustodyEvent[]         @relation("CustodyActor")
   mealOffersMade    MealOffer[]            @relation("MealCreator")
   mealOrders        MealOrder[]            @relation("MealOrderUser")
+  einrichtungStatus EinrichtungStatus[]
 
   @@unique([tenantId, username])
   @@unique([tenantId, email])
@@ -1428,4 +1430,46 @@ model MealOrder {
   /// Eine Bestellung je Person und Tag; ändern statt doppelt anlegen.
   @@unique([tenantId, offerId, userId])
   @@index([tenantId, offerId])
+}
+
+// ===== Einrichtung (Ersteinrichtungs-Assistent) =====
+//
+// Nicht zu verwechseln mit der Einarbeitung neuer Mitarbeitender
+// (OnboardingTemplate/-Assignment/-Item weiter oben) - dies begleitet den
+// Ersteinrichtungs-Assistenten für ein frisch angelegtes Haus.
+
+/// Variante des Einrichtungs-Assistenten, abgeleitet aus den Rechten der
+/// Person (siehe `ermittleEinrichtungsVariante` in @ah-intranet/shared).
+enum EinrichtungVariante {
+  gruppenadmin
+  standortleitung
+  mitarbeiter
+}
+
+/// Fortschritt einer Person durch den Ersteinrichtungs-Assistenten.
+///
+/// Eindeutig je Person (nicht je Person+Variante): wechselt jemand die
+/// Berechtigung und damit die Variante, wird derselbe Status weitergeführt
+/// statt ein zweiter angelegt - eine Person hat immer genau einen laufenden
+/// Einrichtungsstand, unabhängig davon, welche Variante gerade passt.
+model EinrichtungStatus {
+  id                String              @id @default(cuid())
+  tenantId          String              @default("")
+  tenant            Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  variante          EinrichtungVariante
+  willkommenGezeigt Boolean             @default(false)
+  uebersprungen     Boolean             @default(false)
+  abgeschlossen     Boolean             @default(false)
+  abgeschlossenAm   DateTime?
+  /// Fortschritt je Schritt: { [stepId]: { done: boolean, completedAt: string|null } } -
+  /// Struktur in packages/shared/src/einrichtung.ts (EinrichtungsFortschritt) typisiert.
+  fortschritt       Json                @default("{}")
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@index([userId])
 }

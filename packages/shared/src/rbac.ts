@@ -71,6 +71,12 @@ export const PERMISSION_DEFINITIONS: readonly PermissionDefinition[] = [
     description: "Auskunft erteilen, Konten anonymisieren, Fristen ausführen",
     bereich: "Verwaltung",
   },
+  {
+    key: "tenant.manage",
+    name: "Mandantenprofil pflegen",
+    description: "Name und Hinweise des eigenen Hauses bearbeiten",
+    bereich: "Verwaltung",
+  },
 
   {
     key: "news.publish",
