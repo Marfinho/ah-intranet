@@ -1,9 +1,21 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ApiError, SESSION_COOKIE, apiBaseUrl, apiSend, tenantHostHeader } from "./api";
+
+/**
+ * `next start` setzt `NODE_ENV` immer auf "production" - als Maßstab für
+ * `Secure` taugt das hier nicht. Läuft die Anfrage über einen Reverse Proxy
+ * ohne TLS (wie beim lokalen Test), verwirft jeder Browser ein als `Secure`
+ * markiertes Cookie stillschweigend: die Anmeldung wirkt kurz erfolgreich,
+ * der nächste Klick ist schon wieder abgemeldet. `x-forwarded-proto` sagt,
+ * worüber der Browser tatsächlich verbunden war.
+ */
+function isSecureRequest(): boolean {
+  return headers().get("x-forwarded-proto") === "https";
+}
 
 export interface ActionState {
   ok: boolean;
@@ -135,7 +147,7 @@ export async function loginAction(_previous: ActionState, formData: FormData): P
   cookies().set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecureRequest(),
     maxAge: 12 * 60 * 60,
     path: "/",
   });
