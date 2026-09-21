@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { ApiError, SESSION_COOKIE, apiBaseUrl, apiSend } from "./api";
+import type { PlatformStaffSummary } from "@ah-intranet/shared";
+import { ApiError, SESSION_COOKIE, apiBaseUrl, apiGet as apiGetForActions, apiSend } from "./api";
 
 export interface ActionState {
   ok: boolean;
@@ -291,6 +292,86 @@ export async function commentTicketAction(
     return { ok: false, message: "Bitte einen Text eingeben." };
   }
   return run(() => apiSend("POST", `/tickets/${id}/comments`, { message }), ["/tickets"]);
+}
+
+/* --------------------------------------------------- AHOI-Support */
+
+export async function createSupportTicketAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const payload = {
+    subject: String(formData.get("subject") ?? ""),
+    description: String(formData.get("description") ?? ""),
+    priority: String(formData.get("priority") ?? "normal"),
+  };
+  return run(
+    () => apiSend("POST", "/support/tickets", payload),
+    ["/admin/support"],
+    "Support-Anfrage an AHOI gesendet.",
+  );
+}
+
+export async function addSupportMessageAction(
+  id: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const message = String(formData.get("message") ?? "").trim();
+  if (!message) {
+    return { ok: false, message: "Bitte einen Text eingeben." };
+  }
+  return run(() => apiSend("POST", `/support/tickets/${id}/nachrichten`, { body: message }), ["/admin/support"]);
+}
+
+/* ---------------------------------------- Plattform-Support-Posteingang */
+
+export async function platformSupportMessageAction(
+  id: string,
+  isInternal: boolean,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const message = String(formData.get("message") ?? "").trim();
+  if (!message) {
+    return { ok: false, message: "Bitte einen Text eingeben." };
+  }
+  return run(
+    () => apiSend("POST", `/plattform/support-tickets/${id}/nachrichten`, { body: message, isInternal }),
+    ["/admin/support-tickets"],
+  );
+}
+
+export async function updatePlatformSupportTicketAction(
+  id: string,
+  patch: { status?: string; priority?: string; assigneeId?: string | null },
+): Promise<ActionState> {
+  return run(() => apiSend("PATCH", `/plattform/support-tickets/${id}`, patch), ["/admin/support-tickets"]);
+}
+
+/* ----------------------------------------- Mitarbeiter der Plattform */
+
+export async function setPlatformPermissionsAction(userId: string, permissions: string[]): Promise<ActionState> {
+  return run(
+    () => apiSend("PUT", `/plattform/mitarbeiter/${userId}/rechte`, { permissions }),
+    ["/admin/plattform-mitarbeiter"],
+  );
+}
+
+/**
+ * Sucht ein Konto zum Freischalten, über alle Häuser hinweg.
+ *
+ * Eigene Funktion statt `apiGet` direkt aus einer Client-Komponente: `apiGet`
+ * liest das Sitzungscookie über `next/headers` und läuft deshalb nur auf dem
+ * Server - eine Server Action ist der einzige Weg, ihn aus der Suchmaske heraus
+ * anzustoßen.
+ */
+export async function searchPlatformStaffAction(query: string): Promise<PlatformStaffSummary[]> {
+  if (query.trim().length < 2) {
+    return [];
+  }
+  try {
+    return await apiGetForActions<PlatformStaffSummary[]>(`/plattform/mitarbeiter/suche?q=${encodeURIComponent(query)}`);
+  } catch {
+    return [];
+  }
 }
 
 /* ------------------------------------------------------ Abwesenheiten */

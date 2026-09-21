@@ -72,6 +72,8 @@ export interface SessionUser {
   tenant: TenantRef;
   /** Darf Mandanten anlegen und abschalten - nicht identisch mit der Adminrolle im Haus. */
   isPlatformAdmin: boolean;
+  /** Einzeln zugewiesene Rechte der Plattformverwaltung, z. B. den Support-Posteingang. */
+  platformPermissions: string[];
 }
 
 /** Kurzform eines Mandanten, wie sie in Sitzung und Kopfzeile erscheint. */
@@ -369,6 +371,72 @@ export interface TicketSummary {
   updatedAt: string;
   commentCount: number;
   comments?: TicketComment[];
+}
+
+/**
+ * Support-Anfrage eines Hauses an den Betreiber - anders als `TicketSummary`
+ * nicht intern, sondern der Kanal zwischen Kunde und Plattform. Deshalb kein
+ * abschaltbares Fachmodul und keine Kategorie: das ist Vertragsbeziehung, kein
+ * Betriebsalltag.
+ */
+export interface SupportTicketMessage {
+  id: string;
+  body: string;
+  /** Von der Plattformverwaltung verfasst statt vom Haus selbst. */
+  isStaffReply: boolean;
+  createdAt: string;
+}
+
+export interface SupportTicketSummary {
+  id: string;
+  number: string;
+  subject: string;
+  description: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  requester: string;
+  /** Ob sich die Plattformverwaltung der Anfrage bereits angenommen hat. */
+  assigned: boolean;
+  createdAt: string;
+  updatedAt: string;
+  closedAt?: string | null;
+  messageCount: number;
+  messages?: SupportTicketMessage[];
+}
+
+/** Interne Notiz zusätzlich zur Nachricht - nur im Blick der Plattformverwaltung. */
+export interface PlatformSupportMessage extends SupportTicketMessage {
+  author: string;
+  isInternal: boolean;
+}
+
+export interface PlatformSupportTicketSummary {
+  id: string;
+  number: string;
+  subject: string;
+  description: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  tenant: TenantRef;
+  requester: string;
+  assignee?: string | null;
+  assigneeId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  closedAt?: string | null;
+  messageCount: number;
+  messages?: PlatformSupportMessage[];
+}
+
+/** Ein Konto mit Bezug zur Plattformverwaltung, gleich in welchem Haus es sitzt. */
+export interface PlatformStaffSummary {
+  id: string;
+  username: string;
+  displayName: string;
+  email?: string | null;
+  tenant: TenantRef;
+  isPlatformAdmin: boolean;
+  platformPermissions: string[];
 }
 
 export interface OnboardingStep {

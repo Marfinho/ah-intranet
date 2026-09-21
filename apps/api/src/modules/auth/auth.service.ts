@@ -105,6 +105,7 @@ export class AuthService {
       departmentId: user.departmentId,
       tokenVersion: user.tokenVersion,
       isPlatformAdmin: user.isPlatformAdmin,
+      platformPermissions: session.platformPermissions,
     };
 
     await this.audit.log({
@@ -189,6 +190,7 @@ export class AuthService {
     jobTitle: string;
     mustChangePassword: boolean;
     isPlatformAdmin: boolean;
+    platformPermissions: string[];
     tenant: { slug: string; name: string };
     location: { name: string; code: string } | null;
     department: { name: string; code: string } | null;
@@ -223,6 +225,7 @@ export class AuthService {
       mustChangePassword: user.mustChangePassword,
       tenant: { slug: user.tenant.slug, name: user.tenant.name },
       isPlatformAdmin: user.isPlatformAdmin,
+      platformPermissions: user.platformPermissions,
     };
   }
 }

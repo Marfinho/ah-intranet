@@ -10,8 +10,8 @@ import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import type { Request } from "express";
 import type { AppRole } from "@ah-intranet/shared";
-import { getModule, permissionName } from "@ah-intranet/shared";
-import { FEATURE_KEY, PERMISSION_KEY, PLATFORM_ADMIN_KEY, PUBLIC_KEY } from "./decorators";
+import { getModule, permissionName, platformPermissionName } from "@ah-intranet/shared";
+import { FEATURE_KEY, PERMISSION_KEY, PLATFORM_ADMIN_KEY, PLATFORM_PERMISSION_KEY, PUBLIC_KEY } from "./decorators";
 import { ModuleRegistryService } from "./module-registry.service";
 import { PrismaService } from "./prisma.service";
 import type { RequestUser } from "./request-user";
@@ -33,6 +33,7 @@ export interface JwtPayload {
   /** Muss mit dem Wert am Benutzer übereinstimmen, sonst ist die Sitzung ungültig. */
   tokenVersion: number;
   isPlatformAdmin?: boolean;
+  platformPermissions?: string[];
 }
 
 export function payloadToUser(payload: JwtPayload): RequestUser {
@@ -49,6 +50,7 @@ export function payloadToUser(payload: JwtPayload): RequestUser {
     departmentId: payload.departmentId,
     tokenVersion: payload.tokenVersion,
     isPlatformAdmin: payload.isPlatformAdmin ?? false,
+    platformPermissions: payload.platformPermissions ?? [],
   };
 }
 
@@ -132,8 +134,9 @@ export class PermissionGuard implements CanActivate {
     const targets = [context.getHandler(), context.getClass()];
     const platformOnly = this.reflector.getAllAndOverride<boolean>(PLATFORM_ADMIN_KEY, targets);
     const permission = this.reflector.getAllAndOverride<string>(PERMISSION_KEY, targets);
+    const platformPermission = this.reflector.getAllAndOverride<string>(PLATFORM_PERMISSION_KEY, targets);
 
-    if (!platformOnly && !permission) {
+    if (!platformOnly && !permission && !platformPermission) {
       return true;
     }
 
@@ -146,6 +149,13 @@ export class PermissionGuard implements CanActivate {
     }
     if (permission && !user.permissions.includes(permission)) {
       throw new ForbiddenException(`Für diese Aktion fehlt die Berechtigung "${permissionName(permission)}".`);
+    }
+    // `isPlatformAdmin` trägt jedes Plattformrecht implizit - der Betreiber
+    // braucht keine Einzelfreischaltung für Aufgaben, die er ohnehin anlegen darf.
+    if (platformPermission && !user.isPlatformAdmin && !(user.platformPermissions ?? []).includes(platformPermission)) {
+      throw new ForbiddenException(
+        `Für diese Aktion fehlt das Plattformrecht "${platformPermissionName(platformPermission)}".`,
+      );
     }
     return true;
   }

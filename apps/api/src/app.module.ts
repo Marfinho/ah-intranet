@@ -17,6 +17,7 @@ import { OrdersModule } from "./modules/orders/orders.module";
 import { ResourcesModule } from "./modules/resources/resources.module";
 import { ServiceDeskModule } from "./modules/servicedesk/servicedesk.module";
 import { PrivacyModule } from "./modules/privacy/privacy.module";
+import { SupportModule } from "./modules/support/support.module";
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { PrivacyModule } from "./modules/privacy/privacy.module";
     ServiceDeskModule,
     PlatformModule,
     PrivacyModule,
+    SupportModule,
   ],
   controllers: [AppController],
   providers: [

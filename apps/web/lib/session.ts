@@ -76,3 +76,14 @@ export async function requirePermission(...permissions: string[]): Promise<Sessi
 export function can(session: SessionUser, permission: string): boolean {
   return session.permissions.includes(permission);
 }
+
+/**
+ * Prüft ein Recht der Plattformverwaltung.
+ *
+ * `isPlatformAdmin` erfüllt jede Prüfung zusätzlich - der Betreiber braucht
+ * keine Einzelfreischaltung. Nur für die Anzeige gedacht; durchgesetzt wird
+ * in der API.
+ */
+export function hasPlatformPermission(session: SessionUser, permission: string): boolean {
+  return session.isPlatformAdmin || session.platformPermissions.includes(permission);
+}

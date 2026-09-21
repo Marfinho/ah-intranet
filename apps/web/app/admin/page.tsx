@@ -3,7 +3,7 @@ import type { DashboardMetric, ModuleState } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
 import { DataGrid, MetricCard, Section } from "@/components/ui";
 import { apiGet } from "@/lib/api";
-import { can, requirePermission } from "@/lib/session";
+import { can, hasPlatformPermission, requirePermission } from "@/lib/session";
 
 /** Jede Kachel nennt das Recht, das ihre Seite verlangt - nicht eine Rolle. */
 const ADMIN_LINKS = [
@@ -28,11 +28,35 @@ const ADMIN_LINKS = [
     detail: "Auskunft, Löschung, Aufbewahrungsfristen",
     recht: "privacy.manage",
   },
+  {
+    href: "/admin/support",
+    label: "AHOI-Support",
+    detail: "Support-Anfragen dieses Hauses an den Betreiber",
+    recht: "admin.access",
+  },
 ];
 
-/** Nur für die Plattformverwaltung des Betreibers, nicht für Admins im Haus. */
-const PLATFORM_LINKS = [
-  { href: "/admin/mandanten", label: "Autohäuser", detail: "Mandanten anlegen und freischalten" },
+/**
+ * Nur für die Plattformverwaltung des Betreibers, nicht für Admins im Haus.
+ *
+ * `platformOnly` heißt: nur der Betreiber selbst, nicht delegierbar - Mandanten
+ * anlegen und Plattformrechte vergeben ist dieselbe Klasse Entscheidung.
+ * Alles andere prüft ein einzeln zugewiesenes Plattformrecht.
+ */
+const PLATFORM_LINKS: Array<{ href: string; label: string; detail: string; platformOnly?: boolean; recht?: string }> = [
+  { href: "/admin/mandanten", label: "Autohäuser", detail: "Mandanten anlegen und freischalten", platformOnly: true },
+  {
+    href: "/admin/support-tickets",
+    label: "Support-Posteingang",
+    detail: "Anfragen aller Häuser einsehen und beantworten",
+    recht: "support.tickets.view",
+  },
+  {
+    href: "/admin/plattform-mitarbeiter",
+    label: "Mitarbeiter der Verwaltung",
+    detail: "Plattformrechte vergeben und entziehen",
+    platformOnly: true,
+  },
 ];
 
 export default async function AdminPage() {
@@ -85,22 +109,30 @@ export default async function AdminPage() {
         </Section>
       ) : null}
 
-      {session.isPlatformAdmin ? (
-        <Section title="Plattformverwaltung" subtitle={`Angemeldet im Haus ${session.tenant.name}`}>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {PLATFORM_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="rounded-2xl border border-brand-100 bg-brand-50/40 p-5 transition hover:bg-brand-50"
-              >
-                <p className="font-semibold text-slate-900">{link.label}</p>
-                <p className="mt-1 text-sm text-slate-600">{link.detail}</p>
-              </Link>
-            ))}
-          </div>
-        </Section>
-      ) : null}
+      {(() => {
+        const platformLinks = PLATFORM_LINKS.filter((link) =>
+          link.platformOnly ? session.isPlatformAdmin : hasPlatformPermission(session, link.recht!),
+        );
+        if (platformLinks.length === 0) {
+          return null;
+        }
+        return (
+          <Section title="Plattformverwaltung" subtitle={`Angemeldet im Haus ${session.tenant.name}`}>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {platformLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="rounded-2xl border border-brand-100 bg-brand-50/40 p-5 transition hover:bg-brand-50"
+                >
+                  <p className="font-semibold text-slate-900">{link.label}</p>
+                  <p className="mt-1 text-sm text-slate-600">{link.detail}</p>
+                </Link>
+              ))}
+            </div>
+          </Section>
+        );
+      })()}
 
       <Section title="Verwaltungsbereiche" subtitle="Alle Pflegemasken im Überblick">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

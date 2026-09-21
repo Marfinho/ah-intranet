@@ -5,6 +5,7 @@ export const PUBLIC_KEY = "auth:public";
 export const PERMISSION_KEY = "auth:permission";
 export const FEATURE_KEY = "feature:module";
 export const PLATFORM_ADMIN_KEY = "auth:platform-admin";
+export const PLATFORM_PERMISSION_KEY = "auth:platform-permission";
 
 /** Hebt die global aktive JWT-Prüfung für einzelne Routen auf (Login, Health). */
 export const Public = () => SetMetadata(PUBLIC_KEY, true);
@@ -27,6 +28,17 @@ export const Permission = (permission: string) => SetMetadata(PERMISSION_KEY, pe
  * und darf nicht aus dem Haus heraus vergeben werden können.
  */
 export const PlatformAdmin = () => SetMetadata(PLATFORM_ADMIN_KEY, true);
+
+/**
+ * Verlangt ein einzeln zugewiesenes Recht der Plattformverwaltung, z. B. den
+ * Support-Posteingang.
+ *
+ * Anders als `@PlatformAdmin()` nicht auf den Betreiber selbst beschränkt:
+ * Mitarbeitende, die den Service machen, bekommen genau die Rechte, die sie
+ * brauchen, ohne Mandanten anlegen zu dürfen. `isPlatformAdmin` erfüllt jede
+ * Prüfung dieser Art zusätzlich - der Betreiber braucht keine Einzelfreischaltung.
+ */
+export const PlatformPermission = (permission: string) => SetMetadata(PLATFORM_PERMISSION_KEY, permission);
 
 /**
  * Bindet Controller oder Route an ein Modul der Registry. Ist das Modul

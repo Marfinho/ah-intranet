@@ -182,6 +182,8 @@ model Tenant {
   roomBookings                 RoomBooking[]
   tickets                      Ticket[]
   ticketComments               TicketComment[]
+  supportTickets               SupportTicket[]
+  supportTicketMessages        SupportTicketMessage[]
   onboardingTemplates          OnboardingTemplate[]
   onboardingSteps              OnboardingStep[]
   onboardingAssignments        OnboardingAssignment[]
@@ -318,42 +320,45 @@ model LocationDepartment {
 // -------------------------------------------------- Benutzer & Rechte
 
 model User {
-  id                 String     @id @default(cuid())
-  tenantId           String     @default("")
-  tenant             Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  username           String
-  email              String?
-  passwordHash       String
-  firstName          String
-  lastName           String
-  jobTitle           String     @default("Mitarbeitende:r")
-  phone              String?
-  mobile             String?
-  presence           Presence   @default(vor_ort)
-  responsibilities   String[]   @default([])
-  status             UserStatus @default(active)
+  id                  String     @id @default(cuid())
+  tenantId            String     @default("")
+  tenant              Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  username            String
+  email               String?
+  passwordHash        String
+  firstName           String
+  lastName            String
+  jobTitle            String     @default("Mitarbeitende:r")
+  phone               String?
+  mobile              String?
+  presence            Presence   @default(vor_ort)
+  responsibilities    String[]   @default([])
+  status              UserStatus @default(active)
   /// Zielgruppen-Tokens (global, location:*, department:*, specialty:*) - bei Stammdatenänderung neu berechnet.
-  scopes             String[]   @default([])
-  annualLeaveDays    Int        @default(30)
-  mustChangePassword Boolean    @default(false)
-  lastLoginAt        DateTime?
+  scopes              String[]   @default([])
+  annualLeaveDays     Int        @default(30)
+  mustChangePassword  Boolean    @default(false)
+  lastLoginAt         DateTime?
   /// Zeitpunkt der Anonymisierung nach Art. 17 DSGVO. Gesetzt heißt: die
   /// identifizierenden Felder sind ersetzt, der Vorgangsbezug bleibt erhalten.
-  anonymizedAt       DateTime?
+  anonymizedAt        DateTime?
   /// Darf Mandanten anlegen und sperren - betrifft alle Häuser, nicht nur das eigene.
-  isPlatformAdmin    Boolean    @default(false)
+  isPlatformAdmin     Boolean    @default(false)
+  /// Einzeln zugewiesene Rechte der Plattformverwaltung (z. B. Support-Posteingang),
+  /// unabhängig vom eigenen Haus vergeben. `isPlatformAdmin` trägt sie alle implizit.
+  platformPermissions String[]   @default([])
   /// Wird bei Sperre und Passwortwechsel erhöht und macht alle bis dahin
   /// ausgegebenen Tokens sofort ungültig.
-  tokenVersion       Int        @default(0)
-  failedLoginCount   Int        @default(0)
+  tokenVersion        Int        @default(0)
+  failedLoginCount    Int        @default(0)
   /// Gesetzt, solange das Konto nach zu vielen Fehlversuchen gesperrt ist.
-  lockedUntil        DateTime?
-  locationId         String?
-  departmentId       String?
-  specialtyAreaId    String?
-  managerId          String?
-  createdAt          DateTime   @default(now())
-  updatedAt          DateTime   @updatedAt
+  lockedUntil         DateTime?
+  locationId          String?
+  departmentId        String?
+  specialtyAreaId     String?
+  managerId           String?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
 
   location      Location?      @relation(fields: [locationId], references: [id])
   department    Department?    @relation(fields: [departmentId], references: [id])
@@ -361,40 +366,43 @@ model User {
   manager       User?          @relation("ManagerRelation", fields: [managerId], references: [id])
   reports       User[]         @relation("ManagerRelation")
 
-  roles             UserRole[]
-  newsPosts         NewsPost[]             @relation("NewsAuthor")
-  newsComments      NewsComment[]
-  newsReads         NewsRead[]
-  orders            Order[]                @relation("OrderRequester")
-  orderComments     OrderComment[]
-  approvalDecisions ApprovalDecision[]     @relation("ApprovalActor")
-  auditLogs         AuditLog[]             @relation("AuditActor")
-  notifications     Notification[]
-  documents         Document[]             @relation("DocumentOwner")
-  events            CalendarEvent[]        @relation("EventOrganizer")
-  ticketsRequested  Ticket[]               @relation("TicketRequester")
-  ticketsAssigned   Ticket[]               @relation("TicketAssignee")
-  ticketComments    TicketComment[]
-  onboarding        OnboardingAssignment[] @relation("OnboardingEmployee")
-  absences          Absence[]              @relation("AbsenceEmployee")
-  absenceDecisions  Absence[]              @relation("AbsenceDecider")
-  roomBookings      RoomBooking[]
-  wikiArticles      WikiArticle[]          @relation("WikiAuthor")
-  ideas             Idea[]                 @relation("IdeaAuthor")
-  ideaVotes         IdeaVote[]
-  polls             Poll[]                 @relation("PollAuthor")
-  pollVotes         PollVote[]
-  shiftsAssigned    Shift[]                @relation("ShiftAssignee")
-  shiftsCreated     Shift[]                @relation("ShiftCreator")
-  swapsRequested    ShiftSwap[]            @relation("SwapRequester")
-  swapsReceived     ShiftSwap[]            @relation("SwapTarget")
-  swapsDecided      ShiftSwap[]            @relation("SwapDecider")
-  custodyHeld       CustodyItem[]          @relation("CustodyHolder")
-  custodyCreated    CustodyItem[]          @relation("CustodyCreator")
-  custodyReceived   CustodyEvent[]         @relation("CustodyPerson")
-  custodyBooked     CustodyEvent[]         @relation("CustodyActor")
-  mealOffersMade    MealOffer[]            @relation("MealCreator")
-  mealOrders        MealOrder[]            @relation("MealOrderUser")
+  roles                   UserRole[]
+  newsPosts               NewsPost[]             @relation("NewsAuthor")
+  newsComments            NewsComment[]
+  newsReads               NewsRead[]
+  orders                  Order[]                @relation("OrderRequester")
+  orderComments           OrderComment[]
+  approvalDecisions       ApprovalDecision[]     @relation("ApprovalActor")
+  auditLogs               AuditLog[]             @relation("AuditActor")
+  notifications           Notification[]
+  documents               Document[]             @relation("DocumentOwner")
+  events                  CalendarEvent[]        @relation("EventOrganizer")
+  ticketsRequested        Ticket[]               @relation("TicketRequester")
+  ticketsAssigned         Ticket[]               @relation("TicketAssignee")
+  ticketComments          TicketComment[]
+  supportTicketsRequested SupportTicket[]        @relation("SupportTicketRequester")
+  supportTicketsAssigned  SupportTicket[]        @relation("SupportTicketAssignee")
+  supportTicketMessages   SupportTicketMessage[] @relation("SupportTicketMessageAuthor")
+  onboarding              OnboardingAssignment[] @relation("OnboardingEmployee")
+  absences                Absence[]              @relation("AbsenceEmployee")
+  absenceDecisions        Absence[]              @relation("AbsenceDecider")
+  roomBookings            RoomBooking[]
+  wikiArticles            WikiArticle[]          @relation("WikiAuthor")
+  ideas                   Idea[]                 @relation("IdeaAuthor")
+  ideaVotes               IdeaVote[]
+  polls                   Poll[]                 @relation("PollAuthor")
+  pollVotes               PollVote[]
+  shiftsAssigned          Shift[]                @relation("ShiftAssignee")
+  shiftsCreated           Shift[]                @relation("ShiftCreator")
+  swapsRequested          ShiftSwap[]            @relation("SwapRequester")
+  swapsReceived           ShiftSwap[]            @relation("SwapTarget")
+  swapsDecided            ShiftSwap[]            @relation("SwapDecider")
+  custodyHeld             CustodyItem[]          @relation("CustodyHolder")
+  custodyCreated          CustodyItem[]          @relation("CustodyCreator")
+  custodyReceived         CustodyEvent[]         @relation("CustodyPerson")
+  custodyBooked           CustodyEvent[]         @relation("CustodyActor")
+  mealOffersMade          MealOffer[]            @relation("MealCreator")
+  mealOrders              MealOrder[]            @relation("MealOrderUser")
 
   @@unique([tenantId, username])
   @@unique([tenantId, email])
@@ -948,6 +956,66 @@ model TicketComment {
 
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   author User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([tenantId])
+}
+
+// -------------------------------------------------- Support (Plattform)
+
+/// Support-Anfrage eines Hauses an den Betreiber - der Kanal zwischen Kunde
+/// und Plattform, kein Betriebsalltag im Haus. Deshalb kein Fachmodul: die
+/// Registry regelt zuschaltbare Funktionen, nicht die Kundenbeziehung selbst.
+///
+/// Der Mandant ist das anfragende Haus; `assigneeId` kann auf ein Konto in
+/// einem anderen Haus zeigen, weil Mitarbeitende der Plattformverwaltung
+/// gewöhnliche Benutzerkonten irgendeines Hauses sind. Lesezugriffe darauf
+/// laufen deshalb bewusst außerhalb des Mandantenfilters (`runUnscoped`).
+model SupportTicket {
+  id          String       @id @default(cuid())
+  tenantId    String       @default("")
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  number      String
+  subject     String
+  description String
+  status      TicketStatus @default(offen)
+  priority    Priority     @default(normal)
+  requesterId String
+  assigneeId  String?
+  closedAt    DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  requester User                   @relation("SupportTicketRequester", fields: [requesterId], references: [id])
+  assignee  User?                  @relation("SupportTicketAssignee", fields: [assigneeId], references: [id])
+  messages  SupportTicketMessage[]
+
+  @@unique([tenantId, number])
+  @@index([status, createdAt])
+  @@index([requesterId])
+  @@index([assigneeId])
+  @@index([tenantId])
+}
+
+model SupportTicketMessage {
+  id           String   @id @default(cuid())
+  tenantId     String   @default("")
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  ticketId     String
+  authorId     String
+  body         String
+  /// Von der Plattformverwaltung geschrieben statt vom Haus. Ersetzt eine
+  /// mandantenübergreifende Verfasseranzeige im Kundenblick: die Prisma-
+  /// Middleware filtert eingebundene Beziehungen mit, ein Beitrag der
+  /// Plattform in einem fremden Haus wäre über `include: { author }` sonst
+  /// nicht lesbar.
+  isStaffReply Boolean  @default(false)
+  /// Nur für die Plattformverwaltung sichtbar - z. B. Rücksprache im Team.
+  isInternal   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User          @relation("SupportTicketMessageAuthor", fields: [authorId], references: [id])
 
   @@index([ticketId])
   @@index([tenantId])

@@ -17,6 +17,8 @@ export interface RequestUser {
   departmentId: string | null;
   tokenVersion: number;
   isPlatformAdmin?: boolean;
+  /** Einzeln zugewiesene Rechte der Plattformverwaltung. */
+  platformPermissions?: string[];
 }
 
 /**
@@ -33,4 +35,14 @@ export function can(user: RequestUser, permission: string): boolean {
 /** Plattformadministration: darf Mandanten anlegen und sperren. */
 export function isPlatformAdmin(user: RequestUser): boolean {
   return user.isPlatformAdmin === true;
+}
+
+/**
+ * Prüft ein Recht der Plattformverwaltung.
+ *
+ * `isPlatformAdmin` erfüllt jede Prüfung zusätzlich - der Betreiber braucht
+ * keine Einzelfreischaltung für Aufgaben, die er ohnehin anlegen darf.
+ */
+export function hasPlatformPermission(user: RequestUser, permission: string): boolean {
+  return isPlatformAdmin(user) || (user.platformPermissions ?? []).includes(permission);
 }
