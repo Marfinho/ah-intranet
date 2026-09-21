@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import type { ModuleState, SessionUser } from "@ah-intranet/shared";
+import type { EinrichtungStatusPayload, ModuleState, SessionUser } from "@ah-intranet/shared";
 import { ApiError, apiGet } from "./api";
 
 /**
@@ -23,6 +23,20 @@ export const getModules = cache(async (): Promise<ModuleState[]> => {
     return await apiGet<ModuleState[]>("/modules");
   } catch {
     return [];
+  }
+});
+
+/**
+ * Stand der Ersteinrichtung der angemeldeten Person. Nicht zu verwechseln mit
+ * der Einarbeitung neuer Mitarbeitender (`/onboarding`). Liefert `null` bei
+ * jedem API-Fehler - der Willkommensdialog erscheint dann einfach nicht,
+ * statt die Seite scheitern zu lassen.
+ */
+export const getEinrichtungStatus = cache(async (): Promise<EinrichtungStatusPayload | null> => {
+  try {
+    return await apiGet<EinrichtungStatusPayload>("/einrichtung/me");
+  } catch {
+    return null;
   }
 });
 

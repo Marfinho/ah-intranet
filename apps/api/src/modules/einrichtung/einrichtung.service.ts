@@ -12,7 +12,7 @@ import { EINRICHTUNG_SCHRITTE, ermittleEinrichtungsVariante } from "@ah-intranet
 import { PrismaService } from "../../core/prisma.service";
 import { requireTenantId } from "../../core/tenant-context";
 import { AuditService } from "../../core/audit.service";
-import { can, type RequestUser } from "../../core/request-user";
+import type { RequestUser } from "../../core/request-user";
 
 /**
  * Ersteinrichtungs-Assistent ("Einrichtung").
@@ -153,7 +153,12 @@ export class EinrichtungService {
 
   private toPayload(
     variante: EinrichtungVariante,
-    status: { willkommenGezeigt: boolean; uebersprungen: boolean; abgeschlossen: boolean; abgeschlossenAm: Date | null },
+    status: {
+      willkommenGezeigt: boolean;
+      uebersprungen: boolean;
+      abgeschlossen: boolean;
+      abgeschlossenAm: Date | null;
+    },
     schritte: EinrichtungsSchritt[],
     fortschritt: EinrichtungsFortschritt,
   ): EinrichtungStatusPayload {
@@ -215,7 +220,9 @@ export class EinrichtungService {
     const erfuellt = new Set<EinrichtungsSchrittId>();
 
     const [tenant, standorte, weitereMitarbeiter, veroeffentlichteNews, tickets, bestellungen] = await Promise.all([
-      ids.has("org_profil") ? this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { notes: true } }) : null,
+      ids.has("org_profil")
+        ? this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { notes: true } })
+        : null,
       ids.has("standort") ? this.prisma.location.count() : Promise.resolve(0),
       ids.has("mitarbeiter") ? this.prisma.user.count({ where: { id: { not: user.id } } }) : Promise.resolve(0),
       ids.has("erste_news") || ids.has("news_hinweis")

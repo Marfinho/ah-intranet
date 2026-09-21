@@ -3,16 +3,22 @@ import type { DashboardPayload } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
 import { DataGrid, EmptyState, MetricCard, PriorityBadge, Section, StatusBadge } from "@/components/ui";
 import { PollCard } from "@/components/poll-card";
+import { EinrichtungsWillkommenDialog } from "@/components/einrichtungs-willkommen-dialog";
+import { EinrichtungsChecklist } from "@/components/einrichtungs-checklist";
+import { KontextHilfe } from "@/components/kontext-hilfe";
 import { apiGet } from "@/lib/api";
-import { requireSession } from "@/lib/session";
+import { getEinrichtungStatus, requireSession } from "@/lib/session";
 import { formatDate, formatDateTime } from "@/lib/utils";
 
 export default async function DashboardPage() {
   const session = await requireSession();
-  const data = await apiGet<DashboardPayload>("/dashboard");
+  const [data, einrichtung] = await Promise.all([apiGet<DashboardPayload>("/dashboard"), getEinrichtungStatus()]);
 
   return (
     <AppShell title="Dashboard" subtitle="Ihre Übersicht über News, Aufgaben, Termine und Services">
+      <EinrichtungsWillkommenDialog status={einrichtung} />
+      <EinrichtungsChecklist status={einrichtung} />
+
       {/* Ruhige Fläche, Akzent nur als Markierung – siehe docs/ci.md. */}
       <section className="rounded-3xl bg-slate-900 p-6 text-white shadow-card">
         <p className="font-display text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-400">
@@ -53,9 +59,14 @@ export default async function DashboardPage() {
             title="Aktuelles"
             subtitle="Beiträge für Ihre Zielgruppe"
             action={
-              <Link href="/aktuelles" className="text-sm font-semibold text-brand-700 hover:underline">
-                Alle Beiträge
-              </Link>
+              <span className="flex items-center gap-2">
+                {einrichtung?.variante === "mitarbeiter" && !einrichtung.abgeschlossen ? (
+                  <KontextHilfe text="Hier finden Sie alle Neuigkeiten aus Ihrem Haus - neue Beiträge sind mit „neu“ markiert." />
+                ) : null}
+                <Link href="/aktuelles" className="text-sm font-semibold text-brand-700 hover:underline">
+                  Alle Beiträge
+                </Link>
+              </span>
             }
           >
             <ul className="space-y-3">
@@ -88,9 +99,14 @@ export default async function DashboardPage() {
               title="Offene Freigaben"
               subtitle="Warten auf Ihre Entscheidung"
               action={
-                <Link href="/freigaben" className="text-sm font-semibold text-brand-700 hover:underline">
-                  Zu den Freigaben
-                </Link>
+                <span className="flex items-center gap-2">
+                  {einrichtung?.variante === "standortleitung" && !einrichtung.abgeschlossen ? (
+                    <KontextHilfe text="Hier sammeln sich Freigaben und Aufgaben, die auf Ihre Entscheidung warten." />
+                  ) : null}
+                  <Link href="/freigaben" className="text-sm font-semibold text-brand-700 hover:underline">
+                    Zu den Freigaben
+                  </Link>
+                </span>
               }
             >
               <ul className="space-y-3">

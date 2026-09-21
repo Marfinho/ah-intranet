@@ -46,6 +46,12 @@ export class AdminController {
   }
 
   /** Eigenes Mandantenprofil - nicht zu verwechseln mit der Mandantenverwaltung des Betreibers. */
+  @Get("mandant")
+  @Permission("tenant.manage")
+  ownTenant() {
+    return this.platform.ownTenant();
+  }
+
   @Patch("mandant")
   @Permission("tenant.manage")
   updateTenant(@CurrentUser() user: RequestUser, @Body() dto: UpdateTenantProfileDto) {

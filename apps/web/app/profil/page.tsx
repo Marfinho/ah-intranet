@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { InfoList, Section, Tag } from "@/components/ui";
 import { ProfileForm } from "./profile-form";
@@ -62,6 +63,16 @@ export default async function ProfilePage() {
             responsibilities: (me?.responsibilities ?? []).join(", "),
           }}
         />
+      </Section>
+
+      <Section title="Einrichtung" subtitle="Grundsetup Ihres Arbeitsbereichs">
+        <p className="text-sm text-slate-600">
+          Die Ersteinrichtung führt neu angemeldete Personen durch das Grundsetup - übersprungene oder abgeschlossene
+          Schritte lassen sich hier jederzeit erneut aufrufen.
+        </p>
+        <Link href="/einrichtung" className="mt-4 inline-block text-sm font-semibold text-brand-700 hover:underline">
+          Zur Ersteinrichtung
+        </Link>
       </Section>
 
       <Section

@@ -299,6 +299,14 @@ export class PlatformService {
    * eigenes Profil (Name, Notizen) - geschützt über `tenant.manage`, nicht
    * über `@PlatformAdmin()`.
    */
+  async ownTenant() {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: requireTenantId() },
+      select: { id: true, name: true, notes: true },
+    });
+    return tenant;
+  }
+
   async updateOwnTenant(user: RequestUser, input: { name?: string; notes?: string | null }) {
     const tenantId = requireTenantId();
     const tenant = await this.prisma.tenant.update({

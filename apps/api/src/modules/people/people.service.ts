@@ -160,6 +160,23 @@ export class PeopleService {
     return { locations, departments, specialties };
   }
 
+  /** Legt einen Standort an - unter anderem der Pflichtschritt "Standort" der Ersteinrichtung. */
+  async createLocation(actor: RequestUser, input: { name: string; code: string; address?: string }) {
+    const location = await this.prisma.location.create({
+      data: { name: input.name.trim(), code: input.code.trim().toUpperCase(), address: input.address?.trim() || null },
+    });
+
+    await this.audit.log({
+      actor,
+      action: "location.create",
+      entityType: "location",
+      entityId: location.id,
+      detail: `Standort "${location.name}" angelegt`,
+    });
+
+    return location;
+  }
+
   async createUser(
     actor: RequestUser,
     input: UserInput,

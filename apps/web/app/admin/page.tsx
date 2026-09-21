@@ -2,12 +2,14 @@ import Link from "next/link";
 import type { DashboardMetric, ModuleState } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
 import { DataGrid, MetricCard, Section } from "@/components/ui";
-import { apiGet } from "@/lib/api";
+import { TenantProfileForm } from "./tenant-profile-form";
+import { apiGet, apiGetSafe } from "@/lib/api";
 import { can, requirePermission } from "@/lib/session";
 
 /** Jede Kachel nennt das Recht, das ihre Seite verlangt - nicht eine Rolle. */
 const ADMIN_LINKS = [
   { href: "/admin/module", label: "Module", detail: "Fachmodule ein- und ausschalten", recht: "modules.manage" },
+  { href: "/admin/organisation", label: "Organisation", detail: "Standorte anlegen", recht: "users.manage" },
   { href: "/admin/benutzer", label: "Benutzer", detail: "Konten anlegen und pflegen", recht: "users.manage" },
   { href: "/admin/rollen", label: "Rollen & Rechte", detail: "Eigene Rollen anlegen", recht: "roles.manage" },
   { href: "/admin/anmeldung", label: "Anmeldung", detail: "Anmeldearten des Hauses", recht: "auth.manage" },
@@ -46,6 +48,10 @@ export default async function AdminPage() {
   const isAdmin = can(session, "modules.manage");
   const activeModules = modules.filter((module) => module.enabled).length;
   const disabled = modules.filter((module) => !module.enabled);
+  const darfMandantPflegen = can(session, "tenant.manage");
+  const tenant = darfMandantPflegen
+    ? await apiGetSafe<{ name: string; notes: string | null }>("/admin/mandant", { name: "", notes: null })
+    : null;
 
   return (
     <AppShell title="Administration" subtitle="Inhalte, Stammdaten, Rechte und Modulsteuerung">
@@ -54,6 +60,12 @@ export default async function AdminPage() {
           <MetricCard key={metric.label} {...metric} />
         ))}
       </DataGrid>
+
+      {tenant ? (
+        <Section title="Mandantenprofil" subtitle="Name und Hinweise dieses Hauses">
+          <TenantProfileForm defaults={{ name: tenant.name, notes: tenant.notes ?? "" }} />
+        </Section>
+      ) : null}
 
       {isAdmin ? (
         <Section

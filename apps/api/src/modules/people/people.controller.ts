@@ -32,6 +32,12 @@ class ProfileDto {
   @IsOptional() @IsArray() @IsString({ each: true }) responsibilities?: string[];
 }
 
+class LocationBodyDto {
+  @IsString() @MinLength(2) name!: string;
+  @IsString() @MinLength(1) code!: string;
+  @IsOptional() @IsString() address?: string;
+}
+
 class UserBodyDto {
   @IsString() @MinLength(3) username!: string;
   @IsString() @MinLength(2) firstName!: string;
@@ -168,6 +174,12 @@ export class UsersController {
   @Permission("users.read")
   organisation() {
     return this.people.organisation();
+  }
+
+  @Post("organisation/locations")
+  @Permission("users.manage")
+  createLocation(@CurrentUser() user: RequestUser, @Body() dto: LocationBodyDto) {
+    return this.people.createLocation(user, dto);
   }
 
   @Post()

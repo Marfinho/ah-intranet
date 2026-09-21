@@ -106,6 +106,43 @@ export async function changePasswordAction(_previous: ActionState, formData: For
   );
 }
 
+/* -------------------------------------------------------- Einrichtung */
+//
+// Ersteinrichtungs-Assistent - nicht zu verwechseln mit den Onboarding-Aktionen
+// weiter unten (Einarbeitung neuer Mitarbeitender).
+
+export async function markEinrichtungWelcomeSeenAction(): Promise<ActionState> {
+  return run(() => apiSend("POST", "/einrichtung/welcome-seen"), ["/", "/einrichtung"]);
+}
+
+export async function skipEinrichtungAction(): Promise<ActionState> {
+  return run(() => apiSend("POST", "/einrichtung/skip"), ["/", "/einrichtung"]);
+}
+
+export async function restartEinrichtungAction(): Promise<ActionState> {
+  return run(
+    () => apiSend("POST", "/einrichtung/restart"),
+    ["/", "/einrichtung", "/profil"],
+    "Die Einrichtung wurde neu gestartet.",
+  );
+}
+
+export async function refreshEinrichtungProgressAction(): Promise<ActionState> {
+  return run(() => apiSend("POST", "/einrichtung/refresh-progress"), ["/", "/einrichtung"]);
+}
+
+export async function updateTenantProfileAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const payload = {
+    name: String(formData.get("name") ?? "").trim() || undefined,
+    notes: String(formData.get("notes") ?? "").trim() || null,
+  };
+  return run(
+    () => apiSend("PATCH", "/admin/mandant", payload),
+    ["/admin", "/", "/einrichtung"],
+    "Mandantenprofil gespeichert.",
+  );
+}
+
 /* ------------------------------------------------------------ Module */
 
 export async function setModuleEnabledAction(key: string, enabled: boolean): Promise<ActionState> {
@@ -465,6 +502,19 @@ export async function createUserAction(_previous: ActionState, formData: FormDat
   } catch (error) {
     return { ok: false, message: error instanceof ApiError ? error.message : "Konto konnte nicht angelegt werden." };
   }
+}
+
+export async function createLocationAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const payload = {
+    name: String(formData.get("name") ?? "").trim(),
+    code: String(formData.get("code") ?? "").trim(),
+    address: String(formData.get("address") ?? "").trim() || undefined,
+  };
+  return run(
+    () => apiSend("POST", "/users/organisation/locations", payload),
+    ["/admin/organisation", "/admin/benutzer", "/", "/einrichtung"],
+    "Standort angelegt.",
+  );
 }
 
 export async function updateUserStatusAction(id: string, status: "active" | "inactive"): Promise<ActionState> {
