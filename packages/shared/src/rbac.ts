@@ -48,6 +48,12 @@ export const PERMISSION_DEFINITIONS: readonly PermissionDefinition[] = [
   },
   { key: "roles.manage", name: "Rollen verwalten", description: "Rollen und Rechte pflegen", bereich: "Verwaltung" },
   {
+    key: "organisation.manage",
+    name: "Standorte verwalten",
+    description: "Standorte (Filialen/Autohäuser) des Mandanten anlegen und pflegen",
+    bereich: "Verwaltung",
+  },
+  {
     key: "modules.manage",
     name: "Module steuern",
     description: "Fachmodule aktivieren und deaktivieren",

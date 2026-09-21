@@ -197,6 +197,28 @@ export async function personLoeschenAction(userId: string, anlass: string): Prom
   );
 }
 
+/* ------------------------------------------------------------ Standorte */
+
+export async function createLocationAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const payload = {
+    name: String(formData.get("name") ?? ""),
+    code: String(formData.get("code") ?? ""),
+    address: String(formData.get("address") ?? "") || undefined,
+  };
+  return run(
+    () => apiSend("POST", "/locations", payload),
+    ["/admin/standorte", "/admin/benutzer"],
+    `Standort "${payload.name}" angelegt.`,
+  );
+}
+
+export async function updateLocationAction(
+  id: string,
+  input: { name?: string; address?: string },
+): Promise<ActionState> {
+  return run(() => apiSend("PATCH", `/locations/${id}`, input), ["/admin/standorte", "/admin/benutzer"]);
+}
+
 /* --------------------------------------------------------- Mandanten */
 
 export async function createTenantAction(_previous: ActionState, formData: FormData): Promise<ActionState> {

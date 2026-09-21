@@ -160,6 +160,68 @@ export class PeopleService {
     return { locations, departments, specialties };
   }
 
+  async locations() {
+    return this.prisma.location.findMany({ orderBy: { name: "asc" } });
+  }
+
+  /**
+   * Legt einen weiteren Standort an - z. B. eine zusätzliche Filiale eines
+   * Mandanten mit mehreren Häusern. Der Code ist die kurze Kennung für
+   * Zielgruppen (`location:<code>`) und muss deshalb je Mandant eindeutig sein.
+   */
+  async createLocation(actor: RequestUser, input: { name: string; code: string; address?: string | null }) {
+    const code = input.code.trim().toUpperCase();
+    if (!code) {
+      throw new BadRequestException("Bitte eine Kennung für den Standort angeben.");
+    }
+    if (await this.prisma.location.findFirst({ where: { code }, select: { id: true } })) {
+      throw new BadRequestException(`Die Kennung "${code}" ist in diesem Haus bereits vergeben.`);
+    }
+
+    const location = await this.prisma.location.create({
+      data: { name: input.name.trim(), code, address: input.address?.trim() || null },
+    });
+
+    await this.audit.log({
+      actor,
+      action: "location.created",
+      entityType: "location",
+      entityId: location.id,
+      detail: `Standort "${location.name}" (${location.code}) angelegt`,
+    });
+
+    return this.locations();
+  }
+
+  async updateLocation(
+    actor: RequestUser,
+    locationId: string,
+    input: { name?: string; address?: string | null },
+  ) {
+    const location = await this.prisma.location.findUnique({ where: { id: locationId } });
+    if (!location) {
+      throw new NotFoundException("Standort nicht gefunden");
+    }
+
+    const updated = await this.prisma.location.update({
+      where: { id: locationId },
+      data: {
+        ...(input.name !== undefined ? { name: input.name.trim() } : {}),
+        ...(input.address !== undefined ? { address: input.address?.trim() || null } : {}),
+      },
+    });
+
+    await this.audit.log({
+      actor,
+      action: "location.updated",
+      entityType: "location",
+      entityId: updated.id,
+      detail: `Standort "${updated.name}" (${updated.code}) geändert`,
+    });
+
+    return this.locations();
+  }
+
   async createUser(
     actor: RequestUser,
     input: UserInput,
