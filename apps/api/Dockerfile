@@ -9,6 +9,13 @@ RUN pnpm install --filter api... --ignore-scripts
 FROM node:20-alpine AS build
 WORKDIR /app
 RUN corepack enable
+# "prisma generate" läuft in dieser Stufe und erkennt dabei die
+# OpenSSL-Version, um die "native"-Engine passend zu benennen. Fehlt
+# openssl hier, rät die Erkennung falsch (legacy openssl-1.1.x) - und die
+# so falsch benannte Datei lässt sich in der Laufzeit-Stufe nicht laden,
+# obwohl die dort installiertes openssl 3 hat. Beide Stufen brauchen es,
+# nicht nur die, die den Dienst tatsächlich startet.
+RUN apk add --no-cache openssl
 COPY . .
 RUN pnpm install --frozen-lockfile=false
 RUN pnpm --filter api prisma:generate && pnpm --filter api build
