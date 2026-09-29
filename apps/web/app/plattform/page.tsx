@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
+import Link from "next/link";
 import type { TenantSummary } from "@ah-intranet/shared";
-import { AppShell } from "@/components/app-shell";
+import { PlatformShell } from "@/components/platform-shell";
 import { EmptyState, Section } from "@/components/ui";
 import { apiGet } from "@/lib/api";
 import { requireSession } from "@/lib/session";
@@ -8,19 +8,13 @@ import { formatDateTime } from "@/lib/utils";
 import { TenantComposer } from "./tenant-composer";
 import { TenantRowActions } from "./tenant-row-actions";
 
-export default async function TenantsAdminPage() {
+export default async function PlattformUebersichtPage() {
   const session = await requireSession();
-  // Die Rolle `admin` gilt im eigenen Haus. Häuser anzulegen ist Sache des
-  // Betreibers - und darf im Haus nicht vergeben werden können.
-  if (!session.isPlatformAdmin) {
-    redirect("/admin");
-  }
-
   const tenants = await apiGet<TenantSummary[]>("/tenants");
   const aktiv = tenants.filter((tenant) => tenant.isActive).length;
 
   return (
-    <AppShell title="Autohäuser" subtitle="Mandanten der Plattform anlegen, freischalten und sperren">
+    <PlatformShell title="Autohäuser" subtitle="Mandanten der Plattform anlegen, freischalten und sperren">
       <Section title={`${aktiv} von ${tenants.length} Häusern freigeschaltet`} subtitle="Bestand">
         {tenants.length === 0 ? (
           <EmptyState title="Noch kein Haus angelegt" detail="Legen Sie unten das erste Autohaus an." />
@@ -32,7 +26,8 @@ export default async function TenantsAdminPage() {
                   <th className="pb-2">Haus</th>
                   <th className="pb-2">Kennung</th>
                   <th className="pb-2">Adresse</th>
-                  <th className="pb-2">Konten</th>
+                  <th className="pb-2">Lizenzen</th>
+                  <th className="pb-2">Standorte</th>
                   <th className="pb-2">Angelegt</th>
                   <th className="pb-2 text-right">Status</th>
                 </tr>
@@ -41,12 +36,25 @@ export default async function TenantsAdminPage() {
                 {tenants.map((tenant) => (
                   <tr key={tenant.id}>
                     <td className="py-3 font-medium text-slate-900">
-                      {tenant.name}
+                      <Link href={`/plattform/mandanten/${tenant.id}`} className="hover:underline">
+                        {tenant.name}
+                      </Link>
                       {tenant.notes ? <p className="text-xs font-normal text-slate-500">{tenant.notes}</p> : null}
                     </td>
                     <td className="py-3 font-mono text-xs text-slate-600">{tenant.slug}</td>
                     <td className="py-3 text-slate-600">{tenant.domain ?? "–"}</td>
-                    <td className="py-3 text-slate-600">{tenant.userCount}</td>
+                    <td className="py-3 text-slate-600">
+                      {tenant.activeUserCount} {tenant.licensedSeats !== null ? `von ${tenant.licensedSeats}` : ""}
+                      {tenant.licensedSeats !== null && tenant.activeUserCount >= tenant.licensedSeats ? (
+                        <span className="ml-2 badge bg-amber-100 text-amber-800">ausgeschöpft</span>
+                      ) : null}
+                    </td>
+                    <td className="py-3 text-slate-600">
+                      {tenant.locationCount} {tenant.locationLimit !== null ? `von ${tenant.locationLimit}` : ""}
+                      {tenant.locationLimit !== null && tenant.locationCount >= tenant.locationLimit ? (
+                        <span className="ml-2 badge bg-amber-100 text-amber-800">ausgeschöpft</span>
+                      ) : null}
+                    </td>
                     <td className="py-3 text-slate-600">{formatDateTime(tenant.createdAt)}</td>
                     <td className="py-3">
                       <div className="flex items-center justify-end gap-3">
@@ -72,6 +80,6 @@ export default async function TenantsAdminPage() {
       >
         <TenantComposer />
       </Section>
-    </AppShell>
+    </PlatformShell>
   );
 }

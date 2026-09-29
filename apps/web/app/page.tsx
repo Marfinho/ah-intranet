@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import type { DashboardPayload } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
 import { DataGrid, EmptyState, MetricCard, PriorityBadge, Section, StatusBadge } from "@/components/ui";
@@ -9,6 +10,12 @@ import { formatDate, formatDateTime } from "@/lib/utils";
 
 export default async function DashboardPage() {
   const session = await requireSession();
+  // Der Betreiber-Mandant hat kein Dashboard: keine Fachmodule, keine
+  // Geschäftsdaten. Direkt in den eigenen Bereich, statt eine kaputte
+  // Attrappe des Intranets zu zeigen.
+  if (session.isPlatformAdmin) {
+    redirect("/plattform");
+  }
   const data = await apiGet<DashboardPayload>("/dashboard");
 
   return (

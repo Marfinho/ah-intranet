@@ -4,6 +4,8 @@ import { ModulesController } from "./modules.controller";
 import { TenantsController } from "./tenants.controller";
 import { AuthProvidersController } from "./auth-providers.controller";
 import { AuthProvidersService } from "./auth-providers.service";
+import { BrandingController } from "./branding.controller";
+import { BrandingService } from "./branding.service";
 import { PlatformService } from "./platform.service";
 import { ContentModule } from "../content/content.module";
 import { OrdersModule } from "../orders/orders.module";
@@ -21,7 +23,8 @@ import { PeopleModule } from "../people/people.module";
     ModulesController,
     TenantsController,
     AuthProvidersController,
+    BrandingController,
   ],
-  providers: [PlatformService, AuthProvidersService],
+  providers: [PlatformService, AuthProvidersService, BrandingService],
 })
 export class PlatformModule {}

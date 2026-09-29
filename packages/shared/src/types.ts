@@ -87,7 +87,29 @@ export interface TenantSummary extends TenantRef {
   isActive: boolean;
   notes: string | null;
   userCount: number;
+  activeUserCount: number;
+  /** Höchstzahl aktiver Konten. `null` heißt unbegrenzt. */
+  licensedSeats: number | null;
+  /** Höchstzahl Standorte. `null` heißt unbegrenzt. */
+  locationLimit: number | null;
+  locationCount: number;
   createdAt: string;
+}
+
+/** Nicht-personenbezogene Kennzahlen eines Hauses für die Plattformübersicht. */
+export interface TenantStats {
+  id: string;
+  slug: string;
+  name: string;
+  licensedSeats: number | null;
+  activeUsers: number;
+  totalUsers: number;
+  locationLimit: number | null;
+  locations: number;
+  orders: number;
+  tickets: number;
+  news: number;
+  lastActivityAt: string | null;
 }
 
 export interface LoginResponse {

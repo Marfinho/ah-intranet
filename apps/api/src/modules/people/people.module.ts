@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import {
   AbsencesController,
   DirectoryController,
+  LocationsController,
   NotificationsController,
   OnboardingController,
   ProfileController,
@@ -17,6 +18,7 @@ import { OnboardingService } from "./onboarding.service";
     DirectoryController,
     ProfileController,
     UsersController,
+    LocationsController,
     RolesController,
     AbsencesController,
     OnboardingController,

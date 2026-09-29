@@ -52,6 +52,7 @@ export default tseslint.config(
         console: "readonly",
         __dirname: "readonly",
         Buffer: "readonly",
+        URL: "readonly",
       },
     },
     rules: {

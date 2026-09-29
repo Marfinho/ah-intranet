@@ -1,9 +1,21 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { ApiError, SESSION_COOKIE, apiBaseUrl, apiSend } from "./api";
+import { ApiError, SESSION_COOKIE, apiBaseUrl, apiSend, apiSendFile, tenantHostHeader } from "./api";
+
+/**
+ * `next start` setzt `NODE_ENV` immer auf "production" - als Maßstab für
+ * `Secure` taugt das hier nicht. Läuft die Anfrage über einen Reverse Proxy
+ * ohne TLS (wie beim lokalen Test), verwirft jeder Browser ein als `Secure`
+ * markiertes Cookie stillschweigend: die Anmeldung wirkt kurz erfolgreich,
+ * der nächste Klick ist schon wieder abgemeldet. `x-forwarded-proto` sagt,
+ * worüber der Browser tatsächlich verbunden war.
+ */
+function isSecureRequest(): boolean {
+  return headers().get("x-forwarded-proto") === "https";
+}
 
 export interface ActionState {
   ok: boolean;
@@ -54,7 +66,7 @@ export async function passwortVergessenAction(_previous: ActionState, formData: 
   try {
     await fetch(`${apiBaseUrl()}/auth/passwort-vergessen`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...tenantHostHeader() },
       body: JSON.stringify({ username, ...(tenant ? { tenant } : {}) }),
       cache: "no-store",
     });
@@ -114,7 +126,7 @@ export async function loginAction(_previous: ActionState, formData: FormData): P
 
   const response = await fetch(`${apiBaseUrl()}/auth/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...tenantHostHeader() },
     body: JSON.stringify({ username, password, ...(tenant ? { tenant } : {}) }),
     cache: "no-store",
   });
@@ -135,7 +147,7 @@ export async function loginAction(_previous: ActionState, formData: FormData): P
   cookies().set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecureRequest(),
     maxAge: 12 * 60 * 60,
     path: "/",
   });
@@ -179,6 +191,27 @@ export async function resetModulesAction(): Promise<ActionState> {
   return run(() => apiSend("POST", "/modules/reset"), ["/", "/admin", "/admin/module"]);
 }
 
+/* -------------------------------------------------------- Erscheinungsbild */
+
+export async function uploadLogoAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const datei = formData.get("file");
+  if (!(datei instanceof File) || datei.size === 0) {
+    return { ok: false, message: "Bitte eine Bilddatei auswählen." };
+  }
+
+  const upload = new FormData();
+  upload.set("file", datei);
+  return run(
+    () => apiSendFile("/branding/logo", upload),
+    ["/", "/admin", "/admin/erscheinungsbild"],
+    "Logo hinterlegt.",
+  );
+}
+
+export async function removeLogoAction(): Promise<ActionState> {
+  return run(() => apiSend("DELETE", "/branding/logo"), ["/", "/admin", "/admin/erscheinungsbild"]);
+}
+
 /* ------------------------------------------------------- Datenschutz */
 
 export async function aufbewahrungAusfuehrenAction(): Promise<ActionState> {
@@ -197,6 +230,28 @@ export async function personLoeschenAction(userId: string, anlass: string): Prom
   );
 }
 
+/* ------------------------------------------------------------ Standorte */
+
+export async function createLocationAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const payload = {
+    name: String(formData.get("name") ?? ""),
+    code: String(formData.get("code") ?? ""),
+    address: String(formData.get("address") ?? "") || undefined,
+  };
+  return run(
+    () => apiSend("POST", "/locations", payload),
+    ["/admin/standorte", "/admin/benutzer"],
+    `Standort "${payload.name}" angelegt.`,
+  );
+}
+
+export async function updateLocationAction(
+  id: string,
+  input: { name?: string; address?: string },
+): Promise<ActionState> {
+  return run(() => apiSend("PATCH", `/locations/${id}`, input), ["/admin/standorte", "/admin/benutzer"]);
+}
+
 /* --------------------------------------------------------- Mandanten */
 
 export async function createTenantAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
@@ -210,13 +265,42 @@ export async function createTenantAction(_previous: ActionState, formData: FormD
     adminFirstName: String(formData.get("adminFirstName") ?? "") || undefined,
     adminLastName: String(formData.get("adminLastName") ?? "") || undefined,
     adminEmail: String(formData.get("adminEmail") ?? "") || undefined,
+    licensedSeats: (() => {
+      const wert = String(formData.get("licensedSeats") ?? "").trim();
+      return wert ? Number(wert) : undefined;
+    })(),
+    locationLimit: (() => {
+      const wert = String(formData.get("locationLimit") ?? "").trim();
+      return wert ? Number(wert) : undefined;
+    })(),
   };
 
-  return run(() => apiSend("POST", "/tenants", payload), ["/admin/mandanten"], `Haus "${payload.name}" eingerichtet.`);
+  return run(() => apiSend("POST", "/tenants", payload), ["/plattform"], `Haus "${payload.name}" eingerichtet.`);
 }
 
 export async function setTenantActiveAction(id: string, isActive: boolean): Promise<ActionState> {
-  return run(() => apiSend("PATCH", `/tenants/${id}/aktiv`, { isActive }), ["/admin/mandanten"]);
+  return run(() => apiSend("PATCH", `/tenants/${id}/aktiv`, { isActive }), ["/plattform"]);
+}
+
+export async function setTenantLicenseAction(id: string, licensedSeats: number | null): Promise<ActionState> {
+  return run(
+    () => apiSend("PATCH", `/tenants/${id}/lizenz`, { licensedSeats }),
+    ["/plattform", `/plattform/mandanten/${id}`],
+  );
+}
+
+export async function setTenantLocationLimitAction(id: string, locationLimit: number | null): Promise<ActionState> {
+  return run(
+    () => apiSend("PATCH", `/tenants/${id}/standortlimit`, { locationLimit }),
+    ["/plattform", `/plattform/mandanten/${id}`],
+  );
+}
+
+export async function setTenantModuleAction(tenantId: string, key: string, enabled: boolean): Promise<ActionState> {
+  return run(
+    () => apiSend("PUT", `/tenants/${tenantId}/module/${key}`, { enabled }),
+    ["/plattform", `/plattform/mandanten/${tenantId}`],
+  );
 }
 
 /* -------------------------------------------------------------- News */

@@ -61,6 +61,20 @@ export class TenantMiddleware implements NestMiddleware {
       (typeof body?.tenant === "string" ? body.tenant : undefined) ??
       (typeof request.headers["x-tenant"] === "string" ? (request.headers["x-tenant"] as string) : undefined);
 
-    return this.tenants.resolve({ explicit, host: request.headers.host });
+    return this.tenants.resolve({ explicit, host: this.host(request) });
+  }
+
+  /**
+   * Ein Reverse Proxy terminiert die eigentliche Adresse und spricht die API
+   * intern unter einem anderen Namen an - `x-forwarded-host` trägt dann die
+   * Adresse, die die Anfrage ursprünglich gestellt hat. Genauso setzt sie das
+   * Frontend, wenn es serverseitig für den Browser nachfragt: der interne Weg
+   * zur API liegt fest (`api:3001`), die Kennung muss also mitgegeben werden.
+   * Kein größeres Vertrauen als der ohnehin ungeprüfte `x-tenant`-Kopf oben.
+   */
+  private host(request: Request): string | undefined {
+    const forwarded = request.headers["x-forwarded-host"];
+    const erster = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+    return erster?.split(",")[0]?.trim() ?? request.headers.host;
   }
 }
