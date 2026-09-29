@@ -8,6 +8,19 @@ Für die Erprobung auf einem frischen Ubuntu 24.04. Ohne eigene Domain dient
 Das genügt für die Erprobung mit Testdaten – **nicht** für echte Personendaten.
 Dafür braucht es eine eigene Domain und Zertifikate (siehe `ausrollen.md`).
 
+## Kurzweg: ein Aufruf statt vieler Befehle
+
+Wer nur eine Weboberfläche (z. B. die Remote-Konsole) hat und kaum tippen will,
+ruft als root das Skript auf; die Argumente sind die Kennungen der Häuser:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Marfinho/ah-intranet/claude/lucid-pasteur-24oudc/scripts/vps-einrichten.sh | bash -s -- autohaus-x
+```
+
+Es installiert Docker, öffnet Port 22 und 80, erzeugt die Geheimnisse selbst,
+startet alles und richtet die Plattformverwaltung ein. Am Ende steht das
+Passwort. Ein weiteres Haus: Skript erneut mit allen Kennungen aufrufen.
+
 ## 1. Server vorbereiten
 
 ```bash
