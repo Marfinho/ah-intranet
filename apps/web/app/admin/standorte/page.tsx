@@ -24,10 +24,7 @@ interface LocationSummary {
 export default async function StandorteAdminPage() {
   await requirePermission("org.manage");
 
-  const [locations, brands] = await Promise.all([
-    apiGet<LocationSummary[]>("/standorte"),
-    apiGet<Brand[]>("/marken"),
-  ]);
+  const [locations, brands] = await Promise.all([apiGet<LocationSummary[]>("/standorte"), apiGet<Brand[]>("/marken")]);
 
   return (
     <AppShell

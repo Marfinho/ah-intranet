@@ -20,7 +20,6 @@ function BrandLogo({ brand }: { brand: Brand }) {
     return null;
   }
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- Logo liegt als freie URL vor, kein eigenes Asset.
     <img
       src={brand.logoUrl}
       alt={`Logo ${brand.name}`}

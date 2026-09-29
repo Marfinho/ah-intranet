@@ -43,7 +43,6 @@ export function LocationComposer({ brands }: { brands: Brand[] }) {
               >
                 <input type="checkbox" name="brandIds" value={brand.id} className="h-4 w-4" />
                 {brand.logoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- Logo liegt als freie URL vor, kein eigenes Asset.
                   <img src={brand.logoUrl} alt="" className="h-4 w-4 shrink-0 rounded-sm object-contain grayscale" />
                 ) : null}
                 {brand.name}

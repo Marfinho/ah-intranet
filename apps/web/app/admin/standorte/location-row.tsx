@@ -31,7 +31,8 @@ export function LocationRow({ location, allBrands }: { location: LocationSummary
   const [pending, startTransition] = useTransition();
 
   const geaendert =
-    selected.length !== location.brands.length || selected.some((id) => !location.brands.some((brand) => brand.id === id));
+    selected.length !== location.brands.length ||
+    selected.some((id) => !location.brands.some((brand) => brand.id === id));
 
   const melde = (result: { ok: boolean; message?: string }) => {
     if (!result.ok && result.message) {
@@ -48,7 +49,6 @@ export function LocationRow({ location, allBrands }: { location: LocationSummary
             {location.brands
               .filter((brand) => brand.logoUrl)
               .map((brand) => (
-                // eslint-disable-next-line @next/next/no-img-element -- Logo liegt als freie URL vor, kein eigenes Asset.
                 <img
                   key={brand.id}
                   src={brand.logoUrl!}
