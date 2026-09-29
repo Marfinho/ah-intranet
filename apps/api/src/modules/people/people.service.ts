@@ -20,6 +20,7 @@ import { PrismaService } from "../../core/prisma.service";
 import { AuditService } from "../../core/audit.service";
 import { PRESENCE_LABELS, PRESENCE_VALUES, buildScopes, displayName, sortiereRollen } from "../../core/mappers";
 import type { RequestUser } from "../../core/request-user";
+import { requireTenantId } from "../../core/tenant-context";
 
 const directorySelect = {
   id: true,
@@ -160,6 +161,107 @@ export class PeopleService {
     return { locations, departments, specialties };
   }
 
+  async locations() {
+    return this.prisma.location.findMany({ orderBy: { name: "asc" } });
+  }
+
+  /**
+   * Legt einen weiteren Standort an - z. B. eine zusätzliche Filiale eines
+   * Mandanten mit mehreren Häusern. Der Code ist die kurze Kennung für
+   * Zielgruppen (`location:<code>`) und muss deshalb je Mandant eindeutig sein.
+   */
+  async createLocation(actor: RequestUser, input: { name: string; code: string; address?: string | null }) {
+    const code = input.code.trim().toUpperCase();
+    if (!code) {
+      throw new BadRequestException("Bitte eine Kennung für den Standort angeben.");
+    }
+    if (await this.prisma.location.findFirst({ where: { code }, select: { id: true } })) {
+      throw new BadRequestException(`Die Kennung "${code}" ist in diesem Haus bereits vergeben.`);
+    }
+    await this.pruefeStandortlimit();
+
+    const location = await this.prisma.location.create({
+      data: { name: input.name.trim(), code, address: input.address?.trim() || null },
+    });
+
+    await this.audit.log({
+      actor,
+      action: "location.created",
+      entityType: "location",
+      entityId: location.id,
+      detail: `Standort "${location.name}" (${location.code}) angelegt`,
+    });
+
+    return this.locations();
+  }
+
+  async updateLocation(actor: RequestUser, locationId: string, input: { name?: string; address?: string | null }) {
+    const location = await this.prisma.location.findUnique({ where: { id: locationId } });
+    if (!location) {
+      throw new NotFoundException("Standort nicht gefunden");
+    }
+
+    const updated = await this.prisma.location.update({
+      where: { id: locationId },
+      data: {
+        ...(input.name !== undefined ? { name: input.name.trim() } : {}),
+        ...(input.address !== undefined ? { address: input.address?.trim() || null } : {}),
+      },
+    });
+
+    await this.audit.log({
+      actor,
+      action: "location.updated",
+      entityType: "location",
+      entityId: updated.id,
+      detail: `Standort "${updated.name}" (${updated.code}) geändert`,
+    });
+
+    return this.locations();
+  }
+
+  /**
+   * Weist ein erreichtes Lizenzkontingent ab, bevor ein weiteres aktives
+   * Konto entsteht. `licensedSeats: null` heißt unbegrenzt - nicht jedes Haus
+   * hat ein Lizenzmodell, ein erfundenes Limit wäre schlimmer als keins.
+   */
+  private async pruefeLizenzkontingent(): Promise<void> {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: requireTenantId() },
+      select: { licensedSeats: true },
+    });
+    if (tenant.licensedSeats === null) {
+      return;
+    }
+
+    const aktiveKonten = await this.prisma.user.count({ where: { status: "active" } });
+    if (aktiveKonten >= tenant.licensedSeats) {
+      throw new BadRequestException(
+        `Das Lizenzkontingent ist erreicht (${tenant.licensedSeats} aktive Konten). ` +
+          "Bitte ein Konto deaktivieren oder das Kontingent erweitern lassen.",
+      );
+    }
+  }
+
+  /** Dieselbe Prüfung wie `pruefeLizenzkontingent`, nur für Standorte statt Konten. */
+  private async pruefeStandortlimit(): Promise<void> {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: requireTenantId() },
+      select: { locationLimit: true },
+    });
+    if (tenant.locationLimit === null) {
+      return;
+    }
+
+    const vorhandeneStandorte = await this.prisma.location.count();
+    if (vorhandeneStandorte >= tenant.locationLimit) {
+      throw new BadRequestException(
+        `Das Standortlimit ist erreicht (${tenant.locationLimit} Standorte). ` +
+          "Bitte das Limit von der Plattformverwaltung erweitern lassen.",
+      );
+    }
+  }
+
   async createUser(
     actor: RequestUser,
     input: UserInput,
@@ -167,6 +269,9 @@ export class PeopleService {
     const username = input.username.trim().toLowerCase();
     if (await this.prisma.user.findFirst({ where: { username }, select: { id: true } })) {
       throw new BadRequestException(`Der Benutzername "${username}" ist bereits vergeben.`);
+    }
+    if ((input.status ?? "active") === "active") {
+      await this.pruefeLizenzkontingent();
     }
 
     const initialPassword = input.password ?? this.generatePassword();
@@ -211,6 +316,9 @@ export class PeopleService {
     const existing = await this.prisma.user.findUnique({ where: { id } });
     if (!existing) {
       throw new NotFoundException("Benutzer nicht gefunden");
+    }
+    if (input.status === "active" && existing.status !== "active") {
+      await this.pruefeLizenzkontingent();
     }
 
     const scopes = await this.resolveScopes({

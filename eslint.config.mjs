@@ -39,6 +39,7 @@ export default tseslint.config(
   {
     files: [
       "apps/api/prisma/seed.ts",
+      "apps/api/prisma/einrichten.ts",
       "apps/api/src/scripts/**/*.ts",
       "e2e/**/*.js",
       "scripts/**/*.{js,mjs,ts}",
@@ -52,6 +53,7 @@ export default tseslint.config(
         console: "readonly",
         __dirname: "readonly",
         Buffer: "readonly",
+        URL: "readonly",
       },
     },
     rules: {

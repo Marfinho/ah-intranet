@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import type { DashboardMetric, ModuleState } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
 import { DataGrid, MetricCard, Section } from "@/components/ui";
@@ -10,7 +11,19 @@ const ADMIN_LINKS = [
   { href: "/admin/module", label: "Module", detail: "Fachmodule ein- und ausschalten", recht: "modules.manage" },
   { href: "/admin/benutzer", label: "Benutzer", detail: "Konten anlegen und pflegen", recht: "users.manage" },
   { href: "/admin/rollen", label: "Rollen & Rechte", detail: "Eigene Rollen anlegen", recht: "roles.manage" },
+  {
+    href: "/admin/standorte",
+    label: "Standorte",
+    detail: "Filialen und Autohäuser dieses Mandanten pflegen",
+    recht: "organisation.manage",
+  },
   { href: "/admin/anmeldung", label: "Anmeldung", detail: "Anmeldearten des Hauses", recht: "auth.manage" },
+  {
+    href: "/admin/erscheinungsbild",
+    label: "Erscheinungsbild",
+    detail: "Eigenes Logo statt des AHOI-Zeichens",
+    recht: "branding.manage",
+  },
   { href: "/admin/news", label: "News", detail: "Beiträge verfassen und steuern", recht: "news.publish" },
   { href: "/admin/dokumente", label: "Dokumente", detail: "Vorlagen und Richtlinien", recht: "documents.manage" },
   { href: "/admin/katalog", label: "Arbeitskleidung", detail: "Artikel und Größen", recht: "catalog.manage" },
@@ -30,13 +43,14 @@ const ADMIN_LINKS = [
   },
 ];
 
-/** Nur für die Plattformverwaltung des Betreibers, nicht für Admins im Haus. */
-const PLATFORM_LINKS = [
-  { href: "/admin/mandanten", label: "Autohäuser", detail: "Mandanten anlegen und freischalten" },
-];
-
 export default async function AdminPage() {
   const session = await requirePermission("admin.access");
+  // Die Plattformverwaltung hat hier nichts verloren: kein Fachmodul, keine
+  // Geschäftsdaten, nichts von dem, was diese Seite zeigt betrifft sie. Sie
+  // bedient stattdessen einen eigenen Bereich, siehe `/plattform`.
+  if (session.isPlatformAdmin) {
+    redirect("/plattform");
+  }
 
   const [summary, modules] = await Promise.all([
     apiGet<{ metrics: DashboardMetric[] }>("/admin/summary"),
@@ -82,23 +96,6 @@ export default async function AdminPage() {
               </div>
             </div>
           )}
-        </Section>
-      ) : null}
-
-      {session.isPlatformAdmin ? (
-        <Section title="Plattformverwaltung" subtitle={`Angemeldet im Haus ${session.tenant.name}`}>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {PLATFORM_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="rounded-2xl border border-brand-100 bg-brand-50/40 p-5 transition hover:bg-brand-50"
-              >
-                <p className="font-semibold text-slate-900">{link.label}</p>
-                <p className="mt-1 text-sm text-slate-600">{link.detail}</p>
-              </Link>
-            ))}
-          </div>
         </Section>
       ) : null}
 
