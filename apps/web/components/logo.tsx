@@ -51,7 +51,9 @@ export function Signet({ className = "h-7 w-7" }: { className?: string }) {
 export function Logo({ className = "", signetClass = "h-7 w-7" }: { className?: string; signetClass?: string }) {
   const { active, onError } = useOwnLogo();
   if (active) {
-    return <img src="/branding/logo" alt="" className={`${signetClass} object-contain ${className}`} onError={onError} />;
+    return (
+      <img src="/branding/logo" alt="" className={`${signetClass} object-contain ${className}`} onError={onError} />
+    );
   }
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>

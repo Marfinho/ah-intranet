@@ -164,11 +164,7 @@ export class TenantsController {
   }
 
   @Patch(":id/standortlimit")
-  async setLocationLimit(
-    @Param("id") id: string,
-    @Body() dto: SetLocationLimitDto,
-    @CurrentUser() user: RequestUser,
-  ) {
+  async setLocationLimit(@Param("id") id: string, @Body() dto: SetLocationLimitDto, @CurrentUser() user: RequestUser) {
     const tenant = await this.tenants.setLocationLimit(id, dto.locationLimit ?? null);
 
     await this.audit.log({

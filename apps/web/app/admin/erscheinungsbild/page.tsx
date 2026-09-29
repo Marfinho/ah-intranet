@@ -15,10 +15,7 @@ export default async function ErscheinungsbildPage() {
 
   return (
     <AppShell title="Erscheinungsbild" subtitle="Eigenes Logo für dieses Haus hinterlegen">
-      <Section
-        title="Logo"
-        subtitle="Ersetzt das AHOI-Zeichen in Kopfzeile und Anmeldeseite dieses Hauses vollständig"
-      >
+      <Section title="Logo" subtitle="Ersetzt das AHOI-Zeichen in Kopfzeile und Anmeldeseite dieses Hauses vollständig">
         <LogoUploader hasLogo={hasLogo} />
       </Section>
     </AppShell>

@@ -34,7 +34,9 @@ export default async function StatusPage() {
           <div className="rounded-2xl border border-slate-200 p-5">
             <div className="flex items-center justify-between">
               <p className="font-semibold text-slate-900">Datenbankverbindung</p>
-              <span className={`badge ${health.checks.database.ok ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
+              <span
+                className={`badge ${health.checks.database.ok ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}
+              >
                 {health.checks.database.ok ? "ok" : "gestört"}
               </span>
             </div>
@@ -48,7 +50,9 @@ export default async function StatusPage() {
           <div className="rounded-2xl border border-slate-200 p-5">
             <div className="flex items-center justify-between">
               <p className="font-semibold text-slate-900">Schlüssel gesetzt</p>
-              <span className={`badge ${health.checks.secrets.ok ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
+              <span
+                className={`badge ${health.checks.secrets.ok ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}
+              >
                 {health.checks.secrets.ok ? "ok" : "fehlt"}
               </span>
             </div>

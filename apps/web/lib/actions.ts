@@ -201,7 +201,11 @@ export async function uploadLogoAction(_previous: ActionState, formData: FormDat
 
   const upload = new FormData();
   upload.set("file", datei);
-  return run(() => apiSendFile("/branding/logo", upload), ["/", "/admin", "/admin/erscheinungsbild"], "Logo hinterlegt.");
+  return run(
+    () => apiSendFile("/branding/logo", upload),
+    ["/", "/admin", "/admin/erscheinungsbild"],
+    "Logo hinterlegt.",
+  );
 }
 
 export async function removeLogoAction(): Promise<ActionState> {
@@ -279,24 +283,24 @@ export async function setTenantActiveAction(id: string, isActive: boolean): Prom
 }
 
 export async function setTenantLicenseAction(id: string, licensedSeats: number | null): Promise<ActionState> {
-  return run(() => apiSend("PATCH", `/tenants/${id}/lizenz`, { licensedSeats }), [
-    "/plattform",
-    `/plattform/mandanten/${id}`,
-  ]);
+  return run(
+    () => apiSend("PATCH", `/tenants/${id}/lizenz`, { licensedSeats }),
+    ["/plattform", `/plattform/mandanten/${id}`],
+  );
 }
 
 export async function setTenantLocationLimitAction(id: string, locationLimit: number | null): Promise<ActionState> {
-  return run(() => apiSend("PATCH", `/tenants/${id}/standortlimit`, { locationLimit }), [
-    "/plattform",
-    `/plattform/mandanten/${id}`,
-  ]);
+  return run(
+    () => apiSend("PATCH", `/tenants/${id}/standortlimit`, { locationLimit }),
+    ["/plattform", `/plattform/mandanten/${id}`],
+  );
 }
 
 export async function setTenantModuleAction(tenantId: string, key: string, enabled: boolean): Promise<ActionState> {
-  return run(() => apiSend("PUT", `/tenants/${tenantId}/module/${key}`, { enabled }), [
-    "/plattform",
-    `/plattform/mandanten/${tenantId}`,
-  ]);
+  return run(
+    () => apiSend("PUT", `/tenants/${tenantId}/module/${key}`, { enabled }),
+    ["/plattform", `/plattform/mandanten/${tenantId}`],
+  );
 }
 
 /* -------------------------------------------------------------- News */

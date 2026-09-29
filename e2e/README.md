@@ -27,9 +27,10 @@ node e2e/flows.js         # Prüfungen über die wichtigsten Fachprozesse
 ```
 
 Beide Skripte brauchen `*.localhost`-Subdomains, siehe [`../docs/lokal-testen.md`](../docs/lokal-testen.md)
+
 - keine weitere Einrichtung nötig, moderne Browser (und der in Playwright
-mitgelieferte Chromium) lösen sie ohne Hosts-Eintrag auf die eigene Maschine
-auf.
+  mitgelieferte Chromium) lösen sie ohne Hosts-Eintrag auf die eigene Maschine
+  auf.
 
 Alle Skripte beenden sich mit Exit-Code 1, sobald eine Prüfung fehlschlägt.
 
@@ -58,15 +59,15 @@ vorher `pnpm --filter api prisma:seed`.
 
 ## Konfiguration
 
-| Variable               | Standard                    |
-| ---------------------- | ---------------------------- |
-| `E2E_BASE_URL`         | `http://localhost:3000`     |
-| `E2E_API_URL`          | `http://localhost:3001/api` |
-| `E2E_PASSWORD`         | `Intranet2026!`             |
-| `E2E_TENANT`           | `autohaus-mueller`          |
-| `E2E_TENANT_B`         | `autohaus-nord`             |
-| `E2E_PLATFORM_TENANT`  | `verwaltung`                |
-| `CHROMIUM_PATH`        | Playwright-Standardpfad     |
+| Variable              | Standard                    |
+| --------------------- | --------------------------- |
+| `E2E_BASE_URL`        | `http://localhost:3000`     |
+| `E2E_API_URL`         | `http://localhost:3001/api` |
+| `E2E_PASSWORD`        | `Intranet2026!`             |
+| `E2E_TENANT`          | `autohaus-mueller`          |
+| `E2E_TENANT_B`        | `autohaus-nord`             |
+| `E2E_PLATFORM_TENANT` | `verwaltung`                |
+| `CHROMIUM_PATH`       | Playwright-Standardpfad     |
 
 ## Mandanten
 

@@ -195,11 +195,7 @@ export class PeopleService {
     return this.locations();
   }
 
-  async updateLocation(
-    actor: RequestUser,
-    locationId: string,
-    input: { name?: string; address?: string | null },
-  ) {
+  async updateLocation(actor: RequestUser, locationId: string, input: { name?: string; address?: string | null }) {
     const location = await this.prisma.location.findUnique({ where: { id: locationId } });
     if (!location) {
       throw new NotFoundException("Standort nicht gefunden");
