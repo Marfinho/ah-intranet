@@ -4,6 +4,7 @@
 # https://localhub.<BASE_DOMAIN> über den Proxy von AHOI.
 #
 #   curl -fsSL https://raw.githubusercontent.com/Marfinho/ah-intranet/claude/lucid-pasteur-24oudc/scripts/vps-localhub.sh | bash
+#   (anderer Branch: ... | LOCALHUB_BRANCH=name bash)
 #
 # Voraussetzung: vps-einrichten.sh ist gelaufen (Proxy, Netz ahoi-proxy).
 # Erneut aufrufen aktualisiert den Code; Geheimnisse und Daten bleiben.
@@ -13,6 +14,8 @@ set -euo pipefail
 # vps-einrichten.sh. Docker-Aufrufe bekommen deshalb </dev/null.
 
 DIR="${LOCALHUB_DIR:-/opt/localhub}"
+# Standard ist main; ein anderer Branch erlaubt, eine Korrektur vor dem Mergen zu erproben.
+BRANCH="${LOCALHUB_BRANCH:-main}"
 AHOI_DIR="${AHOI_DIR:-/opt/ah-intranet}"
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -42,9 +45,10 @@ ufw allow 443/tcp >/dev/null 2>&1 || true
 
 echo "==> LocalHub holen"
 if [ -d "$DIR/.git" ]; then
-  git -C "$DIR" pull -q --ff-only </dev/null
+  git -C "$DIR" fetch -q origin "$BRANCH" </dev/null
+  git -C "$DIR" checkout -q -B "$BRANCH" "origin/$BRANCH"
 else
-  git clone -q https://github.com/Marfinho/triathlon-trainer.git "$DIR"
+  git clone -q -b "$BRANCH" https://github.com/Marfinho/triathlon-trainer.git "$DIR"
 fi
 cd "$DIR"
 
