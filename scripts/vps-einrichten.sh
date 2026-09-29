@@ -12,6 +12,10 @@
 # tippen will. Ohne TLS - nur für die Erprobung mit Testdaten (docs/vps.md).
 set -euo pipefail
 
+# Bei `curl | bash` ist die Standardeingabe das Skript selbst: jeder Befehl, der
+# davon liest (docker compose exec), verschluckt den Rest und das Skript endet
+# stumm mittendrin. Deshalb bekommen alle Docker-Aufrufe </dev/null.
+
 BRANCH="${AHOI_BRANCH:-claude/lucid-pasteur-24oudc}"
 DIR="${AHOI_DIR:-/opt/ah-intranet}"
 COMPOSE="docker compose -f docker-compose.prod.yml"
@@ -72,14 +76,14 @@ mv .env.neu .env
 chmod 600 .env
 
 echo "==> Bauen und starten (dauert einige Minuten)"
-$COMPOSE up -d --build
+$COMPOSE up -d --build </dev/null
 
 # Die API lauscht erst, wenn die Migrationen durch sind; vorher einzurichten
 # könnte an fehlenden Tabellen scheitern und halb angelegt zurückbleiben.
 echo "==> Warten auf die API"
 bereit=0
 for _ in $(seq 1 60); do
-  if $COMPOSE exec -T api wget -q -O /dev/null http://localhost:3001/api/health 2>/dev/null; then
+  if $COMPOSE exec -T api wget -q -O /dev/null http://localhost:3001/api/health </dev/null 2>/dev/null; then
     bereit=1
     break
   fi
@@ -91,7 +95,7 @@ if [ "$bereit" -ne 1 ]; then
 fi
 
 echo "==> Plattformverwaltung einrichten"
-$COMPOSE exec -T api pnpm --filter api prisma:einrichten
+$COMPOSE exec -T api pnpm --filter api prisma:einrichten </dev/null
 
 PASSWORT="$(grep '^PLATTFORM_PASSWORT=' .env | cut -d= -f2-)"
 echo
