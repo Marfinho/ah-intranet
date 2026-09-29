@@ -1,0 +1,78 @@
+# Betrieb auf einem einzelnen Server, ohne eigene Domain:
+#
+#   cp .env.prod.example .env      # Werte eintragen, siehe docs/vps.md
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Eigenständige Datei statt Ergänzung zu docker-compose.yml: dort stehen
+# Erprobungswerte (Datenbankpasswort, offene Ports), die sich in einer
+# Ergänzung nicht wieder entfernen ließen. Nach außen ist nur der Proxy offen.
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ah_intranet
+      POSTGRES_USER: ahoi
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD fehlt in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ahoi -d ah_intranet"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    # Migrationen beim Start: das Image bringt sie mit, angewendet werden sie
+    # sonst nirgends - ohne sie wäre die Datenbank leer und die API liefe ins Leere.
+    command: sh -c "pnpm --filter api exec prisma migrate deploy && pnpm --filter api start"
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgresql://ahoi:${DB_PASSWORD:?}@postgres:5432/ah_intranet?schema=public
+      FRONTEND_URL: ${FRONTEND_URL:?FRONTEND_URL fehlt in .env}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt in .env}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY fehlt in .env}
+      JWT_EXPIRES_IN: 12h
+      # Nur für die einmalige Einrichtung (prisma:einrichten); danach aus .env entfernen.
+      PLATTFORM_PASSWORT: ${PLATTFORM_PASSWORT:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-AHOI <noreply@example.de>}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    environment:
+      # Nur serverseitig genutzt: der Browser spricht die API über den Proxy nicht direkt an.
+      API_URL: http://api:3001/api
+      NEXT_PUBLIC_API_URL: http://api:3001/api
+    depends_on:
+      - api
+
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "${PROXY_PORT:-80}:80"
+    environment:
+      BASE_DOMAIN: ${BASE_DOMAIN:?BASE_DOMAIN fehlt in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./landing:/srv/landing:ro
+
+volumes:
+  postgres_data:
