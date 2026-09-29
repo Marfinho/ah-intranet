@@ -34,9 +34,10 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 
 # SSH zuerst freigeben: ohne diese Regel sperrt sich aus, wer ufw einschaltet.
-echo "==> Firewall (SSH und Port 80)"
+echo "==> Firewall (SSH, Port 80 und 443)"
 ufw allow OpenSSH >/dev/null
 ufw allow 80/tcp >/dev/null
+ufw allow 443/tcp >/dev/null
 ufw --force enable >/dev/null
 
 # Kleine Server gehen beim Bauen von Next.js in die Knie: ohne Auslagerung
@@ -54,7 +55,9 @@ if [ "$RAM_MB" -lt 4000 ] && [ "$(swapon --show --noheadings | wc -l)" -eq 0 ]; 
 fi
 
 echo "==> Anwendung holen ($BRANCH)"
+ALT=""
 if [ -d "$DIR/.git" ]; then
+  ALT="$(git -C "$DIR" rev-parse HEAD)"
   git -C "$DIR" fetch -q origin "$BRANCH"
   git -C "$DIR" checkout -q -B "$BRANCH" "origin/$BRANCH"
 else
@@ -89,10 +92,17 @@ grep -v -E '^(BASE_DOMAIN|FRONTEND_URL)=' .env >.env.neu || true
 mv .env.neu .env
 chmod 600 .env
 
-# Nacheinander statt gleichzeitig: zwei Bauvorgänge teilen sich sonst den knappen Speicher.
-echo "==> Bauen (Web und API nacheinander)"
-$COMPOSE build api </dev/null
-$COMPOSE build web </dev/null
+# Nur neu bauen, wenn sich Code geändert hat: der Bau dauert auf kleinen Servern
+# sehr lange, und Änderungen an Konfiguration oder Skripten brauchen ihn nicht.
+# Fehlt ein Image, baut `up` es ohnehin.
+if [ -n "$ALT" ] && git diff --quiet "$ALT" HEAD -- apps packages pnpm-lock.yaml pnpm-workspace.yaml package.json; then
+  echo "==> Code unverändert - kein Neubau"
+else
+  # Nacheinander statt gleichzeitig: zwei Bauvorgänge teilen sich sonst den knappen Speicher.
+  echo "==> Bauen (Web und API nacheinander)"
+  $COMPOSE build api </dev/null
+  $COMPOSE build web </dev/null
+fi
 echo "==> Starten"
 $COMPOSE up -d </dev/null
 

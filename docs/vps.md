@@ -73,3 +73,27 @@ git pull && docker compose -f docker-compose.prod.yml up -d --build
 Die Sicherungsskripte in `scripts/` zielen auf die Erprobungsdatenbank; für
 diesen Aufbau (Benutzer `ahoi`, Container `postgres`) sind sie noch nicht
 angepasst.
+
+## LocalHub daneben (ohne KI)
+
+[LocalHub](https://github.com/Marfinho/triathlon-trainer) läuft als eigener
+Stack neben AHOI und hängt über das gemeinsame Netz `ahoi-proxy` am selben
+Proxy. Nach `vps-einrichten.sh` (das den Proxy in der aktuellen Fassung startet):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Marfinho/ah-intranet/claude/lucid-pasteur-24oudc/scripts/vps-localhub.sh | bash
+```
+
+- **Adresse:** `https://localhub.217-160-128-156.sslip.io`. Anders als AHOI mit
+  HTTPS, denn LocalHubs Anmeldung setzt nur Cookies mit `Secure`-Flag – über
+  HTTP bliebe niemand angemeldet. Caddy holt das Zertifikat je Hostname von
+  Let's Encrypt; dafür muss Port 443 offen sein (Firewall des Servers und im
+  IONOS-Panel). `localhub` darf deshalb keine Kennung eines Hauses in AHOI sein.
+- **Ohne KI:** `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` und Ollama bleiben leer, es
+  gilt der Copy-&-Paste-Weg.
+- **Nicht nutzbar ohne Domain:** Google-Anmeldung, Stripe, OAuth-Anbindungen
+  (Strava, Wahoo, Withings). Anmeldung geht mit E-Mail und Passwort.
+- **Registrierung ist offen:** Wer die Adresse kennt, kann ein Konto anlegen
+  (mit Begrenzung der Versuche je IP). LocalHub bietet dafür keinen Schalter.
+- **Speicher:** Zwei Stacks im Dauerbetrieb brauchen zusammen mindestens 4 GB
+  RAM einschließlich Auslagerung.
