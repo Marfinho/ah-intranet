@@ -11,7 +11,9 @@ import type { RequestUser } from "../../core/request-user";
 
 const userWithContext = {
   tenant: { select: { slug: true, name: true } },
-  location: { select: { name: true, code: true } },
+  location: {
+    select: { name: true, code: true, locationBrands: { select: { brand: { select: { code: true } } } } },
+  },
   department: { select: { name: true, code: true } },
   specialtyArea: { select: { name: true, code: true } },
   roles: {
@@ -190,7 +192,7 @@ export class AuthService {
     mustChangePassword: boolean;
     isPlatformAdmin: boolean;
     tenant: { slug: string; name: string };
-    location: { name: string; code: string } | null;
+    location: { name: string; code: string; locationBrands: { brand: { code: string } }[] } | null;
     department: { name: string; code: string } | null;
     specialtyArea: { name: string; code: string } | null;
     roles: { role: { key: string; name: string; rank: number; permissions: { permission: { key: string } }[] } }[];
@@ -218,6 +220,7 @@ export class AuthService {
         locationCode: user.location?.code,
         departmentCode: user.department?.code,
         specialtyCode: user.specialtyArea?.code,
+        brandCodes: user.location?.locationBrands.map((entry) => entry.brand.code),
       }),
       permissions,
       mustChangePassword: user.mustChangePassword,

@@ -1,6 +1,10 @@
+import type { PrismaClient } from "@prisma/client";
 import type { AppRole, Presence } from "@ah-intranet/shared";
 import { GLOBAL_SCOPE } from "@ah-intranet/shared";
 import type { RequestUser } from "./request-user";
+
+/** Reicht für `resolveUserScopes`: passt sowohl auf `PrismaService` als auch auf ein `$transaction`-Client. */
+type ScopeLookupClient = Pick<PrismaClient, "location" | "department" | "specialtyArea">;
 
 /** Minimale Benutzerfelder, die für Anzeigezwecke überall selektiert werden. */
 export const userDisplaySelect = {
@@ -39,12 +43,48 @@ export function buildScopes(input: {
   locationCode?: string | null;
   departmentCode?: string | null;
   specialtyCode?: string | null;
+  brandCodes?: string[];
 }): string[] {
   const scopes = [GLOBAL_SCOPE];
   if (input.locationCode) scopes.push(`location:${input.locationCode}`);
   if (input.departmentCode) scopes.push(`department:${input.departmentCode}`);
   if (input.specialtyCode) scopes.push(`specialty:${input.specialtyCode}`);
+  for (const brandCode of input.brandCodes ?? []) {
+    scopes.push(`brand:${brandCode}`);
+  }
   return scopes;
+}
+
+/**
+ * Zielgruppen-Tokens eines Kontos anhand seiner Stammdaten neu ermitteln -
+ * gemeinsam genutzt von der Kontoverwaltung (Standort/Abteilung/Fachbereich
+ * ändern sich) und der Standortverwaltung (Marken eines Standorts ändern sich).
+ */
+export async function resolveUserScopes(
+  prisma: ScopeLookupClient,
+  input: { locationId?: string | null; departmentId?: string | null; specialtyAreaId?: string | null },
+): Promise<string[]> {
+  const [location, department, specialty] = await Promise.all([
+    input.locationId
+      ? prisma.location.findUnique({
+          where: { id: input.locationId },
+          select: { code: true, locationBrands: { select: { brand: { select: { code: true } } } } },
+        })
+      : null,
+    input.departmentId
+      ? prisma.department.findUnique({ where: { id: input.departmentId }, select: { code: true } })
+      : null,
+    input.specialtyAreaId
+      ? prisma.specialtyArea.findUnique({ where: { id: input.specialtyAreaId }, select: { code: true } })
+      : null,
+  ]);
+
+  return buildScopes({
+    locationCode: location?.code,
+    departmentCode: department?.code,
+    specialtyCode: specialty?.code,
+    brandCodes: location?.locationBrands.map((entry) => entry.brand.code) ?? [],
+  });
 }
 
 /** Prisma-Filterfragment für zielgruppengesteuerte Inhalte. */

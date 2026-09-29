@@ -9,6 +9,12 @@ import { can, requirePermission } from "@/lib/session";
 const ADMIN_LINKS = [
   { href: "/admin/module", label: "Module", detail: "Fachmodule ein- und ausschalten", recht: "modules.manage" },
   { href: "/admin/benutzer", label: "Benutzer", detail: "Konten anlegen und pflegen", recht: "users.manage" },
+  {
+    href: "/admin/standorte",
+    label: "Standorte & Marken",
+    detail: "Standorte pflegen, Marken zuordnen",
+    recht: "org.manage",
+  },
   { href: "/admin/rollen", label: "Rollen & Rechte", detail: "Eigene Rollen anlegen", recht: "roles.manage" },
   { href: "/admin/anmeldung", label: "Anmeldung", detail: "Anmeldearten des Hauses", recht: "auth.manage" },
   { href: "/admin/news", label: "News", detail: "Beiträge verfassen und steuern", recht: "news.publish" },

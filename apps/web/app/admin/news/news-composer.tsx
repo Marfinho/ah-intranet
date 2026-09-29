@@ -6,26 +6,36 @@ import { createNewsAction, type ActionState } from "@/lib/actions";
 
 const initialState: ActionState = { ok: true };
 
-/** Zielgruppen als Tokens: `global` oder `<typ>:<code>`. */
-const AUDIENCES = [
-  { value: "global", label: "Alle Mitarbeitenden" },
-  { value: "location:HB", label: "Standort Bremen" },
-  { value: "location:DEL", label: "Standort Delmenhorst" },
-  { value: "location:ACH", label: "Standort Achim" },
-  { value: "department:SRV", label: "Service & Werkstatt" },
-  { value: "department:VKN", label: "Verkauf Neuwagen" },
-  { value: "department:VKG", label: "Verkauf Gebrauchtwagen" },
-  { value: "department:TDI", label: "Teiledienst" },
-  { value: "department:VWL", label: "Verwaltung" },
-  { value: "department:MKT", label: "Marketing" },
-  { value: "department:IT", label: "IT" },
-  { value: "specialty:EMOB", label: "Elektromobilität" },
-  { value: "specialty:NFZ", label: "Nutzfahrzeuge" },
-  { value: "specialty:KUL", label: "Karosserie & Lack" },
-];
+interface OrganisationEintrag {
+  code: string;
+  name: string;
+}
 
-export function NewsComposer() {
+export interface NewsComposerOrganisation {
+  locations: OrganisationEintrag[];
+  departments: OrganisationEintrag[];
+  specialties: OrganisationEintrag[];
+  brands: OrganisationEintrag[];
+}
+
+/**
+ * Zielgruppen als Tokens: `global` oder `<typ>:<code>`. Kommt aus den
+ * tatsächlichen Stammdaten des Hauses statt aus einer festen Liste - sonst
+ * stimmten die Codes für jedes Haus mit anderen Standorten nicht.
+ */
+function buildAudiences(organisation: NewsComposerOrganisation) {
+  return [
+    { value: "global", label: "Alle Mitarbeitenden" },
+    ...organisation.locations.map((entry) => ({ value: `location:${entry.code}`, label: `Standort ${entry.name}` })),
+    ...organisation.departments.map((entry) => ({ value: `department:${entry.code}`, label: entry.name })),
+    ...organisation.specialties.map((entry) => ({ value: `specialty:${entry.code}`, label: entry.name })),
+    ...organisation.brands.map((entry) => ({ value: `brand:${entry.code}`, label: `Marke ${entry.name}` })),
+  ];
+}
+
+export function NewsComposer({ organisation }: { organisation: NewsComposerOrganisation }) {
   const [state, formAction] = useFormState(createNewsAction, initialState);
+  const AUDIENCES = buildAudiences(organisation);
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

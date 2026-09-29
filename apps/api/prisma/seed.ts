@@ -46,6 +46,19 @@ const SPECIALTIES = [
   { name: "Karosserie & Lack", code: "KUL" },
 ];
 
+const BRANDS = [
+  { name: "Volkswagen", code: "VW" },
+  { name: "Audi", code: "AUDI" },
+  { name: "Škoda", code: "SKODA" },
+];
+
+/** Welcher Standort welche Marken führt - Bremen führt zwei, die Filialen je eine. */
+const LOCATION_BRANDS: Record<string, string[]> = {
+  HB: ["VW", "AUDI"],
+  DEL: ["VW"],
+  ACH: ["SKODA"],
+};
+
 interface SeedUser {
   username: string;
   firstName: string;
@@ -249,10 +262,12 @@ async function clearAll() {
     prisma.permission.deleteMany(),
     prisma.role.deleteMany(),
     prisma.locationDepartment.deleteMany(),
+    prisma.locationBrand.deleteMany(),
     prisma.user.deleteMany(),
     prisma.specialtyArea.deleteMany(),
     prisma.department.deleteMany(),
     prisma.location.deleteMany(),
+    prisma.brand.deleteMany(),
   ]);
 
   await prisma.tenant.deleteMany();
@@ -267,18 +282,31 @@ async function seedTenant(tenantId: string, platformAdmin: boolean) {
   await prisma.location.createMany({ data: LOCATIONS });
   await prisma.department.createMany({ data: DEPARTMENTS });
   await prisma.specialtyArea.createMany({ data: SPECIALTIES });
+  await prisma.brand.createMany({ data: BRANDS });
 
   const locations = await prisma.location.findMany();
   const departments = await prisma.department.findMany();
   const specialties = await prisma.specialtyArea.findMany();
+  const brands = await prisma.brand.findMany();
 
   const locationByCode = new Map(locations.map((entry) => [entry.code, entry]));
   const departmentByCode = new Map(departments.map((entry) => [entry.code, entry]));
   const specialtyByCode = new Map(specialties.map((entry) => [entry.code, entry]));
+  const brandByCode = new Map(brands.map((entry) => [entry.code, entry]));
 
   await prisma.locationDepartment.createMany({
     data: locations.flatMap((location) =>
       departments.map((department) => ({ locationId: location.id, departmentId: department.id })),
+    ),
+    skipDuplicates: true,
+  });
+
+  await prisma.locationBrand.createMany({
+    data: Object.entries(LOCATION_BRANDS).flatMap(([locationCode, brandCodes]) =>
+      brandCodes.map((brandCode) => ({
+        locationId: locationByCode.get(locationCode)!.id,
+        brandId: brandByCode.get(brandCode)!.id,
+      })),
     ),
     skipDuplicates: true,
   });
@@ -340,6 +368,7 @@ async function seedTenant(tenantId: string, platformAdmin: boolean) {
           `location:${location.code}`,
           `department:${department.code}`,
           ...(specialty ? [`specialty:${specialty.code}`] : []),
+          ...(LOCATION_BRANDS[location.code]?.map((brandCode) => `brand:${brandCode}`) ?? []),
         ],
         roles: { create: seedUser.roles.map((key) => ({ roleId: roleByKey.get(key)!.id })) },
       },
