@@ -39,6 +39,20 @@ ufw allow OpenSSH >/dev/null
 ufw allow 80/tcp >/dev/null
 ufw --force enable >/dev/null
 
+# Kleine Server gehen beim Bauen von Next.js in die Knie: ohne Auslagerung
+# beendet der Kernel den Bau, mit zu wenig Speicher dazu kriecht er stundenlang.
+# Deshalb Auslagerungsdatei anlegen, wenn kaum RAM da ist und keine besteht.
+RAM_MB="$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo)"
+echo "==> Arbeitsspeicher: ${RAM_MB} MB"
+if [ "$RAM_MB" -lt 4000 ] && [ "$(swapon --show --noheadings | wc -l)" -eq 0 ]; then
+  echo "==> Lege 4 GB Auslagerung an"
+  fallocate -l 4G /swapfile
+  chmod 600 /swapfile
+  mkswap /swapfile >/dev/null
+  swapon /swapfile
+  grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >>/etc/fstab
+fi
+
 echo "==> Anwendung holen ($BRANCH)"
 if [ -d "$DIR/.git" ]; then
   git -C "$DIR" fetch -q origin "$BRANCH"
@@ -75,8 +89,12 @@ grep -v -E '^(BASE_DOMAIN|FRONTEND_URL)=' .env >.env.neu || true
 mv .env.neu .env
 chmod 600 .env
 
-echo "==> Bauen und starten (dauert einige Minuten)"
-$COMPOSE up -d --build </dev/null
+# Nacheinander statt gleichzeitig: zwei Bauvorgänge teilen sich sonst den knappen Speicher.
+echo "==> Bauen (Web und API nacheinander)"
+$COMPOSE build api </dev/null
+$COMPOSE build web </dev/null
+echo "==> Starten"
+$COMPOSE up -d </dev/null
 
 # Die API lauscht erst, wenn die Migrationen durch sind; vorher einzurichten
 # könnte an fehlenden Tabellen scheitern und halb angelegt zurückbleiben.
