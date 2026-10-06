@@ -72,6 +72,17 @@ class UserPatchDto {
   @IsOptional() @IsIn(["active", "inactive"]) status?: "active" | "inactive";
 }
 
+class LocationCreateDto {
+  @IsString() @MinLength(2) name!: string;
+  @IsString() @MinLength(1) code!: string;
+  @IsOptional() @IsString() address?: string;
+}
+
+class LocationUpdateDto {
+  @IsOptional() @IsString() @MinLength(2) name?: string;
+  @IsOptional() @IsString() address?: string;
+}
+
 class RolePermissionsDto {
   @IsArray() @IsString({ each: true }) permissions!: string[];
 }
@@ -186,6 +197,29 @@ export class UsersController {
   @Permission("users.manage")
   resetPassword(@CurrentUser() user: RequestUser, @Param("id") id: string) {
     return this.people.resetPassword(user, id);
+  }
+}
+
+@Controller("locations")
+export class LocationsController {
+  constructor(private readonly people: PeopleService) {}
+
+  @Get()
+  @Permission("organisation.manage")
+  list() {
+    return this.people.locations();
+  }
+
+  @Post()
+  @Permission("organisation.manage")
+  create(@CurrentUser() user: RequestUser, @Body() dto: LocationCreateDto) {
+    return this.people.createLocation(user, dto);
+  }
+
+  @Patch(":id")
+  @Permission("organisation.manage")
+  update(@CurrentUser() user: RequestUser, @Param("id") id: string, @Body() dto: LocationUpdateDto) {
+    return this.people.updateLocation(user, id, dto);
   }
 }
 

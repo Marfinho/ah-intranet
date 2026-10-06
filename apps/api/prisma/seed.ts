@@ -258,8 +258,74 @@ async function clearAll() {
   await prisma.tenant.deleteMany();
 }
 
+/**
+ * Eigener, schlanker Mandant für den Betreiber der Plattform.
+ *
+ * Bewusst getrennt von jedem Kunden-Mandanten: wer Häuser anlegen und sperren
+ * darf (`isPlatformAdmin`), soll dafür nicht bei einem Kunden angemeldet sein.
+ * Löst über die eigene Subdomain auf (`verwaltung.<domain>`) und trägt keine
+ * Geschäftsdaten - nur das, was ein Konto zum Anmelden braucht.
+ */
+async function seedPlatformTenant(tenantId: string) {
+  const prisma = tenantClient(tenantId);
+
+  await prisma.permission.createMany({
+    data: PERMISSION_DEFINITIONS.map((permission) => ({
+      key: permission.key,
+      name: permission.name,
+      description: permission.description,
+    })),
+  });
+  const permissionByKey = new Map((await prisma.permission.findMany()).map((entry) => [entry.key, entry]));
+
+  for (const role of ROLE_DEFINITIONS) {
+    await prisma.role.create({
+      data: {
+        key: role.key,
+        name: role.name,
+        description: role.description,
+        rank: role.rank,
+        permissions: {
+          create: role.permissions.map((key) => ({ permissionId: permissionByKey.get(key)!.id })),
+        },
+      },
+    });
+  }
+  const adminRole = await prisma.role.findFirstOrThrow({ where: { key: "admin" } });
+
+  const location = await prisma.location.create({ data: { name: "AHOI Plattform", code: "PF" } });
+  const department = await prisma.department.create({ data: { name: "Plattformverwaltung", code: "PF" } });
+  await prisma.locationDepartment.create({ data: { locationId: location.id, departmentId: department.id } });
+
+  const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 12);
+  await prisma.user.create({
+    data: {
+      username: "plattform",
+      email: "plattform@ahoi.example",
+      passwordHash,
+      firstName: "Plattform",
+      lastName: "Verwaltung",
+      jobTitle: "Betreiber",
+      locationId: location.id,
+      departmentId: department.id,
+      scopes: ["global", `location:${location.code}`, `department:${department.code}`],
+      isPlatformAdmin: true,
+      roles: { create: [{ roleId: adminRole.id }] },
+    },
+  });
+
+  // Fachmodule sind für die Plattformverwaltung ohne Bedeutung - sie verwaltet
+  // Häuser, nicht deren Betriebsalltag.
+  await prisma.moduleSetting.createMany({
+    data: MODULE_DEFINITIONS.map((module) => ({ key: module.key, enabled: false })),
+    skipDuplicates: true,
+  });
+
+  await prisma.$disconnect();
+}
+
 /** Baut einen vollständigen Datenbestand für ein Autohaus auf. */
-async function seedTenant(tenantId: string, platformAdmin: boolean) {
+async function seedTenant(tenantId: string) {
   const prisma = tenantClient(tenantId);
 
   /* ------------------------------------------------------- Organisation */
@@ -1361,11 +1427,6 @@ async function seedTenant(tenantId: string, platformAdmin: boolean) {
     skipDuplicates: true,
   });
 
-  if (platformAdmin) {
-    // Genau ein Konto darf Mandanten anlegen und sperren.
-    await prisma.user.update({ where: { id: admin.id }, data: { isPlatformAdmin: true } });
-  }
-
   const counts = {
     Benutzer: await prisma.user.count(),
     News: await prisma.newsPost.count(),
@@ -1380,28 +1441,34 @@ async function seedTenant(tenantId: string, platformAdmin: boolean) {
   return counts;
 }
 
+const PLATFORM_TENANT = { slug: "verwaltung", name: "AHOI Plattformverwaltung" };
+
 const TENANTS = [
-  { slug: "autohaus-mueller", name: "Autohaus Müller GmbH", platformAdmin: true },
-  { slug: "autohaus-nord", name: "Autohaus Nord KG", platformAdmin: false },
+  { slug: "autohaus-mueller", name: "Autohaus Müller GmbH" },
+  { slug: "autohaus-nord", name: "Autohaus Nord KG" },
 ];
 
 async function main() {
   console.log("Seed startet …");
   await clearAll();
 
+  const platform = await root.tenant.create({ data: PLATFORM_TENANT });
+  await seedPlatformTenant(platform.id);
+  console.log(`  ${PLATFORM_TENANT.name} (${PLATFORM_TENANT.slug}): Plattform-Konto eingerichtet`);
+
   for (const entry of TENANTS) {
     const tenant = await root.tenant.create({ data: { slug: entry.slug, name: entry.name } });
-    const counts = await seedTenant(tenant.id, entry.platformAdmin);
+    const counts = await seedTenant(tenant.id);
     console.log(`  ${entry.name} (${entry.slug}):`, counts);
   }
 
   console.log("");
   console.log(`Alle Demokonten nutzen das Passwort: ${DEMO_PASSWORD}`);
-  console.log("Beide Häuser haben dieselben Benutzernamen - die Kennung entscheidet:");
+  console.log(`Plattformverwaltung (Häuser anlegen/sperren): ${PLATFORM_TENANT.slug} → Benutzer "plattform"`);
+  console.log("Die Kundenhäuser haben dieselben Benutzernamen - die Subdomain entscheidet:");
   for (const entry of TENANTS) {
     console.log(`  ${entry.slug}: admin / s.meier / p.hansen / d.wagner`);
   }
-  console.log("Die Plattformverwaltung liegt bei admin im Haus autohaus-mueller.");
 }
 
 main()
