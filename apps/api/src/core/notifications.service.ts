@@ -2,7 +2,9 @@ import { Injectable, Logger } from "@nestjs/common";
 import type { NotificationItem } from "@ah-intranet/shared";
 import { PrismaService } from "./prisma.service";
 import { MailService } from "./mail.service";
+import { hausAdresse } from "./adresse";
 import { toIso } from "./mappers";
+import { currentTenant } from "./tenant-context";
 import type { RequestUser } from "./request-user";
 
 export interface NotifyInput {
@@ -76,7 +78,13 @@ export class NotificationsService {
       select: { email: true },
     });
 
-    const basis = process.env.FRONTEND_URL ?? "";
+    // Der Link führt in das Haus der Empfangenden. Mandantendaten sind kein
+    // Mandantenfilter-Modell, die Abfrage braucht also keinen Kontext.
+    const kontext = currentTenant();
+    const haus = kontext
+      ? await this.prisma.tenant.findUnique({ where: { id: kontext.tenantId }, select: { slug: true, domain: true } })
+      : null;
+    const basis = haus ? hausAdresse(haus, process.env) : (process.env.FRONTEND_URL ?? "").split(",")[0].trim();
     const link = input.link && basis ? `\n\nIm Intranet ansehen: ${basis}${input.link}` : "";
 
     for (const person of empfaenger) {

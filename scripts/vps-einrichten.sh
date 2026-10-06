@@ -28,7 +28,7 @@ fi
 echo "==> Grundpakete und Docker"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq git curl ufw openssl >/dev/null
+apt-get install -y -qq git curl ufw openssl cron >/dev/null
 if ! command -v docker >/dev/null 2>&1; then
   curl -fsSL https://get.docker.com | sh
 fi
@@ -64,6 +64,12 @@ else
   git clone -q -b "$BRANCH" https://github.com/Marfinho/ah-intranet.git "$DIR"
 fi
 cd "$DIR"
+
+# Tägliche Sicherung, solange keine bessere eingerichtet ist. Sie liegt auf
+# derselben Maschine (siehe vps-sicherung.sh) - ein Abzug auf ein zweites
+# System bleibt Aufgabe des Betreibers.
+echo "0 3 * * * root $DIR/scripts/vps-sicherung.sh >>/var/log/ahoi-sicherung.log 2>&1" >/etc/cron.d/ahoi-sicherung
+chmod 644 /etc/cron.d/ahoi-sicherung
 
 IP="$(curl -4 -fsS --max-time 10 https://api.ipify.org || hostname -I | awk '{print $1}')"
 BASE="$(echo "$IP" | tr . -).sslip.io"
