@@ -1,6 +1,7 @@
 import { PlatformShell } from "@/components/platform-shell";
 import { Section } from "@/components/ui";
 import { apiGet } from "@/lib/api";
+import { requirePlatformSession } from "@/lib/session";
 
 interface HealthReport {
   ok: boolean;
@@ -19,6 +20,7 @@ function formatUptime(seconds: number): string {
 }
 
 export default async function StatusPage() {
+  await requirePlatformSession();
   const health = await apiGet<HealthReport>("/health");
 
   return (

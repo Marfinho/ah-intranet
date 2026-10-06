@@ -4,8 +4,18 @@ import type { NestExpressApplication } from "@nestjs/platform-express";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { AppModule } from "./app.module";
+import { pruefeGeheimnisse } from "./core/geheimnis-pruefung";
 
 async function bootstrap() {
+  // Vor allem anderen: eine Installation mit Platzhalter-Geheimnissen soll
+  // gar nicht erst laufen, statt scheinbar zu funktionieren.
+  const probleme = pruefeGeheimnisse(process.env);
+  if (probleme.length > 0) {
+    // Der Nest-Logger existiert vor dem Start noch nicht.
+    console.error(`Start abgebrochen:\n- ${probleme.join("\n- ")}\nZufallswerte erzeugt man mit: openssl rand -hex 32`);
+    process.exit(1);
+  }
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.setGlobalPrefix("api");

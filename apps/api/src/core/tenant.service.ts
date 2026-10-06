@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { PERMISSION_DEFINITIONS, ROLE_DEFINITIONS } from "@ah-intranet/shared";
 import type { TenantContext } from "./tenant-context";
+import { pruefeKennung } from "./kennung";
 
 /**
  * Liest die Kennung aus einer Subdomain: `<slug>.basis.tld` in Produktion,
@@ -299,10 +300,9 @@ export class TenantService implements OnModuleInit {
     locationLimit?: number | null;
   }) {
     const slug = input.slug.trim().toLowerCase();
-    if (!/^[a-z0-9][a-z0-9-]{1,40}$/.test(slug)) {
-      throw new BadRequestException(
-        "Die Kennung darf nur Kleinbuchstaben, Ziffern und Bindestriche enthalten und muss mit einem Zeichen beginnen.",
-      );
+    const kennungsfehler = pruefeKennung(slug);
+    if (kennungsfehler) {
+      throw new BadRequestException(kennungsfehler);
     }
     if (await this.client.tenant.findUnique({ where: { slug }, select: { id: true } })) {
       throw new BadRequestException(`Die Kennung "${slug}" ist bereits vergeben.`);

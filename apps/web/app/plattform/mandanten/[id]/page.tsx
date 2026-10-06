@@ -3,11 +3,13 @@ import { PlatformShell } from "@/components/platform-shell";
 import { DataGrid, MetricCard, Section } from "@/components/ui";
 import { apiGet } from "@/lib/api";
 import { setTenantLicenseAction, setTenantLocationLimitAction } from "@/lib/actions";
+import { requirePlatformSession } from "@/lib/session";
 import { formatDateTime } from "@/lib/utils";
 import { QuotaEditor } from "./quota-editor";
 import { TenantModuleToggle } from "./tenant-module-toggle";
 
 export default async function TenantDetailPage({ params }: { params: { id: string } }) {
+  await requirePlatformSession();
   const [stats, modules] = await Promise.all([
     apiGet<TenantStats>(`/tenants/${params.id}/kennzahlen`),
     apiGet<ModuleState[]>(`/tenants/${params.id}/module`),

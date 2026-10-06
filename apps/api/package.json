@@ -9,6 +9,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate",
     "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:einrichten": "tsx prisma/einrichten.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",

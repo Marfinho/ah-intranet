@@ -45,6 +45,20 @@ export async function requireSession(): Promise<SessionUser> {
 }
 
 /**
+ * Für die Plattformverwaltung: Wer kein Plattformkonto ist, geht zurück auf die
+ * Startseite. Die Prüfung gehört an den Anfang der Seite, vor jede Abfrage -
+ * die API lehnt fremde Konten mit 403 ab, und eine Seite, die erst lädt und
+ * dann prüft, zeigt statt der Umleitung die Fehlerseite.
+ */
+export async function requirePlatformSession(): Promise<SessionUser> {
+  const session = await requireSession();
+  if (!session.isPlatformAdmin) {
+    redirect("/");
+  }
+  return session;
+}
+
+/**
  * Stellt sicher, dass ein Modul aktiv ist. Abgeschaltete Module verhalten sich
  * im Frontend wie nicht vorhandene Seiten.
  */
