@@ -27,6 +27,13 @@ nötigen Schlüssel gesetzt sind. Er eignet sich als Ziel für einen Monitor; ei
 nur eine neue Anmeldung. Ein gestohlenes Backup enthält trotzdem alle
 Personendaten des Hauses; es gehört verschlüsselt abgelegt.
 
+Nur beim Seed-Lauf gelesen, nie zur Laufzeit: `PLATFORM_ADMIN_USERNAME` und
+`PLATFORM_ADMIN_PASSWORD` legen das erste Konto der Plattformverwaltung mit
+eigener Kennung an statt mit der Demo-Kennung `plattform`. Lokal in
+`docker-compose.yml` eintragen, **nie committen** – ein echtes Passwort im
+Programmcode bleibt dauerhaft in der Git-Historie stehen, auch nach dem
+nächsten Commit.
+
 ## Sicherung
 
 ```bash

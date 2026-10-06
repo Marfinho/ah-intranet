@@ -24,6 +24,13 @@ function tenantClient(tenantId: string): PrismaClient {
 
 const DEMO_PASSWORD = process.env.SEED_PASSWORD ?? "Intranet2026!";
 
+// Eigene Zugangsdaten für die Plattformverwaltung statt der Demo-Kennung -
+// über Umgebungsvariablen, damit ein echtes Passwort nie im Programmcode
+// landet (der Code steht bei GitHub, die Umgebungsvariable nur lokal auf
+// dem Server). Ohne Angabe gilt weiterhin die Demo-Kennung.
+const PLATFORM_ADMIN_USERNAME = process.env.PLATFORM_ADMIN_USERNAME ?? "plattform";
+const PLATFORM_ADMIN_PASSWORD = process.env.PLATFORM_ADMIN_PASSWORD ?? DEMO_PASSWORD;
+
 const LOCATIONS = [
   { name: "Hauptbetrieb Bremen", code: "HB", address: "Bremer Heerstraße 120, 28719 Bremen" },
   { name: "Filiale Delmenhorst", code: "DEL", address: "Oldenburger Straße 8, 27749 Delmenhorst" },
@@ -297,10 +304,10 @@ async function seedPlatformTenant(tenantId: string) {
   const department = await prisma.department.create({ data: { name: "Plattformverwaltung", code: "PF" } });
   await prisma.locationDepartment.create({ data: { locationId: location.id, departmentId: department.id } });
 
-  const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 12);
+  const passwordHash = await bcrypt.hash(PLATFORM_ADMIN_PASSWORD, 12);
   await prisma.user.create({
     data: {
-      username: "plattform",
+      username: PLATFORM_ADMIN_USERNAME,
       email: "plattform@ahoi.example",
       passwordHash,
       firstName: "Plattform",
@@ -1463,8 +1470,11 @@ async function main() {
   }
 
   console.log("");
-  console.log(`Alle Demokonten nutzen das Passwort: ${DEMO_PASSWORD}`);
-  console.log(`Plattformverwaltung (Häuser anlegen/sperren): ${PLATFORM_TENANT.slug} → Benutzer "plattform"`);
+  console.log(`Alle Demokonten (Kundenhäuser) nutzen das Passwort: ${DEMO_PASSWORD}`);
+  console.log(
+    `Plattformverwaltung (Häuser anlegen/sperren): ${PLATFORM_TENANT.slug} → Benutzer "${PLATFORM_ADMIN_USERNAME}"` +
+      (process.env.PLATFORM_ADMIN_PASSWORD ? " (eigenes Passwort gesetzt)" : ` / ${PLATFORM_ADMIN_PASSWORD}`),
+  );
   console.log("Die Kundenhäuser haben dieselben Benutzernamen - die Subdomain entscheidet:");
   for (const entry of TENANTS) {
     console.log(`  ${entry.slug}: admin / s.meier / p.hansen / d.wagner`);

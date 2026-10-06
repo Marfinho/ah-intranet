@@ -26,6 +26,12 @@ services:
       # Für den Produktivbetrieb durch ein Secret ersetzen.
       JWT_SECRET: bitte-aendern-langer-zufallswert
       JWT_EXPIRES_IN: 12h
+      # Nur für `prisma:seed` gelesen: eigene Zugangsdaten für das erste
+      # Konto der Plattformverwaltung statt der Demo-Kennung "plattform".
+      # Hier lokal eintragen, nie committen - das Passwort landet sonst im
+      # Programmcode bei GitHub.
+      PLATFORM_ADMIN_USERNAME: plattform
+      PLATFORM_ADMIN_PASSWORD: bitte-aendern
     ports:
       - "3001:3001"
     depends_on:
