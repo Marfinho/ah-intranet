@@ -4,7 +4,8 @@ import { Signet } from "@/components/logo";
 
 export const metadata: Metadata = { title: "Anmeldung" };
 
-export default function LoginPage({ searchParams }: { searchParams: { next?: string } }) {
+export default async function LoginPage(props: { searchParams: Promise<{ next?: string }> }) {
+  const searchParams = await props.searchParams;
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-900 px-4 py-10">
       <div className="w-full max-w-md">

@@ -14,7 +14,8 @@ interface AbsencesResponse {
   canSeeTeam: boolean;
 }
 
-export default async function AbsencesPage({ searchParams }: { searchParams: { scope?: string; status?: string } }) {
+export default async function AbsencesPage(props: { searchParams: Promise<{ scope?: string; status?: string }> }) {
+  const searchParams = await props.searchParams;
   const session = await requireModule("absences");
 
   const scope = searchParams.scope === "team" ? "team" : "mine";

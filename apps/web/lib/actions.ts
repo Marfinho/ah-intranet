@@ -13,8 +13,8 @@ import { ApiError, SESSION_COOKIE, apiBaseUrl, apiSend, apiSendFile, tenantHostH
  * der nächste Klick ist schon wieder abgemeldet. `x-forwarded-proto` sagt,
  * worüber der Browser tatsächlich verbunden war.
  */
-function isSecureRequest(): boolean {
-  return headers().get("x-forwarded-proto") === "https";
+async function isSecureRequest(): Promise<boolean> {
+  return (await headers()).get("x-forwarded-proto") === "https";
 }
 
 export interface ActionState {
@@ -66,7 +66,7 @@ export async function passwortVergessenAction(_previous: ActionState, formData: 
   try {
     await fetch(`${apiBaseUrl()}/auth/passwort-vergessen`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...tenantHostHeader() },
+      headers: { "Content-Type": "application/json", ...(await tenantHostHeader()) },
       body: JSON.stringify({ username, ...(tenant ? { tenant } : {}) }),
       cache: "no-store",
     });
@@ -126,7 +126,7 @@ export async function loginAction(_previous: ActionState, formData: FormData): P
 
   const response = await fetch(`${apiBaseUrl()}/auth/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...tenantHostHeader() },
+    headers: { "Content-Type": "application/json", ...(await tenantHostHeader()) },
     body: JSON.stringify({ username, password, ...(tenant ? { tenant } : {}) }),
     cache: "no-store",
   });
@@ -144,10 +144,10 @@ export async function loginAction(_previous: ActionState, formData: FormData): P
     return { ok: false, message: "Die Sitzung konnte nicht gesetzt werden." };
   }
 
-  cookies().set(SESSION_COOKIE, token, {
+  (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: isSecureRequest(),
+    secure: await isSecureRequest(),
     maxAge: 12 * 60 * 60,
     path: "/",
   });
@@ -161,7 +161,7 @@ export async function logoutAction(): Promise<void> {
   } catch {
     // Auch bei API-Fehler lokal abmelden.
   }
-  cookies().delete(SESSION_COOKIE);
+  (await cookies()).delete(SESSION_COOKIE);
   redirect("/login");
 }
 

@@ -12,8 +12,8 @@ const API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http:
  * `x-forwarded-host` reicht die ursprüngliche Adresse weiter, wie es ein
  * Reverse Proxy täte.
  */
-export function tenantHostHeader(): Record<string, string> {
-  const eingang = headers();
+export async function tenantHostHeader(): Promise<Record<string, string>> {
+  const eingang = await headers();
   const host = eingang.get("host");
 
   // Dasselbe gilt für die Adresse des Browsers: ohne sie sieht die API für
@@ -51,9 +51,9 @@ export class ApiError extends Error {
   }
 }
 
-function authHeader(): Record<string, string> {
-  const token = cookies().get(SESSION_COOKIE)?.value;
-  return { ...tenantHostHeader(), ...(token ? { cookie: `${SESSION_COOKIE}=${token}` } : {}) };
+async function authHeader(): Promise<Record<string, string>> {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  return { ...(await tenantHostHeader()), ...(token ? { cookie: `${SESSION_COOKIE}=${token}` } : {}) };
 }
 
 async function parseError(response: Response): Promise<string> {
@@ -76,7 +76,7 @@ async function parseError(response: Response): Promise<string> {
 export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
-    headers: { ...authHeader(), ...(init?.headers ?? {}) },
+    headers: { ...(await authHeader()), ...(init?.headers ?? {}) },
     cache: "no-store",
   });
 
@@ -105,7 +105,7 @@ export async function apiSend<T>(
 ): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     method,
-    headers: { "Content-Type": "application/json", ...authHeader() },
+    headers: { "Content-Type": "application/json", ...(await authHeader()) },
     body: body === undefined ? undefined : JSON.stringify(body),
     cache: "no-store",
   });
@@ -128,7 +128,7 @@ export function apiBaseUrl() {
 export async function apiSendFile<T>(path: string, formData: FormData): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     method: "POST",
-    headers: authHeader(),
+    headers: await authHeader(),
     body: formData,
     cache: "no-store",
   });

@@ -8,7 +8,8 @@ import { formatDateTime } from "@/lib/utils";
 import { QuotaEditor } from "./quota-editor";
 import { TenantModuleToggle } from "./tenant-module-toggle";
 
-export default async function TenantDetailPage({ params }: { params: { id: string } }) {
+export default async function TenantDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   await requirePlatformSession();
   const [stats, modules] = await Promise.all([
     apiGet<TenantStats>(`/tenants/${params.id}/kennzahlen`),
