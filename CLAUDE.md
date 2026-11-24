@@ -76,6 +76,20 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
 - Ein neues Haus entsteht samt Rollen, Rechten und erstem Administrationskonto
   in einer Transaktion – ein halb eingerichteter Mandant wäre nicht benutzbar.
 
+## Vertrieb
+
+- **Interessenten wohnen im Plattform-Mandanten**, nicht bei einem Kunden und nicht
+  in einer Tabelle ohne Mandant. Die öffentliche Pitch-Seite (`/angebot/<token>`)
+  löst ihren Mandanten wie jede Anfrage über den Host auf und braucht deshalb
+  weder `runUnscoped` noch eine Ausnahme in der Trennung.
+- **Der Link ist die Berechtigung.** 256 Bit Zufall, nur als Hash gespeichert,
+  befristet, widerrufbar. Jeder Fehlschlag antwortet gleich (404).
+- **Preisliste als reine Funktion** in `packages/shared/src/preise.ts`, Beträge in
+  Cent. Browser und Server rechnen mit demselben Code; maßgeblich ist die
+  Rechnung des Servers, festgehalten mit `PREISLISTE_VERSION`. Ein Test sichert,
+  dass ein Tier nie teurer ist als dieselben Module einzeln.
+- Einzelheiten: [`docs/vertrieb.md`](docs/vertrieb.md).
+
 ## Architekturprinzipien
 
 - **Registries als einzige Quelle der Wahrheit.** Module stehen in

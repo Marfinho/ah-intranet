@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const SESSION_COOKIE = "ah_session";
 /** Erreichbar ohne Anmeldung. */
-const OHNE_ANMELDUNG = ["/login", "/passwort-vergessen", "/passwort-neu"];
+const OHNE_ANMELDUNG = ["/login", "/passwort-vergessen", "/passwort-neu", "/angebot"];
 
 /**
  * Wegführen, wenn schon angemeldet.

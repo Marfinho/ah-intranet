@@ -330,6 +330,11 @@ export class PrivacyService {
         ).count;
       case "meal_order":
         return (await this.prisma.mealOrder.deleteMany({ where: { createdAt: { lt: cutoff } } })).count;
+      case "lead":
+        // Gewonnene bleiben: dort läuft die Geschäftsbeziehung.
+        return (
+          await this.prisma.lead.deleteMany({ where: { updatedAt: { lt: cutoff }, status: { not: "gewonnen" } } })
+        ).count;
       default:
         // Erreichbar nur, wenn eine neue Regel mit `mode: "delete"` angelegt,
         // aber hier nicht umgesetzt wurde.
@@ -359,6 +364,8 @@ export class PrivacyService {
         });
       case "meal_order":
         return this.prisma.mealOrder.count({ where: { createdAt: { lt: cutoff } } });
+      case "lead":
+        return this.prisma.lead.count({ where: { updatedAt: { lt: cutoff }, status: { not: "gewonnen" } } });
       default:
         throw new Error(`Für die Frist "${rule.key}" ist kein Löschweg hinterlegt.`);
     }

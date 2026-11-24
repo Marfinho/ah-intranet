@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   // "native" fürs Entwickeln außerhalb von Docker; die musl-Variante fürs
   // Alpine-Image der Dockerfiles. Explizit statt der Selbsterkennung, die auf
   // aktuellem Alpine (OpenSSL 3, keine libssl.so.1.1 mehr im Repo) zur
@@ -142,29 +142,29 @@ enum NotificationChannel {
 /// Ein Autohaus als Mandant. Sämtliche Fachdaten hängen daran; das Löschen
 /// eines Mandanten entfernt über die Kaskade auch seine Daten.
 model Tenant {
-  id        String   @id @default(cuid())
+  id            String   @id @default(cuid())
   /// Kurzkennung, auch als Subdomain verwendbar.
-  slug      String   @unique
-  name      String
+  slug          String   @unique
+  name          String
   /// Eigene Domain, falls der Mandant nicht über die Subdomain kommt.
-  domain    String?  @unique
-  isActive  Boolean  @default(true)
+  domain        String?  @unique
+  isActive      Boolean  @default(true)
   /// Höchstzahl aktiver Konten. `null` heißt unbegrenzt - nicht jedes Haus
   /// hat ein Lizenzmodell, und ein erfundenes Limit wäre schlimmer als keins.
   licensedSeats Int?
   /// Höchstzahl Standorte. `null` heißt unbegrenzt - dieselbe Logik wie
   /// `licensedSeats`, nur für Filialen statt Konten.
   locationLimit Int?
-  notes     String?
+  notes         String?
   /// Eigenes Logo des Hauses (Weißmarke) - ersetzt das AHOI-Zeichen in
   /// Kopfzeile und Anmeldeseite dieses Mandanten. In der Datenbank statt auf
   /// einem eigenen Dateisystem: ein einzelnes kleines Bild je Haus, damit
   /// gesichert von denselben Skripten wie der Rest der Daten (`scripts/`),
   /// ohne einen zweiten Aufbewahrungsweg zu brauchen.
-  logo      Bytes?
-  logoMime  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  logo          Bytes?
+  logoMime      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   locations                    Location[]
   departments                  Department[]
@@ -224,6 +224,8 @@ model Tenant {
   mealOffers                   MealOffer[]
   mealOptions                  MealOption[]
   mealOrders                   MealOrder[]
+  leads                        Lead[]
+  leadStandorte                LeadStandort[]
 
   @@index([isActive])
 }
@@ -1509,4 +1511,85 @@ model PasswordReset {
 
   @@index([tenantId, userId])
   @@index([expiresAt])
+}
+
+// ------------------------------------------------------- Interessenten
+
+/// Stand eines Interessenten im Vertrieb.
+enum LeadStatus {
+  entwurf
+  versendet
+  angefragt
+  gewonnen
+  verloren
+}
+
+/// Interessent der Plattformverwaltung samt seiner Pitch-Seite.
+///
+/// Liegt im Betreiber-Mandanten, nicht beim Kunden: ein Interessent ist noch
+/// kein Haus. Geschäftsdaten eines Unternehmens, dazu höchstens der Name einer
+/// Ansprechperson. Die Pitch-Seite ist über einen Link ohne Anmeldung erreichbar;
+/// gespeichert wird davon nur der Hash, wie bei Zurücksetz-Token.
+model Lead {
+  id             String     @id @default(cuid())
+  tenantId       String     @default("")
+  tenant         Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  /// Name des Unternehmens oder der Gruppe.
+  name           String
+  ansprechperson String?
+  notiz          String?
+  status         LeadStatus @default(entwurf)
+
+  /// SHA-256 des Links. Der Klartext erscheint nur einmal bei der Anlage.
+  tokenHash         String    @unique
+  tokenGueltigBis   DateTime
+  tokenWiderrufenAm DateTime?
+
+  /// Was der Interessent auf der Seite einstellen darf.
+  anzahlHaeuser Int
+  anzahlNutzer  Int
+  keyUser       Int?
+  /// `basis`, `prozesse`, `komplett` - oder leer bei Einzelwahl.
+  tier          String?
+  /// Bei Einzelwahl: gewählte Module.
+  module        String[]
+
+  /// Gesetzt, wenn der Interessent eine Anfrage abgeschickt hat.
+  angefragtAm       DateTime?
+  /// Das Angebot zum Zeitpunkt der Anfrage, samt Version der Preisliste.
+  angebot           Json?
+  preislisteVersion String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  standorte LeadStandort[]
+
+  @@index([tenantId, status])
+}
+
+/// Ein Haus des Interessenten, so wie es die Pitch-Seite zeigt.
+model LeadStandort {
+  id              String   @id @default(cuid())
+  tenantId        String   @default("")
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  leadId          String
+  lead            Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  position        Int      @default(0)
+  name            String
+  strasse         String?
+  plz             String?
+  ort             String?
+  marken          String[]
+  /// Verkauf, Service, Teiledienst ... frei geführt, wie der Kunde sie nennt.
+  leistungen      String[]
+  oeffnungszeiten String?
+  /// Gleicher Verbund (z. B. drei Häuser in einer Straße). Gleicher Wert = gleicher Campus.
+  campus          String?
+  /// Eigener Text für die Pitch-Seite. Leer: die Seite leitet einen Vorschlag aus den Angaben ab.
+  vorschlag       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tenantId, leadId])
 }

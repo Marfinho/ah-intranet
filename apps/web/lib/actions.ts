@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { parseStandortText } from "@ah-intranet/shared";
 import { ApiError, SESSION_COOKIE, apiBaseUrl, apiSend, apiSendFile, tenantHostHeader } from "./api";
 
 /**
@@ -899,4 +900,109 @@ export async function orderMealAction(offerId: string, optionId: string, quantit
 
 export async function cancelMealAction(offerId: string): Promise<ActionState> {
   return run(() => apiSend("DELETE", `/essen/angebote/${offerId}/bestellung`), ["/essen", "/"]);
+}
+
+/* ------------------------------------------------------------- Pitch-Seite */
+
+export interface PitchKonfiguration {
+  haeuser: number;
+  nutzer: number;
+  keyUser: number | null;
+  tier: string | null;
+  module: string[];
+}
+
+/**
+ * Speichern und Anfragen der Pitch-Seite laufen ohne Anmeldung. Das Token im
+ * Pfad ist die Berechtigung; die API rechnet und bereinigt selbst, die Zahlen
+ * aus dem Browser sind nur Eingaben.
+ */
+export async function pitchSpeichernAction(token: string, konfiguration: PitchKonfiguration): Promise<ActionState> {
+  return run(() => apiSend("PUT", `/angebot/${encodeURIComponent(token)}`, konfiguration), []);
+}
+
+export async function pitchAnfrageAction(token: string, konfiguration: PitchKonfiguration): Promise<ActionState> {
+  return run(
+    () => apiSend("POST", `/angebot/${encodeURIComponent(token)}/anfrage`, konfiguration),
+    [],
+    "Danke, Ihre Anfrage ist bei uns angekommen. Wir melden uns bei Ihnen.",
+  );
+}
+
+/* ------------------------------------------------------------ Interessenten */
+
+/** Adresse der Pitch-Seite, so wie der Betreiber sie gerade aufgerufen hat. */
+function pitchLink(token: string): string {
+  const eingang = headers();
+  const host = eingang.get("x-forwarded-host") ?? eingang.get("host") ?? "localhost";
+  const protokoll = eingang.get("x-forwarded-proto") ?? "http";
+  return `${protokoll}://${host}/angebot/${token}`;
+}
+
+function leadPayload(formData: FormData) {
+  const zahl = (name: string) => {
+    const wert = String(formData.get(name) ?? "").trim();
+    return wert ? Number(wert) : undefined;
+  };
+  return {
+    name: String(formData.get("name") ?? ""),
+    ansprechperson: String(formData.get("ansprechperson") ?? ""),
+    notiz: String(formData.get("notiz") ?? ""),
+    standorte: parseStandortText(String(formData.get("standorte") ?? "")),
+    nutzer: zahl("nutzer"),
+    linkTage: zahl("linkTage"),
+  };
+}
+
+export async function createLeadAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const payload = leadPayload(formData);
+  try {
+    const ergebnis = await apiSend<{ lead: { id: string }; token: string }>("POST", "/leads", payload);
+    revalidatePath("/plattform/interessenten");
+    return {
+      ok: true,
+      message: ergebnis.lead.id,
+      detail: `Interessent angelegt. Link zur Pitch-Seite (wird nur jetzt angezeigt): ${pitchLink(ergebnis.token)}`,
+    };
+  } catch (error) {
+    return { ok: false, message: error instanceof ApiError ? error.message : "Unerwarteter Fehler." };
+  }
+}
+
+export async function updateLeadAction(id: string, _previous: ActionState, formData: FormData): Promise<ActionState> {
+  const { name, ansprechperson, notiz, standorte } = leadPayload(formData);
+  return run(
+    () => apiSend("PUT", `/leads/${id}`, { name, ansprechperson, notiz, standorte }),
+    ["/plattform/interessenten", `/plattform/interessenten/${id}`],
+    "Gespeichert.",
+  );
+}
+
+export async function setLeadStatusAction(id: string, status: string): Promise<ActionState> {
+  return run(
+    () => apiSend("PATCH", `/leads/${id}/status`, { status }),
+    ["/plattform/interessenten", `/plattform/interessenten/${id}`],
+  );
+}
+
+export async function neuerLeadLinkAction(id: string): Promise<ActionState> {
+  try {
+    const ergebnis = await apiSend<{ token: string }>("POST", `/leads/${id}/link`, {});
+    revalidatePath(`/plattform/interessenten/${id}`);
+    return { ok: true, detail: `Neuer Link (wird nur jetzt angezeigt): ${pitchLink(ergebnis.token)}` };
+  } catch (error) {
+    return { ok: false, message: error instanceof ApiError ? error.message : "Unerwarteter Fehler." };
+  }
+}
+
+export async function widerrufeLeadLinkAction(id: string): Promise<ActionState> {
+  return run(() => apiSend("POST", `/leads/${id}/widerrufen`, {}), [`/plattform/interessenten/${id}`]);
+}
+
+export async function deleteLeadAction(id: string): Promise<ActionState> {
+  const ergebnis = await run(() => apiSend("DELETE", `/leads/${id}`), ["/plattform/interessenten"]);
+  if (ergebnis.ok) {
+    redirect("/plattform/interessenten");
+  }
+  return ergebnis;
 }
