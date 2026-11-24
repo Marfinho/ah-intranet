@@ -3,6 +3,7 @@ import {
   CORE_MODULE_KEYS,
   MODULE_DEFINITIONS,
   MODULE_GROUP_LABELS,
+  MODUL_NUTZEN,
   MODULE_STAGES,
   PERMISSION_KEYS,
   ROLE_DEFINITIONS,
@@ -150,5 +151,17 @@ describe("Rechte", () => {
   it("kennt kein Recht ohne Träger", () => {
     const vergeben = new Set(ROLE_DEFINITIONS.flatMap((role) => role.permissions));
     expect([...PERMISSION_KEYS].filter((key) => !vergeben.has(key))).toEqual([]);
+  });
+});
+
+describe("Pitch-Inhalte", () => {
+  it("führen zu jedem Modul mindestens zwei Anwendungsfälle", () => {
+    const fehlend = MODULE_DEFINITIONS.filter((modul) => (MODUL_NUTZEN[modul.key]?.length ?? 0) < 2);
+    expect(fehlend.map((modul) => modul.key)).toEqual([]);
+  });
+
+  it("kennen kein Modul, das es nicht gibt", () => {
+    const unbekannt = Object.keys(MODUL_NUTZEN).filter((key) => !isModuleKey(key));
+    expect(unbekannt).toEqual([]);
   });
 });
