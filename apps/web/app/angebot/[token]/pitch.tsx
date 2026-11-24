@@ -861,6 +861,12 @@ export function Intranet({
         </li>
       </ul>
 
+      <p className="hint" style={{ marginTop: 12 }}>
+        Welches Haus welches Modul nutzt, ist unser Vorschlag aus den Angaben zu Ihren Häusern (Werkstatt,
+        Öffnungszeiten, gemeinsamer Standort). Gemessen wird nichts. Im Betrieb schalten Sie Module für das ganze Haus
+        ein, wer was sieht, steuern die Zielgruppen je Standort.
+      </p>
+
       <aside className="panel detail graf-detail" aria-live="polite" style={{ marginTop: 16 }}>
         {!zeige ? (
           <>
