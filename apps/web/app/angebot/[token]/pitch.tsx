@@ -20,6 +20,7 @@ import {
   type TierKey,
 } from "@ah-intranet/shared";
 import { pitchAnfrageAction, pitchSpeichernAction } from "@/lib/actions";
+import { ModulSlideshow } from "./modul-slideshow";
 
 const STATIONEN = ["Start", "Ihre Häuser", "Funktionen", "Ihr Angebot", "Ihr Intranet"] as const;
 
@@ -38,6 +39,8 @@ export function Pitch({ token, ansicht }: { token: string; ansicht: PitchAnsicht
   useEffect(() => {
     const auf = (ereignis: KeyboardEvent) => {
       if (/INPUT|SELECT|TEXTAREA/.test((ereignis.target as HTMLElement).tagName)) return;
+      // Bei offenem Fenster gehören die Pfeiltasten dem Fenster, nicht der Seite.
+      if (document.querySelector('[role="dialog"]')) return;
       if (ereignis.key === "ArrowRight") setStation((s) => Math.min(STATIONEN.length - 1, s + 1));
       if (ereignis.key === "ArrowLeft") setStation((s) => Math.max(0, s - 1));
     };
@@ -224,6 +227,7 @@ function Haeuser({ ansicht }: { ansicht: PitchAnsicht }) {
 function Funktionen({ ansicht }: { ansicht: PitchAnsicht }) {
   const [gruppe, setGruppe] = useState<string>("alle");
   const [gewaehlt, setGewaehlt] = useState<string>("news");
+  const [ablauf, setAblauf] = useState<string | null>(null);
   const module = (MODULE_DEFINITIONS as readonly ModuleDefinition[]).filter(
     (modul) => gruppe === "alle" || modul.group === gruppe,
   );
@@ -297,9 +301,18 @@ function Funktionen({ ansicht }: { ansicht: PitchAnsicht }) {
                 </>
               ) : null}
             </dl>
+            <button
+              type="button"
+              className="btn primary"
+              style={{ marginTop: 16 }}
+              onClick={() => setAblauf(aktuell.key)}
+            >
+              Ablauf ansehen
+            </button>
           </aside>
         ) : null}
       </div>
+      {ablauf ? <ModulSlideshow schluessel={ablauf} onClose={() => setAblauf(null)} /> : null}
     </section>
   );
 }
@@ -939,6 +952,7 @@ function ModulDetail({
   haeuser: string[];
   onAngebot: () => void;
 }) {
+  const [ablauf, setAblauf] = useState(false);
   const modul = getModule(schluessel);
   if (!modul) return null;
   return (
@@ -973,11 +987,17 @@ function ModulDetail({
           </div>
         </div>
       ) : null}
-      {!gewaehlt ? (
-        <button type="button" className="btn" style={{ marginTop: 16 }} onClick={onAngebot}>
-          Im Angebot ändern
+      <div className="row" style={{ marginTop: 16 }}>
+        <button type="button" className="btn primary" onClick={() => setAblauf(true)}>
+          Ablauf ansehen
         </button>
-      ) : null}
+        {!gewaehlt ? (
+          <button type="button" className="btn" onClick={onAngebot}>
+            Im Angebot ändern
+          </button>
+        ) : null}
+      </div>
+      {ablauf ? <ModulSlideshow schluessel={schluessel} onClose={() => setAblauf(false)} /> : null}
     </>
   );
 }

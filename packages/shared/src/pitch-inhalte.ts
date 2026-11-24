@@ -13,7 +13,7 @@ export const MODUL_NUTZEN: Readonly<Record<string, readonly string[]>> = {
     "Jede Person sieht, was für ihr Haus und ihre Abteilung gilt.",
   ],
   notifications: [
-    "Eine Entscheidung über einen Antrag erreicht die Person sofort, auf Wunsch auch per Mail.",
+    "Eine Entscheidung über einen Antrag erreicht die Person sofort, auch per Mail, wenn der Versand eingerichtet ist.",
     "Zugewiesene Serviceanfragen und neue Freigaben melden sich von selbst.",
     "Alles an einer Stelle statt in Zurufen, Zetteln und Chatgruppen.",
   ],
@@ -25,7 +25,7 @@ export const MODUL_NUTZEN: Readonly<Record<string, readonly string[]>> = {
   search: [
     "Ein Suchfeld für Aushänge, Dokumente, Wissensseiten, Kolleginnen und Tickets.",
     "Die Preisliste vom letzten Jahr finden, ohne zu wissen, in welchem Ordner sie liegt.",
-    "Ergebnisse zeigen nur, was die Person sehen darf.",
+    "Aushänge und Dokumente erscheinen nur für ihre Zielgruppe, fremde Tickets nur mit dem passenden Recht.",
   ],
   quicklinks: [
     "DMS, Zeiterfassung und Herstellerportale als Kacheln auf der Startseite.",
@@ -53,13 +53,13 @@ export const MODUL_NUTZEN: Readonly<Record<string, readonly string[]>> = {
   ],
   documents: [
     "Formulare, Vorlagen und Richtlinien an einer Stelle, mit Zielgruppe je Dokument.",
-    "Die aktuelle Fassung ersetzt die alte, niemand arbeitet mit dem Stand von gestern.",
+    "Dokumente werden eingestellt und zurückgezogen, statt per Mail herumgeschickt zu werden.",
     "Dokumente sind Verweise auf Ihr Laufwerk, keine zweite Ablage.",
   ],
   wiki: [
     "Anleitungen für Abläufe: Fahrzeugübergabe, Garantieabwicklung, Probefahrt.",
     "Markenstandards einer neuen Marke nachlesen statt nachfragen.",
-    "Durchsuchbar und von den Fachleuten selbst gepflegt.",
+    "Durchsuchbar und von Personen mit dem Recht dazu gepflegt.",
   ],
   orders: [
     "Visitenkarten und Arbeitskleidung digital bestellen statt per Zettel.",
@@ -67,7 +67,7 @@ export const MODUL_NUTZEN: Readonly<Record<string, readonly string[]>> = {
     "Jede Bestellung zeigt ihren Stand, vom Antrag bis zur Lieferung.",
   ],
   approvals: [
-    "Die Leitung gibt Bestellungen mit einem Klick frei, auch vom Handy aus der Halle.",
+    "Die Leitung bekommt eine Meldung über jede neue Freigabe und entscheidet mit einem Klick.",
     "Wer wann was freigegeben hat, steht nachvollziehbar im Verlauf.",
     "Freigegebene Vorgänge gehen gebündelt in die Sammelbestellung.",
   ],
@@ -83,8 +83,8 @@ export const MODUL_NUTZEN: Readonly<Record<string, readonly string[]>> = {
   ],
   absences: [
     "Urlaub und Abwesenheit beantragen, die Führungskraft entscheidet im Intranet.",
-    "Das Team sieht, wer wann fehlt, ohne Diagnosen zu kennen.",
-    "Der Antrag landet nicht mehr auf dem Schreibtisch, sondern in der Freigabe.",
+    "Krankmeldungen enthalten keine Diagnose, nur den Zeitraum.",
+    "Die Entscheidung kommt bei der Antragstellerin an, auch per Mail, wenn der Versand eingerichtet ist.",
   ],
   calendar: [
     "Schulungen, Aktionen und Wartungsfenster für alle Häuser in einem Kalender.",
@@ -94,7 +94,7 @@ export const MODUL_NUTZEN: Readonly<Record<string, readonly string[]>> = {
   rooms: [
     "Besprechungsraum und Schulungsraum häuserübergreifend buchen.",
     "Doppelbuchungen sind ausgeschlossen.",
-    "Häuser am selben Standort teilen sich ihre Räume.",
+    "Räume lassen sich standortübergreifend buchen.",
   ],
   shifts: [
     "Besetzung je Haus und Abteilung planen, auch für den Sonntags-Schautag.",

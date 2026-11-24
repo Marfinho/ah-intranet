@@ -3,7 +3,9 @@ import {
   CORE_MODULE_KEYS,
   MODULE_DEFINITIONS,
   MODULE_GROUP_LABELS,
+  FIGUR_ARTEN,
   MODUL_NUTZEN,
+  MODUL_SZENEN,
   MODULE_STAGES,
   PERMISSION_KEYS,
   ROLE_DEFINITIONS,
@@ -163,5 +165,76 @@ describe("Pitch-Inhalte", () => {
   it("kennen kein Modul, das es nicht gibt", () => {
     const unbekannt = Object.keys(MODUL_NUTZEN).filter((key) => !isModuleKey(key));
     expect(unbekannt).toEqual([]);
+  });
+});
+
+describe("Modul-Szenen", () => {
+  it("erzählen jedes Modul", () => {
+    const fehlend = MODULE_DEFINITIONS.filter((modul) => !MODUL_SZENEN[modul.key]);
+    expect(fehlend.map((modul) => modul.key)).toEqual([]);
+  });
+
+  it("kennen kein Modul, das es nicht gibt", () => {
+    expect(Object.keys(MODUL_SZENEN).filter((key) => !isModuleKey(key))).toEqual([]);
+  });
+
+  it("haben drei bis vier Schritte mit Titel und Text", () => {
+    for (const [key, szene] of Object.entries(MODUL_SZENEN)) {
+      expect(szene.schritte.length, key).toBeGreaterThanOrEqual(3);
+      expect(szene.schritte.length, key).toBeLessThanOrEqual(4);
+      for (const schritt of szene.schritte) {
+        expect(schritt.titel.length, key).toBeGreaterThan(2);
+        expect(schritt.text.length, key).toBeGreaterThan(20);
+        expect(schritt.text.length, key).toBeLessThan(260);
+      }
+    }
+  });
+
+  it("verwenden nur bekannte Figurenarten und eindeutige Kennungen", () => {
+    for (const [key, szene] of Object.entries(MODUL_SZENEN)) {
+      const ids = szene.figuren.map((figur) => figur.id);
+      expect(new Set(ids).size, key).toBe(ids.length);
+      for (const figur of szene.figuren) {
+        expect(FIGUR_ARTEN, `${key}/${figur.id}`).toContain(figur.art);
+      }
+    }
+  });
+
+  it("geben im ersten Schritt jeder Figur einen Platz", () => {
+    for (const [key, szene] of Object.entries(MODUL_SZENEN)) {
+      for (const figur of szene.figuren) {
+        const zustand = szene.schritte[0].zustand[figur.id];
+        expect(zustand?.x, `${key}/${figur.id} x`).toBeTypeOf("number");
+        expect(zustand?.y, `${key}/${figur.id} y`).toBeTypeOf("number");
+      }
+    }
+  });
+
+  it("nennen in den Schritten nur Figuren der Szene", () => {
+    for (const [key, szene] of Object.entries(MODUL_SZENEN)) {
+      const ids = new Set(szene.figuren.map((figur) => figur.id));
+      for (const schritt of szene.schritte) {
+        for (const id of Object.keys(schritt.zustand)) {
+          expect(ids.has(id), `${key}: ${id}`).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("halten alle Figuren innerhalb der Bühne", () => {
+    for (const [key, szene] of Object.entries(MODUL_SZENEN)) {
+      const stand = new Map<string, { x: number; y: number }>();
+      for (const schritt of szene.schritte) {
+        for (const [id, zustand] of Object.entries(schritt.zustand)) {
+          const alt = stand.get(id) ?? { x: 0, y: 0 };
+          stand.set(id, { x: zustand.x ?? alt.x, y: zustand.y ?? alt.y });
+          const neu = stand.get(id)!;
+          expect(neu.x, `${key}/${id}`).toBeGreaterThanOrEqual(40);
+          expect(neu.x, `${key}/${id}`).toBeLessThanOrEqual(760);
+          expect(neu.y, `${key}/${id}`).toBeGreaterThanOrEqual(60);
+          expect(neu.y, `${key}/${id}`).toBeLessThanOrEqual(270);
+        }
+      }
+    }
   });
 });

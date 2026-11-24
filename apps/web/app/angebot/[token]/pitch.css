@@ -673,3 +673,257 @@
   gap: 6px;
   font-size: 16px;
 }
+
+/* Modul-Slideshow */
+.pitch .slide-hintergrund {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(8, 12, 16, 0.72);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  overflow: auto;
+}
+.pitch .slide-fenster {
+  background: var(--bg);
+  color: var(--fg);
+  border-radius: 10px;
+  width: min(920px, 100%);
+  padding: 20px;
+  border: 1px solid var(--line);
+  max-height: 100%;
+  overflow: auto;
+}
+.pitch .slide-kopf {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.pitch .slide-kopf h3 {
+  font-size: 32px;
+}
+.pitch .buehne {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #1b2631;
+}
+.pitch .buehne svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.pitch .zaehler {
+  position: absolute;
+  right: 14px;
+  top: 12px;
+  font: 700 14px var(--head);
+  letter-spacing: 0.14em;
+  color: #8fa3b5;
+}
+.pitch .el {
+  transition:
+    transform 0.95s cubic-bezier(0.4, 0.1, 0.2, 1),
+    opacity 0.5s;
+}
+.pitch .el.weg {
+  opacity: 0;
+  pointer-events: none;
+}
+.pitch .el.dim {
+  opacity: 0.3;
+}
+.pitch .korpus {
+  stroke: transparent;
+  stroke-width: 3.5;
+  transition: stroke 0.4s;
+}
+.pitch .rand-akzent .korpus {
+  stroke: #e8834a;
+}
+.pitch .rand-ok .korpus {
+  stroke: #6fcf97;
+}
+.pitch .rand-wartet .korpus {
+  stroke: #f2c562;
+}
+.pitch .fuell-person {
+  fill: #8fa3b5;
+}
+.pitch .fuell-haus {
+  fill: #2a3846;
+}
+.pitch .fuell-dach {
+  fill: #3a4b5c;
+}
+.pitch .fuell-fenster {
+  fill: #f0b35e;
+}
+.pitch .fuell-doc {
+  fill: #e8eef3;
+}
+.pitch .doc-linie {
+  stroke: #9aa9b7;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.pitch .fuell-kasten {
+  fill: rgba(143, 163, 181, 0.08);
+  stroke: #4a5d70;
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+}
+.pitch .fuell-schicht {
+  fill: #e8834a;
+}
+.pitch .schicht-text {
+  font: 800 19px var(--head);
+  fill: #15181b;
+  letter-spacing: 0.04em;
+}
+.pitch .kachel-text {
+  font: 700 15px var(--head);
+  fill: #e8eef3;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.pitch .b-label {
+  font: 700 15px var(--head);
+  fill: #c9d3dc;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.pitch .kal-tag {
+  fill: #d5dde4;
+}
+.pitch .kal-tag.an {
+  fill: #e8834a;
+}
+.pitch .balken {
+  fill: #f0b35e;
+  transition:
+    y 0.6s,
+    height 0.6s;
+}
+.pitch .box {
+  fill: #fff;
+  stroke: #9aa9b7;
+  stroke-width: 2;
+}
+.pitch .haken-strich {
+  fill: none;
+  stroke: #1e7a46;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pitch .lupe {
+  fill: none;
+  stroke: #c9d3dc;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+.pitch .key {
+  fill: none;
+  stroke: #f0b35e;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+.pitch .zahn {
+  fill: none;
+  stroke: #8fa3b5;
+  stroke-width: 12;
+  stroke-dasharray: 7 6.6;
+}
+.pitch .zahn-aussen {
+  fill: none;
+  stroke: transparent;
+}
+.pitch .abz circle {
+  stroke: #101820;
+  stroke-width: 3;
+}
+.pitch .abz {
+  animation: pitch-pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+.pitch .abz-haken circle {
+  fill: #6fcf97;
+}
+.pitch .abz-uhr circle {
+  fill: #f2c562;
+}
+.pitch .abz-frage circle {
+  fill: #8fa3b5;
+}
+.pitch .abz path {
+  fill: none;
+  stroke: #101820;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pitch .abz text {
+  font: 800 18px var(--head);
+  fill: #101820;
+}
+@keyframes pitch-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.pitch .untertitel {
+  margin-top: 18px;
+  min-height: 120px;
+}
+.pitch .untertitel h3 {
+  font-size: 28px;
+}
+.pitch .untertitel p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 18px;
+  max-width: 68ch;
+}
+.pitch .steuerung {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 12px;
+}
+.pitch .punkte {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  justify-content: center;
+  min-width: 120px;
+}
+.pitch .punkt {
+  width: 34px;
+  height: 8px;
+  border-radius: 4px;
+  border: 0;
+  padding: 0;
+  background: var(--line);
+}
+.pitch .punkt.vorbei {
+  background: var(--accent-soft);
+}
+.pitch .punkt.an {
+  background: var(--accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pitch .el,
+  .pitch .abz {
+    transition: none;
+    animation: none;
+  }
+}
