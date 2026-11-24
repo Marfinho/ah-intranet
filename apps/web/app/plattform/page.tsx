@@ -3,13 +3,13 @@ import type { TenantSummary } from "@ah-intranet/shared";
 import { PlatformShell } from "@/components/platform-shell";
 import { EmptyState, Section } from "@/components/ui";
 import { apiGet } from "@/lib/api";
-import { requireSession } from "@/lib/session";
+import { requirePlatformSession } from "@/lib/session";
 import { formatDateTime } from "@/lib/utils";
 import { TenantComposer } from "./tenant-composer";
 import { TenantRowActions } from "./tenant-row-actions";
 
 export default async function PlattformUebersichtPage() {
-  const session = await requireSession();
+  const session = await requirePlatformSession();
   const tenants = await apiGet<TenantSummary[]>("/tenants");
   const aktiv = tenants.filter((tenant) => tenant.isActive).length;
 

@@ -39,6 +39,7 @@ export default tseslint.config(
   {
     files: [
       "apps/api/prisma/seed.ts",
+      "apps/api/prisma/einrichten.ts",
       "apps/api/src/scripts/**/*.ts",
       "e2e/**/*.js",
       "scripts/**/*.{js,mjs,ts}",

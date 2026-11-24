@@ -6,6 +6,7 @@ import { MailService } from "../../core/mail.service";
 import { AuditService } from "../../core/audit.service";
 import { runUnscoped } from "../../core/tenant-context";
 import { displayName } from "../../core/mappers";
+import { hausAdresse } from "../../core/adresse";
 
 /**
  * Vergessenes Passwort ohne die Administration.
@@ -48,7 +49,13 @@ export class PasswortService {
     const kennung = benutzername.trim().toLowerCase();
     const user = await this.prisma.user.findFirst({
       where: { username: kennung, status: "active" },
-      select: { id: true, email: true, firstName: true, lastName: true, tenant: { select: { name: true } } },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        tenant: { select: { name: true, slug: true, domain: true } },
+      },
     });
 
     if (!user) {
@@ -75,7 +82,9 @@ export class PasswortService {
       data: { userId: user.id, tokenHash: this.hash(token), expiresAt: ablauf },
     });
 
-    const basis = process.env.FRONTEND_URL ?? "";
+    // Die Adresse des Hauses, nicht irgendeine der konfigurierten: der Link
+    // soll im richtigen Haus landen.
+    const basis = hausAdresse(user.tenant, process.env);
     const link = `${basis}/passwort-neu?token=${token}`;
     await this.mail.send({
       to: user.email,

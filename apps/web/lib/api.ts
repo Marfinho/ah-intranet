@@ -13,8 +13,23 @@ const API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http:
  * Reverse Proxy täte.
  */
 export function tenantHostHeader(): Record<string, string> {
-  const host = headers().get("host");
-  return host ? { "x-forwarded-host": host } : {};
+  const eingang = headers();
+  const host = eingang.get("host");
+
+  // Dasselbe gilt für die Adresse des Browsers: ohne sie sieht die API für
+  // jeden Nutzer aller Häuser nur diesen Container. Die Drosselung der Anmeldung
+  // (zehn Versuche je Minute und Adresse) träfe dann alle gemeinsam - am
+  // Montagmorgen sperrte der Dienst sich selbst aus. Der Proxy davor
+  // überschreibt `x-forwarded-for` mit der echten Adresse; maßgeblich ist der
+  // letzte Eintrag, den der nächste Proxy angehängt hat, nie ein vom Browser
+  // mitgeschickter. Das Frontend darf deshalb nur über den Proxy erreichbar sein.
+  const kette = eingang.get("x-forwarded-for");
+  const adresse = kette?.split(",").pop()?.trim();
+
+  return {
+    ...(host ? { "x-forwarded-host": host } : {}),
+    ...(adresse ? { "x-forwarded-for": adresse } : {}),
+  };
 }
 
 export class ApiError extends Error {

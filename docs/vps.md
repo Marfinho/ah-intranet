@@ -1,0 +1,99 @@
+# Auf einen einzelnen Server (ohne Domain)
+
+Für die Erprobung auf einem frischen Ubuntu 24.04. Ohne eigene Domain dient
+**sslip.io**: `<haus>.217-160-128-156.sslip.io` löst von selbst auf die IP
+`217.160.128.156` auf. Die erste Namensstufe ist die Kennung des Hauses.
+
+**Grenze:** Ohne TLS läuft alles unverschlüsselt über HTTP, auch Passwörter.
+Das genügt für die Erprobung mit Testdaten – **nicht** für echte Personendaten.
+Dafür braucht es eine eigene Domain und Zertifikate (siehe `ausrollen.md`).
+
+## Kurzweg: ein Aufruf statt vieler Befehle
+
+Wer nur eine Weboberfläche (z. B. die Remote-Konsole) hat und kaum tippen will,
+ruft als root das Skript auf; die Argumente sind die Kennungen der Häuser:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Marfinho/ah-intranet/claude/lucid-pasteur-24oudc/scripts/vps-einrichten.sh | bash -s -- autohaus-x
+```
+
+Es installiert Docker, öffnet Port 22 und 80, erzeugt die Geheimnisse selbst,
+startet alles und richtet die Plattformverwaltung ein. Am Ende steht das
+Passwort. Ein weiteres Haus: Skript erneut mit allen Kennungen aufrufen.
+
+## 1. Server vorbereiten
+
+```bash
+apt update && apt upgrade -y
+curl -fsSL https://get.docker.com | sh
+ufw allow OpenSSH && ufw allow 80/tcp && ufw --force enable
+```
+
+Docker umgeht `ufw` bei veröffentlichten Ports; deshalb veröffentlicht die
+Compose-Datei nur den Proxy (Port 80), Datenbank und API bleiben intern.
+Empfehlenswert: SSH-Schlüssel statt Kennwort und das Initialkennwort ändern.
+
+## 2. Anwendung holen und konfigurieren
+
+```bash
+git clone https://github.com/Marfinho/ah-intranet.git && cd ah-intranet
+cp .env.prod.example .env
+nano .env        # DB_PASSWORD, JWT_SECRET, SECRET_KEY, PLATTFORM_PASSWORT
+```
+
+Zufallswerte: `openssl rand -hex 32`. In `FRONTEND_URL` je Haus eine Adresse
+eintragen (und `verwaltung`), sonst weist die API den Browser ab.
+
+## 3. Starten und Plattformkonto anlegen
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml exec api pnpm --filter api prisma:einrichten
+```
+
+Nach der Einrichtung `PLATTFORM_PASSWORT` aus `.env` streichen und `up -d api` wiederholen. Die Migrationen laufen beim Start der API. `prisma:einrichten` legt nur die
+Plattformverwaltung an (Benutzer `plattform`, Passwort aus `PLATTFORM_PASSWORT`),
+keine Demodaten – der Seed leert die Datenbank und gehört nicht auf diesen Server.
+
+## 4. Benutzen
+
+- `http://verwaltung.217-160-128-156.sslip.io` → Plattformverwaltung, dort Häuser anlegen
+- `http://<kennung>.217-160-128-156.sslip.io` → das jeweilige Haus
+- `http://217-160-128-156.sslip.io` → Landingpage
+
+Neue Häuser brauchen einen Eintrag in `FRONTEND_URL`, danach
+`docker compose -f docker-compose.prod.yml up -d api`.
+
+## Aktualisieren und sichern
+
+```bash
+git pull && docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Die Sicherungsskripte in `scripts/` zielen auf die Erprobungsdatenbank; für
+diesen Aufbau (Benutzer `ahoi`, Container `postgres`) sind sie noch nicht
+angepasst.
+
+## LocalHub daneben (ohne KI)
+
+[LocalHub](https://github.com/Marfinho/triathlon-trainer) läuft als eigener
+Stack neben AHOI und hängt über das gemeinsame Netz `ahoi-proxy` am selben
+Proxy. Nach `vps-einrichten.sh` (das den Proxy in der aktuellen Fassung startet):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Marfinho/ah-intranet/claude/lucid-pasteur-24oudc/scripts/vps-localhub.sh | bash
+```
+
+- **Adresse:** `https://localhub.217-160-128-156.sslip.io`. Anders als AHOI mit
+  HTTPS, denn LocalHubs Anmeldung setzt nur Cookies mit `Secure`-Flag – über
+  HTTP bliebe niemand angemeldet. Caddy holt das Zertifikat je Hostname von
+  Let's Encrypt; dafür muss Port 443 offen sein (Firewall des Servers und im
+  IONOS-Panel). `localhub` darf deshalb keine Kennung eines Hauses in AHOI sein.
+- **Ohne KI:** `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` und Ollama bleiben leer, es
+  gilt der Copy-&-Paste-Weg.
+- **Nicht nutzbar ohne Domain:** Google-Anmeldung, Stripe, OAuth-Anbindungen
+  (Strava, Wahoo, Withings). Anmeldung geht mit E-Mail und Passwort.
+- **Registrierung ist offen:** Wer die Adresse kennt, kann ein Konto anlegen
+  (mit Begrenzung der Versuche je IP). LocalHub bietet dafür keinen Schalter.
+- **Speicher:** Zwei Stacks im Dauerbetrieb brauchen zusammen mindestens 4 GB
+  RAM einschließlich Auslagerung.

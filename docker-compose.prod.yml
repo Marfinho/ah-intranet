@@ -1,0 +1,127 @@
+# Betrieb auf einem einzelnen Server, ohne eigene Domain:
+#
+#   cp .env.prod.example .env      # Werte eintragen, siehe docs/vps.md
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Eigenständige Datei statt Ergänzung zu docker-compose.yml: dort stehen
+# Erprobungswerte (Datenbankpasswort, offene Ports), die sich in einer
+# Ergänzung nicht wieder entfernen ließen. Nach außen ist nur der Proxy offen.
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ah_intranet
+      POSTGRES_USER: ahoi
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD fehlt in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ahoi -d ah_intranet"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: ahoi-api:prod
+    restart: unless-stopped
+    # Migrationen beim Start: das Image bringt sie mit, angewendet werden sie
+    # sonst nirgends - ohne sie wäre die Datenbank leer und die API liefe ins Leere.
+    command: sh -c "pnpm --filter api exec prisma migrate deploy && pnpm --filter api start"
+    environment:
+      # Schaltet die Startprüfung der Geheimnisse scharf: mit einem Platzhalter
+      # oder zu kurzem JWT_SECRET startet die API nicht.
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://ahoi:${DB_PASSWORD:?}@postgres:5432/ah_intranet?schema=public
+      FRONTEND_URL: ${FRONTEND_URL:?FRONTEND_URL fehlt in .env}
+      # Aus der Basisdomain entstehen die Links in E-Mails, je Haus eigen.
+      BASE_DOMAIN: ${BASE_DOMAIN:?BASE_DOMAIN fehlt in .env}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt in .env}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY fehlt in .env}
+      JWT_EXPIRES_IN: 12h
+      # Nur für die einmalige Einrichtung (prisma:einrichten); danach aus .env entfernen.
+      PLATTFORM_PASSWORT: ${PLATTFORM_PASSWORT:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-AHOI <noreply@example.de>}
+    healthcheck:
+      # Nach den Migrationen, die vor dem Start laufen, antwortet die API erst.
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:3001/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Aufbewahrungsfristen durchsetzen (packages/shared/src/retention.ts). Ein
+  # eigener Container statt Hintergrundaufgabe in der API: bei mehreren
+  # API-Instanzen liefe die sonst mehrfach. Ohne diesen Lauf blieben Daten
+  # über ihre Frist hinaus liegen - gegen den Grundsatz der Speicherbegrenzung.
+  aufbewahrung:
+    # Dasselbe Image wie die API - ein zweiter Bau kostete auf kleinen Servern
+    # viele Minuten und brächte nichts.
+    image: ahoi-api:prod
+    restart: unless-stopped
+    working_dir: /app/apps/api
+    command: sh -c "while true; do node dist/scripts/aufbewahrung.js; sleep 86400; done"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://ahoi:${DB_PASSWORD:?}@postgres:5432/ah_intranet?schema=public
+      JWT_SECRET: ${JWT_SECRET:?}
+      SECRET_KEY: ${SECRET_KEY:?}
+    depends_on:
+      api:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    environment:
+      # Nur serverseitig genutzt: der Browser spricht die API über den Proxy nicht direkt an.
+      API_URL: http://api:3001/api
+      NEXT_PUBLIC_API_URL: http://api:3001/api
+    depends_on:
+      api:
+        condition: service_healthy
+
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "${PROXY_PORT:-80}:80"
+      # 443 für Adressen mit Zertifikat (LocalHub); AHOI selbst läuft über 80.
+      - "443:443"
+    environment:
+      BASE_DOMAIN: ${BASE_DOMAIN:?BASE_DOMAIN fehlt in .env}
+    volumes:
+      - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - ./landing:/srv/landing:ro
+      # Zertifikate müssen einen Neustart überstehen, sonst stellt Caddy sie
+      # jedes Mal neu aus und läuft in die Ausstellungsgrenzen.
+      - caddy_data:/data
+    networks:
+      - default
+      - ahoi-proxy
+
+volumes:
+  postgres_data:
+  caddy_data:
+
+# Gemeinsames Netz, über das der Proxy weitere Dienste auf diesem Server
+# erreicht (z. B. LocalHub), ohne deren Ports nach außen zu öffnen.
+networks:
+  ahoi-proxy:
+    name: ahoi-proxy
