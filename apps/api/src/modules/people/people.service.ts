@@ -18,7 +18,7 @@ import type {
 } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
 import { AuditService } from "../../core/audit.service";
-import { PRESENCE_LABELS, PRESENCE_VALUES, buildScopes, displayName, sortiereRollen } from "../../core/mappers";
+import { PRESENCE_LABELS, PRESENCE_VALUES, displayName, resolveUserScopes, sortiereRollen } from "../../core/mappers";
 import type { RequestUser } from "../../core/request-user";
 import { requireTenantId } from "../../core/tenant-context";
 
@@ -153,71 +153,13 @@ export class PeopleService {
   }
 
   async organisation() {
-    const [locations, departments, specialties] = await Promise.all([
+    const [locations, departments, specialties, brands] = await Promise.all([
       this.prisma.location.findMany({ orderBy: { name: "asc" } }),
       this.prisma.department.findMany({ orderBy: { name: "asc" } }),
       this.prisma.specialtyArea.findMany({ orderBy: { name: "asc" } }),
+      this.prisma.brand.findMany({ orderBy: { name: "asc" } }),
     ]);
-    return { locations, departments, specialties };
-  }
-
-  async locations() {
-    return this.prisma.location.findMany({ orderBy: { name: "asc" } });
-  }
-
-  /**
-   * Legt einen weiteren Standort an - z. B. eine zusätzliche Filiale eines
-   * Mandanten mit mehreren Häusern. Der Code ist die kurze Kennung für
-   * Zielgruppen (`location:<code>`) und muss deshalb je Mandant eindeutig sein.
-   */
-  async createLocation(actor: RequestUser, input: { name: string; code: string; address?: string | null }) {
-    const code = input.code.trim().toUpperCase();
-    if (!code) {
-      throw new BadRequestException("Bitte eine Kennung für den Standort angeben.");
-    }
-    if (await this.prisma.location.findFirst({ where: { code }, select: { id: true } })) {
-      throw new BadRequestException(`Die Kennung "${code}" ist in diesem Haus bereits vergeben.`);
-    }
-    await this.pruefeStandortlimit();
-
-    const location = await this.prisma.location.create({
-      data: { name: input.name.trim(), code, address: input.address?.trim() || null },
-    });
-
-    await this.audit.log({
-      actor,
-      action: "location.created",
-      entityType: "location",
-      entityId: location.id,
-      detail: `Standort "${location.name}" (${location.code}) angelegt`,
-    });
-
-    return this.locations();
-  }
-
-  async updateLocation(actor: RequestUser, locationId: string, input: { name?: string; address?: string | null }) {
-    const location = await this.prisma.location.findUnique({ where: { id: locationId } });
-    if (!location) {
-      throw new NotFoundException("Standort nicht gefunden");
-    }
-
-    const updated = await this.prisma.location.update({
-      where: { id: locationId },
-      data: {
-        ...(input.name !== undefined ? { name: input.name.trim() } : {}),
-        ...(input.address !== undefined ? { address: input.address?.trim() || null } : {}),
-      },
-    });
-
-    await this.audit.log({
-      actor,
-      action: "location.updated",
-      entityType: "location",
-      entityId: updated.id,
-      detail: `Standort "${updated.name}" (${updated.code}) geändert`,
-    });
-
-    return this.locations();
+    return { locations, departments, specialties, brands };
   }
 
   /**
@@ -243,25 +185,6 @@ export class PeopleService {
     }
   }
 
-  /** Dieselbe Prüfung wie `pruefeLizenzkontingent`, nur für Standorte statt Konten. */
-  private async pruefeStandortlimit(): Promise<void> {
-    const tenant = await this.prisma.tenant.findUniqueOrThrow({
-      where: { id: requireTenantId() },
-      select: { locationLimit: true },
-    });
-    if (tenant.locationLimit === null) {
-      return;
-    }
-
-    const vorhandeneStandorte = await this.prisma.location.count();
-    if (vorhandeneStandorte >= tenant.locationLimit) {
-      throw new BadRequestException(
-        `Das Standortlimit ist erreicht (${tenant.locationLimit} Standorte). ` +
-          "Bitte das Limit von der Plattformverwaltung erweitern lassen.",
-      );
-    }
-  }
-
   async createUser(
     actor: RequestUser,
     input: UserInput,
@@ -275,7 +198,7 @@ export class PeopleService {
     }
 
     const initialPassword = input.password ?? this.generatePassword();
-    const scopes = await this.resolveScopes(input);
+    const scopes = await resolveUserScopes(this.prisma, input);
 
     const created = await this.prisma.user.create({
       data: {
@@ -321,7 +244,7 @@ export class PeopleService {
       await this.pruefeLizenzkontingent();
     }
 
-    const scopes = await this.resolveScopes({
+    const scopes = await resolveUserScopes(this.prisma, {
       locationId: input.locationId !== undefined ? input.locationId : existing.locationId,
       departmentId: input.departmentId !== undefined ? input.departmentId : existing.departmentId,
       specialtyAreaId: input.specialtyAreaId !== undefined ? input.specialtyAreaId : existing.specialtyAreaId,
@@ -671,30 +594,6 @@ export class PeopleService {
       throw new BadRequestException(`Unbekannte Rolle: ${unbekannt.join(", ")}`);
     }
     return rows.map((row) => ({ roleId: row.id }));
-  }
-
-  private async resolveScopes(input: {
-    locationId?: string | null;
-    departmentId?: string | null;
-    specialtyAreaId?: string | null;
-  }): Promise<string[]> {
-    const [location, department, specialty] = await Promise.all([
-      input.locationId
-        ? this.prisma.location.findUnique({ where: { id: input.locationId }, select: { code: true } })
-        : null,
-      input.departmentId
-        ? this.prisma.department.findUnique({ where: { id: input.departmentId }, select: { code: true } })
-        : null,
-      input.specialtyAreaId
-        ? this.prisma.specialtyArea.findUnique({ where: { id: input.specialtyAreaId }, select: { code: true } })
-        : null,
-    ]);
-
-    return buildScopes({
-      locationCode: location?.code,
-      departmentCode: department?.code,
-      specialtyCode: specialty?.code,
-    });
   }
 
   private generatePassword(): string {

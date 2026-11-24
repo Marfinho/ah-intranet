@@ -2,7 +2,7 @@ import type { NewsItem } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
 import { ActionButton } from "@/components/forms";
 import { EmptyState, PriorityBadge, Section, StatusBadge } from "@/components/ui";
-import { NewsComposer } from "./news-composer";
+import { NewsComposer, type NewsComposerOrganisation } from "./news-composer";
 import { apiGet } from "@/lib/api";
 import { can, requirePermission } from "@/lib/session";
 import { deleteNewsAction, setNewsStatusAction } from "@/lib/actions";
@@ -10,7 +10,10 @@ import { formatDate } from "@/lib/utils";
 
 export default async function NewsAdminPage() {
   const session = await requirePermission("news.publish");
-  const items = await apiGet<NewsItem[]>("/news?status=all");
+  const [items, organisation] = await Promise.all([
+    apiGet<NewsItem[]>("/news?status=all"),
+    apiGet<NewsComposerOrganisation>("/users/organisation"),
+  ]);
 
   return (
     <AppShell title="News verwalten" subtitle="Beiträge verfassen, veröffentlichen und archivieren">
@@ -18,7 +21,7 @@ export default async function NewsAdminPage() {
         title="Neuen Beitrag verfassen"
         subtitle="Zielgruppe und Priorität steuern Sichtbarkeit und Benachrichtigung"
       >
-        <NewsComposer />
+        <NewsComposer organisation={organisation} />
       </Section>
 
       <Section title={`${items.length} Beiträge`} subtitle="Entwürfe, veröffentlichte und archivierte Beiträge">

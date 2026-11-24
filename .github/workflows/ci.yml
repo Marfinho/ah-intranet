@@ -25,7 +25,10 @@ env:
 jobs:
   quality:
     name: Typen, Lint, Tests, Build
-    runs-on: ubuntu-latest
+    # Fest auf 24.04 statt ubuntu-latest: dort wechselte das Image auf 26.04, das
+    # kein postgresql-client-16 mehr führt - der Schritt unten bräche ab, bevor
+    # irgendein eigener Code läuft. Muss zur Datenbank (postgres:16) passen.
+    runs-on: ubuntu-24.04
 
     services:
       postgres:

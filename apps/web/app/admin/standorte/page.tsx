@@ -1,53 +1,57 @@
 import { AppShell } from "@/components/app-shell";
-import { EmptyState, Section, Tag } from "@/components/ui";
+import { EmptyState, Section } from "@/components/ui";
 import { LocationComposer } from "./location-composer";
-import { LocationRowActions } from "./location-row-actions";
+import { LocationRow } from "./location-row";
+import { BrandManager } from "./brand-manager";
 import { apiGet } from "@/lib/api";
 import { requirePermission } from "@/lib/session";
 
-interface LocationRow {
+interface Brand {
+  id: string;
+  name: string;
+  code: string;
+  logoUrl: string | null;
+}
+
+interface LocationSummary {
   id: string;
   name: string;
   code: string;
   address: string | null;
+  brands: Brand[];
 }
 
-export default async function LocationsAdminPage() {
+export default async function StandorteAdminPage() {
   await requirePermission("organisation.manage");
-  const locations = await apiGet<LocationRow[]>("/locations");
+
+  const [locations, brands] = await Promise.all([apiGet<LocationSummary[]>("/standorte"), apiGet<Brand[]>("/marken")]);
 
   return (
-    <AppShell title="Standorte verwalten" subtitle="Filialen und Autohäuser dieses Mandanten pflegen">
-      <Section
-        title="Standort hinzufügen"
-        subtitle="Für einen Kunden mit mehreren Häusern - z. B. jede Filiale als eigener Standort"
-      >
-        <LocationComposer />
+    <AppShell
+      title="Standorte & Marken"
+      subtitle="Standorte pflegen und die Marken zuordnen, die sie führen - steuert u. a., welche News einen Standort erreichen"
+    >
+      <Section title="Neuer Standort" subtitle="Marken direkt bei der Anlage anklicken, oder später ergänzen">
+        <LocationComposer brands={brands} />
       </Section>
 
-      <Section title={`${locations.length} Standorte`}>
+      <Section
+        title={`${locations.length} Standorte`}
+        subtitle="Marken ändern sich sofort in den Zielgruppen - betroffene Konten werden abgemeldet"
+      >
         {locations.length === 0 ? (
-          <EmptyState title="Keine Standorte" detail="Legen Sie oben den ersten Standort an." />
+          <EmptyState title="Noch keine Standorte" detail="Legen Sie oben den ersten Standort an." />
         ) : (
-          <ul className="space-y-3">
+          <div className="space-y-4">
             {locations.map((location) => (
-              <li
-                key={location.id}
-                className="flex flex-col gap-3 rounded-2xl border border-slate-200 p-5 md:flex-row md:items-center md:justify-between"
-              >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-semibold text-slate-900">{location.name}</span>
-                    <Tag>{location.code}</Tag>
-                  </div>
-                  {location.address ? <p className="mt-1 text-sm text-slate-600">{location.address}</p> : null}
-                </div>
-
-                <LocationRowActions location={location} />
-              </li>
+              <LocationRow key={location.id} location={location} allBrands={brands} />
             ))}
-          </ul>
+          </div>
         )}
+      </Section>
+
+      <Section title="Marken" subtitle="Frei angelegte Tags, die ein Standort führen kann">
+        <BrandManager brands={brands} />
       </Section>
     </AppShell>
   );
