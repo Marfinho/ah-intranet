@@ -19,9 +19,25 @@ describe("vorschlagFuerStandort", () => {
     expect(vorschlagFuerStandort(haus({ name: "A" }), []).module).toContain("news");
   });
 
-  it("gibt einem Haus mit Service Serviceanfragen und Bestellungen", () => {
+  it("gibt einem Haus mit Service Serviceanfragen sowie Bestellungen mit Freigabe", () => {
     const vorschlag = vorschlagFuerStandort(haus({ name: "A", leistungen: ["Verkauf", "Service"] }), []);
-    expect(vorschlag.module).toEqual(expect.arrayContaining(["tickets", "orders"]));
+    expect(vorschlag.module).toEqual(expect.arrayContaining(["tickets", "orders", "approvals"]));
+  });
+
+  it("legt in jedem Haus die Grundlage an", () => {
+    for (const standort of [haus({ name: "A" }), haus({ name: "B", leistungen: ["Service"] })]) {
+      expect(vorschlagFuerStandort(standort, []).module).toEqual(
+        expect.arrayContaining(["news", "directory", "documents", "quicklinks", "absences"]),
+      );
+    }
+  });
+
+  it("schlägt Freigaben nie ohne Bestellungen vor", () => {
+    const alle = [haus({ name: "A" }), haus({ name: "B", leistungen: ["Service"] })];
+    for (const standort of alle) {
+      const { module } = vorschlagFuerStandort(standort, alle);
+      if (module.includes("approvals")) expect(module).toContain("orders");
+    }
   });
 
   it("gibt einem reinen Verkaufshaus keine Bestellungen", () => {

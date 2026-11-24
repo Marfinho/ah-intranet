@@ -29,14 +29,22 @@ function nennt(liste: string[], stichwort: string): boolean {
 }
 
 export function vorschlagFuerStandort(standort: StandortAngabe, alle: StandortAngabe[]): Vorschlag {
-  const module: string[] = ["news"];
-  const saetze: string[] = ["Aushänge erreichen genau die Mitarbeitenden dieses Hauses."];
+  // Was in jedem Haus gebraucht wird, egal wie es arbeitet: Aushänge, Dokumente,
+  // Schnellzugriffe, Verzeichnis und Urlaubsanträge. Ohne diese Grundlage stünde
+  // ein gewähltes Modul in keinem Haus, und das Bild bliebe an der Stelle leer.
+  const module: string[] = ["news", "directory", "documents", "quicklinks", "absences"];
+  const saetze: string[] = [
+    "Aushänge, Dokumente, Verzeichnis und Abwesenheitsanträge erreichen genau die Mitarbeitenden dieses Hauses.",
+  ];
 
   const hatWerkstatt = nennt(standort.leistungen, "service") || nennt(standort.leistungen, "werkstatt");
 
   if (hatWerkstatt) {
-    module.push("tickets", "orders");
-    saetze.push("Werkstatt und Verkauf unter einem Dach: Serviceanfragen und Bestellungen ohne Papierweg.");
+    // Freigaben hängen an den Bestellungen: wer bestellt, braucht auch den Freigabeweg.
+    module.push("tickets", "orders", "approvals");
+    saetze.push(
+      "Werkstatt und Verkauf unter einem Dach: Serviceanfragen sowie Bestellungen mit Freigabe ohne Papierweg.",
+    );
   } else {
     module.push("tickets");
     saetze.push("Ohne eigene Werkstatt halten Serviceanfragen den Weg zur Technik kurz.");

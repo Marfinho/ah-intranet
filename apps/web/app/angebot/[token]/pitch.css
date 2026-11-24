@@ -493,112 +493,118 @@
   margin-top: 12px;
 }
 
-/* Sternbild */
-.pitch .graf-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-  gap: 24px;
-  align-items: start;
+/* Skyline */
+.pitch .nacht {
   margin-top: 24px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #1b2631;
 }
-@media (max-width: 900px) {
-  .pitch .graf-layout {
-    grid-template-columns: 1fr;
-  }
-}
-.pitch .graf {
+.pitch .nacht svg {
+  display: block;
   width: 100%;
   height: auto;
-  display: block;
-  max-width: 780px;
-  margin-inline: auto;
-  overflow: visible;
 }
-.pitch .graf-ring {
-  fill: none;
-  stroke: var(--line);
-  stroke-width: 1.5;
-}
-.pitch .graf-modul {
+.pitch .sk-wand {
+  fill: #2a3846;
   cursor: pointer;
-  transition:
-    opacity 0.2s,
-    fill-opacity 0.2s;
   outline: none;
 }
-.pitch .graf-modul.an {
-  fill: var(--accent);
-  fill-opacity: 0.88;
+.pitch .sk-dach {
+  fill: #3a4b5c;
+  pointer-events: none;
 }
-.pitch .graf-modul.kern.an {
-  fill: var(--fg);
-  fill-opacity: 0.85;
+.pitch .sk-haus {
+  transition: opacity 0.2s;
 }
-.pitch .graf-modul.beta.an {
-  fill-opacity: 0.45;
+.pitch .sk-haus.dim {
+  opacity: 0.3;
 }
-.pitch .graf-modul.aus {
-  fill: none;
-  stroke: var(--quiet);
+.pitch .sk-haus.fokus .sk-wand,
+.pitch .sk-wand:focus-visible {
+  fill: #34465a;
+}
+.pitch .sk-fenster {
+  cursor: pointer;
+  outline: none;
+  transition:
+    opacity 0.2s,
+    fill 0.2s;
+}
+.pitch .sk-fenster.an {
+  fill: #f0b35e;
+}
+.pitch .sk-fenster.kern {
+  fill: #8fa3b5;
+}
+.pitch .sk-fenster.beta {
+  fill: #f0b35e;
+  opacity: 0.5;
+}
+.pitch .sk-fenster.offen {
+  fill: #1a2531;
+  stroke: #4a5d70;
   stroke-width: 1.5;
-  stroke-dasharray: 3 5;
+  stroke-dasharray: 3 3;
 }
-.pitch .graf-modul.dim {
-  opacity: 0.16;
+.pitch .sk-fenster.dim {
+  opacity: 0.22;
 }
-.pitch .graf-modul:hover,
-.pitch .graf-modul:focus-visible,
-.pitch .graf-modul.fokus {
-  fill-opacity: 1;
-  stroke: var(--fg);
+.pitch .sk-fenster.fokus {
+  fill: #fff;
+  stroke: #e8834a;
+  stroke-width: 3;
+  stroke-dasharray: none;
+  opacity: 1;
+}
+.pitch .sk-fenster:hover,
+.pitch .sk-fenster:focus-visible {
+  stroke: #fff;
   stroke-width: 2.5;
   stroke-dasharray: none;
 }
-.pitch .graf-modul.aus:hover,
-.pitch .graf-modul.aus.fokus {
-  fill: var(--accent-soft);
+.pitch .sk-tor {
+  fill: #17212b;
 }
-.pitch .graf-label-gruppe {
-  pointer-events: none;
-  transition: opacity 0.2s;
+.pitch .sk-tor-linie {
+  stroke: #3a4b5c;
+  stroke-width: 1.5;
 }
-.pitch .graf-label-gruppe.dim {
-  opacity: 0.2;
-}
-.pitch .graf-label {
-  font: 700 19px var(--head);
+.pitch .sk-name {
+  font: 700 15px var(--head);
+  fill: #c9d3dc;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  fill: var(--fg);
+  letter-spacing: 0.05em;
+  pointer-events: none;
 }
-.pitch .graf-label-gruppe.aus .graf-label {
-  fill: var(--quiet);
-  font-weight: 600;
+.pitch .sk-platt {
+  font: 600 13px var(--head);
+  fill: #8fa3b5;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  pointer-events: none;
 }
-@media (max-width: 700px) {
-  .pitch .graf-label-gruppe {
-    display: none;
-  }
+.pitch .sk-zahl {
+  font: 800 84px var(--head);
+  fill: #f2e3c6;
+  pointer-events: none;
 }
-.pitch .bahn {
+.pitch .sk-zahl-text {
+  font: 600 18px var(--head);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  fill: #8fa3b5;
+  pointer-events: none;
+}
+.pitch .sk-bahn {
   fill: none;
-  stroke: var(--accent);
-  stroke-width: 2;
+  stroke: #e8834a;
+  stroke-width: 3;
   stroke-linecap: round;
-  opacity: 0.42;
   stroke-dasharray: 1;
-  stroke-dashoffset: 0;
-  transition:
-    opacity 0.2s,
-    stroke-width 0.2s;
-  animation: pitch-zeichne 1.1s cubic-bezier(0.3, 0.7, 0.2, 1) both;
-}
-.pitch .bahn.an {
-  opacity: 1;
-  stroke-width: 3.2;
-}
-.pitch .bahn.aus {
-  opacity: 0.05;
+  animation: pitch-zeichne 0.8s cubic-bezier(0.3, 0.7, 0.2, 1) both;
+  pointer-events: none;
+  filter: drop-shadow(0 0 6px rgba(232, 131, 74, 0.7));
 }
 @keyframes pitch-zeichne {
   from {
@@ -609,54 +615,9 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pitch .bahn {
+  .pitch .sk-bahn {
     animation: none;
   }
-}
-.pitch .verbund {
-  stroke: var(--quiet);
-  stroke-width: 2;
-  stroke-dasharray: 2 7;
-  stroke-linecap: round;
-}
-.pitch .knoten-gruppe {
-  cursor: pointer;
-  outline: none;
-  transition: opacity 0.2s;
-}
-.pitch .knoten-gruppe.dim {
-  opacity: 0.22;
-}
-.pitch .knoten-flaeche {
-  fill: transparent;
-}
-.pitch .knoten {
-  fill: var(--surface);
-  stroke: var(--fg);
-  stroke-width: 3;
-  transition: r 0.15s;
-}
-.pitch .knoten.werkstatt {
-  fill: var(--fg);
-}
-.pitch .knoten-gruppe:hover .knoten,
-.pitch .knoten-gruppe:focus-visible .knoten,
-.pitch .knoten.fokus {
-  stroke: var(--accent);
-  stroke-width: 5;
-  r: 18;
-}
-.pitch .mitte-zahl {
-  font: 800 104px var(--head);
-  fill: var(--fg);
-  pointer-events: none;
-}
-.pitch .mitte-text {
-  font: 600 22px var(--head);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  fill: var(--quiet);
-  pointer-events: none;
 }
 .pitch .legende {
   list-style: none;
@@ -677,37 +638,31 @@
   display: inline-block;
   flex: none;
 }
-.pitch .l-modul {
-  width: 22px;
-  height: 12px;
+.pitch .l-fenster {
+  width: 14px;
+  height: 16px;
   border-radius: 2px;
 }
-.pitch .l-modul.an {
-  background: var(--accent);
+.pitch .l-fenster.an {
+  background: #f0b35e;
 }
-.pitch .l-modul.aus {
-  border: 1.5px dashed var(--quiet);
+.pitch .l-fenster.kern {
+  background: #8fa3b5;
 }
-.pitch .l-modul.kern {
-  background: var(--fg);
+.pitch .l-fenster.offen {
+  background: #1a2531;
+  border: 1.5px dashed #4a5d70;
 }
-.pitch .l-knoten {
+.pitch .l-tor {
   width: 14px;
   height: 14px;
-  border-radius: 50%;
-  border: 2.5px solid var(--fg);
-  background: var(--surface);
+  background: #17212b;
+  border: 1px solid #3a4b5c;
 }
-.pitch .l-knoten.werkstatt {
-  background: var(--fg);
-}
-.pitch .l-verbund {
-  width: 24px;
-  border-top: 2px dotted var(--quiet);
-}
-.pitch .graf-detail {
-  position: sticky;
-  top: 96px;
+.pitch .l-platte {
+  width: 22px;
+  height: 5px;
+  background: #324355;
 }
 .pitch .nutzen {
   margin: 8px 0 0;

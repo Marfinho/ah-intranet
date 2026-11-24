@@ -12,12 +12,7 @@ import {
   berechneAngebot,
   einzelmodulPreis,
   formatEuro,
-  bahn,
   getModule,
-  polar,
-  ringSegment,
-  segmente,
-  verteile,
   waehlbareModule,
   type LeadKonfiguration,
   type ModuleDefinition,
@@ -597,23 +592,25 @@ function Angebot({
   );
 }
 
-/* ------------------------------------------------------------- Sternbild */
+/* --------------------------------------------------------------- Skyline */
 
-const GROESSE = 1000;
-const MITTE = GROESSE / 2;
-const R_HAUS = 125;
-const R_INNEN = 262;
-const R_AUSSEN = 306;
+const BREITE = 122;
+const LUECKE = 20;
+const GRUPPEN_LUECKE = 70;
+const BODEN = 400;
 
 type Fokus = { art: "modul" | "haus"; key: string } | null;
 
 /**
- * Ihr Intranet als Bild.
+ * Ihr Intranet als Skyline.
  *
- * Innen die Häuser, außen die Module als Ring. Gefüllt ist, was zur Auswahl
- * gehört, offen bleibt, was nicht dazugehört - wie im AHOI-Zeichen. Die Bahnen
- * zeigen, welches Haus welches Modul im Alltag nutzt. Die Abbildung ist ein
- * Vorschlag aus den Angaben zu den Häusern, keine Messung.
+ * Jedes Haus ist ein Gebäude, jedes Fenster ein Modul, das dort im Alltag Sinn
+ * ergibt. Erleuchtet ist, was zur Auswahl gehört, dunkel bleibt der Rest, wie
+ * im AHOI-Zeichen. Wer ein Modul wählt, sieht es in allen Häusern aufleuchten,
+ * durch Bahnen verbunden. Die Höhe eines Hauses hängt nicht an der Auswahl,
+ * sondern an dem, was dort möglich wäre: ein größeres Paket macht Fenster hell,
+ * lässt kein Haus wachsen. Die Zuordnung ist ein Vorschlag aus den Angaben zu den
+ * Häusern, keine Messung.
  */
 export function Intranet({
   ansicht,
@@ -640,247 +637,260 @@ export function Intranet({
       ),
     [],
   );
-  const segs = useMemo(
-    () =>
-      segmente(
-        module.length,
-        module.map((modul) => MODULE_GROUPS.indexOf(modul.group)),
-        1.4,
-        -4,
-      ),
-    [module],
-  );
-
   const haeuser = ansicht.standorte;
-  const winkel = verteile(haeuser.length, 20);
-  const hausPunkt = haeuser.map((_, index) => polar(MITTE, MITTE, haeuser.length === 1 ? 0 : R_HAUS, winkel[index]));
-  const mitte = { x: MITTE, y: MITTE };
+  const hatWerkstatt = (haus: PitchAnsicht["standorte"][number]) =>
+    haus.leistungen.some((leistung) => /service|werkstatt/i.test(leistung));
 
-  const bahnen = haeuser.flatMap((haus, hausIndex) =>
-    haus.vorschlagModule
-      .filter((key) => gewaehlt.has(key) && !getModule(key)?.core)
-      .map((key) => {
-        const modulIndex = module.findIndex((modul) => modul.key === key);
-        return {
-          haus: hausIndex,
-          modul: key,
-          pfad: bahn(hausPunkt[hausIndex], polar(MITTE, MITTE, R_INNEN - 6, segs[modulIndex].mitte), mitte, 0.78),
-        };
-      }),
+  // Häuser eines gemeinsamen Standorts stehen nebeneinander, getrennt von den übrigen.
+  const reihenfolge = [...haeuser.map((haus, index) => ({ haus, index }))].sort((a, b) =>
+    (a.haus.campus ?? `~${a.index}`).localeCompare(b.haus.campus ?? `~${b.index}`, "de"),
   );
 
-  const verbuende = haeuser.flatMap((haus, index) =>
-    haeuser
-      .slice(index + 1)
-      .map((anderes, offset) => ({
-        von: index,
-        nach: index + 1 + offset,
-        gleich: haus.campus && haus.campus === anderes.campus,
-      }))
-      .filter((paar) => paar.gleich),
-  );
+  let x = 40;
+  const gebaeude = reihenfolge.map(({ haus, index }, position) => {
+    const vorher = reihenfolge[position - 1];
+    if (position > 0) x += vorher.haus.campus && vorher.haus.campus === haus.campus ? LUECKE : GRUPPEN_LUECKE;
+    const fenster = module.filter((modul) => modul.core || haus.vorschlagModule.includes(modul.key));
+    const zeilen = Math.ceil(fenster.length / 3);
+    const eintrag = { haus, index, x, fenster, hoehe: zeilen * 40 + 56 };
+    x += BREITE;
+    return eintrag;
+  });
+  const gesamt = x + 40;
+  const oberkante = Math.max(0, Math.round(BODEN - Math.max(...gebaeude.map((g) => g.hoehe)) - 110));
+
+  const plattformen: { von: number; bis: number; name: string }[] = [];
+  for (const g of gebaeude) {
+    if (!g.haus.campus) continue;
+    const letzte = plattformen[plattformen.length - 1];
+    if (letzte && letzte.name === g.haus.campus) letzte.bis = g.x + BREITE;
+    else plattformen.push({ von: g.x, bis: g.x + BREITE, name: g.haus.campus });
+  }
 
   const [angeheftet, setAngeheftet] = useState<Fokus>(null);
   const [schwebe, setSchwebe] = useState<Fokus>(null);
-  const aktiv = schwebe ?? angeheftet;
   const zeige = angeheftet ?? schwebe;
-
-  const hausIndexAktiv = aktiv?.art === "haus" ? haeuser.findIndex((haus) => haus.name === aktiv.key) : -1;
   const heftAn = (fokus: NonNullable<Fokus>) =>
     setAngeheftet((alt) => (alt?.art === fokus.art && alt.key === fokus.key ? null : fokus));
+  const nachTaste = (fokus: NonNullable<Fokus>) => (e: { key: string }) => {
+    if (e.key === "Enter" || e.key === " ") heftAn(fokus);
+  };
 
-  const hatWerkstatt = (index: number) =>
-    haeuser[index].leistungen.some((leistung) => /service|werkstatt/i.test(leistung));
+  const fensterPunkt = (g: (typeof gebaeude)[number], nummer: number) => ({
+    x: g.x + 16 + (nummer % 3) * 34 + 13,
+    y: BODEN - g.hoehe + 18 + Math.floor(nummer / 3) * 40 + 14,
+  });
+
+  // Bahnen verbinden das gewählte Modul von Haus zu Haus, von links nach rechts.
+  const bahnPunkte =
+    zeige?.art === "modul"
+      ? gebaeude
+          .map((g) => ({ g, nummer: g.fenster.findIndex((modul) => modul.key === zeige.key) }))
+          .filter((eintrag) => eintrag.nummer >= 0)
+          .map((eintrag) => fensterPunkt(eintrag.g, eintrag.nummer))
+          .sort((a, b) => a.x - b.x)
+      : [];
+
   const nichtKern = module.filter((modul) => !modul.core && gewaehlt.has(modul.key));
-  const kern = module.filter((modul) => modul.core);
-
-  const modulGedimmt = (key: string, kernModul: boolean) => {
-    if (!aktiv) return false;
-    if (aktiv.art === "modul") return aktiv.key !== key;
-    return kernModul ? false : !bahnen.some((eintrag) => eintrag.haus === hausIndexAktiv && eintrag.modul === key);
-  };
-  const hausGedimmt = (index: number) => {
-    if (!aktiv) return false;
-    if (aktiv.art === "haus") return index !== hausIndexAktiv;
-    return !bahnen.some((eintrag) => eintrag.modul === aktiv.key && eintrag.haus === index);
-  };
-  const bahnZustand = (haus: number, modul: string) => {
-    if (!aktiv) return "";
-    const trifft = aktiv.art === "modul" ? aktiv.key === modul : hausIndexAktiv === haus;
-    return trifft ? "an" : "aus";
-  };
+  const offen = module.filter((modul) => !modul.core && !gewaehlt.has(modul.key));
+  const aktivesHaus = zeige?.art === "haus" ? zeige.key : null;
 
   return (
     <section className="station">
       <div className="eyebrow">Ihr Intranet</div>
       <h2 style={{ marginTop: 10 }}>So sieht Ihre Auswahl aus</h2>
       <p className="lead">
-        Innen Ihre Häuser, außen die Module. Gefüllt ist, was zu Ihrer Auswahl gehört, offen bleibt der Rest, wie im
-        AHOI-Zeichen. Tippen Sie ein Haus oder ein Modul an und sehen Sie, was Sie damit tun können.
+        Jedes Haus ein Gebäude, jedes Fenster ein Modul. Hell ist, was zu Ihrer Auswahl gehört, dunkel bleibt der Rest,
+        wie im AHOI-Zeichen. Tippen Sie ein Haus oder ein Fenster an und sehen Sie, was Sie damit tun können.
       </p>
 
-      <div className="graf-layout">
-        <div>
-          <svg
-            className="graf"
-            viewBox={`0 0 ${GROESSE} ${GROESSE}`}
-            role="group"
-            aria-label="Ihre Häuser und Module als Bild"
-          >
-            {/* Ringe als ruhiger Hintergrund */}
-            <circle className="graf-ring" cx={MITTE} cy={MITTE} r={R_HAUS} />
-            <circle className="graf-ring" cx={MITTE} cy={MITTE} r={R_INNEN - 22} />
+      <div className="nacht">
+        <svg
+          viewBox={`0 ${oberkante} ${gesamt} ${470 - oberkante}`}
+          role="group"
+          aria-label="Ihre Häuser als Skyline, jedes Fenster ein Modul"
+        >
+          <defs>
+            <linearGradient id="pitch-himmel" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#0B121A" />
+              <stop offset="1" stopColor="#223142" />
+            </linearGradient>
+          </defs>
+          <rect y={oberkante} width={gesamt} height={470 - oberkante} fill="url(#pitch-himmel)" />
+          {Array.from({ length: 34 }, (_, i) => (
+            <circle
+              key={i}
+              cx={(i * 211) % gesamt}
+              cy={oberkante + 14 + ((i * 97) % 80)}
+              r={i % 5 === 0 ? 1.8 : 1}
+              fill="#fff"
+              opacity={0.25 + (i % 4) * 0.12}
+            />
+          ))}
+          <text className="sk-zahl" x="46" y={oberkante + 92}>
+            {gewaehlt.size}
+          </text>
+          <text className="sk-zahl-text" x="48" y={oberkante + 122}>
+            von {MODULE_DEFINITIONS.length} Modulen
+          </text>
 
-            {verbuende.map((paar) => (
-              <line
-                key={`${paar.von}-${paar.nach}`}
-                className="verbund"
-                x1={hausPunkt[paar.von].x}
-                y1={hausPunkt[paar.von].y}
-                x2={hausPunkt[paar.nach].x}
-                y2={hausPunkt[paar.nach].y}
-              />
-            ))}
+          <rect x="0" y={BODEN} width={gesamt} height="70" fill="#101820" />
+          {plattformen.map((platte) => (
+            <g key={platte.name}>
+              <rect x={platte.von - 12} y={BODEN} width={platte.bis - platte.von + 24} height="10" fill="#324355" />
+              <text x={(platte.von + platte.bis) / 2} y={BODEN + 36} textAnchor="middle" className="sk-platt">
+                {platte.name}
+              </text>
+            </g>
+          ))}
 
-            {bahnen.map((eintrag, index) => (
-              <path
-                key={`${eintrag.haus}-${eintrag.modul}`}
-                className={`bahn ${bahnZustand(eintrag.haus, eintrag.modul)}`}
-                d={eintrag.pfad}
-                pathLength={1}
-                style={{ animationDelay: `${index * 45}ms` }}
-              />
-            ))}
-
-            {module.map((modul, index) => {
-              const an = gewaehlt.has(modul.key);
-              const segment = segs[index];
-              const gedimmt = modulGedimmt(modul.key, modul.core);
-              const klasse = [
-                "graf-modul",
-                an ? "an" : "aus",
-                modul.core ? "kern" : "",
-                modul.stage === "beta" ? "beta" : "",
-                gedimmt ? "dim" : "",
-                zeige?.art === "modul" && zeige.key === modul.key ? "fokus" : "",
-              ]
-                .filter(Boolean)
-                .join(" ");
-              const text = polar(MITTE, MITTE, R_AUSSEN + 12, segment.mitte);
-              const links = segment.mitte > 180;
-              const drehung = segment.mitte - 90 + (links ? 180 : 0);
-              return (
-                <g key={modul.key}>
-                  <path
-                    className={klasse}
-                    d={ringSegment(MITTE, MITTE, R_INNEN, R_AUSSEN, segment.von, segment.bis)}
-                    tabIndex={0}
-                    role="button"
-                    aria-label={`${modul.label}, ${an ? "in Ihrer Auswahl" : "nicht in Ihrer Auswahl"}`}
-                    onMouseEnter={() => setSchwebe({ art: "modul", key: modul.key })}
-                    onMouseLeave={() => setSchwebe(null)}
-                    onFocus={() => setSchwebe({ art: "modul", key: modul.key })}
-                    onBlur={() => setSchwebe(null)}
-                    onClick={() => heftAn({ art: "modul", key: modul.key })}
-                    onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && heftAn({ art: "modul", key: modul.key })}
-                  />
-                  <g
-                    transform={`translate(${text.x} ${text.y}) rotate(${drehung})`}
-                    className={`graf-label-gruppe ${an ? "an" : "aus"} ${gedimmt ? "dim" : ""}`}
-                  >
-                    <text className="graf-label" textAnchor={links ? "end" : "start"} dominantBaseline="central">
-                      {modul.label}
-                    </text>
-                  </g>
-                </g>
-              );
-            })}
-
-            {haeuser.map((haus, index) => (
+          {gebaeude.map((g) => {
+            const oben = BODEN - g.hoehe;
+            const gedimmt = aktivesHaus !== null && aktivesHaus !== g.haus.name;
+            return (
               <g
-                key={`${haus.name}-${index}`}
-                className={`knoten-gruppe ${hausGedimmt(index) ? "dim" : ""}`}
-                tabIndex={0}
-                role="button"
-                aria-label={`${haus.name}${hatWerkstatt(index) ? ", mit Werkstatt" : ", Verkaufshaus"}`}
-                onMouseEnter={() => setSchwebe({ art: "haus", key: haus.name })}
-                onMouseLeave={() => setSchwebe(null)}
-                onFocus={() => setSchwebe({ art: "haus", key: haus.name })}
-                onBlur={() => setSchwebe(null)}
-                onClick={() => heftAn({ art: "haus", key: haus.name })}
-                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && heftAn({ art: "haus", key: haus.name })}
+                key={`${g.haus.name}-${g.index}`}
+                className={`sk-haus ${gedimmt ? "dim" : ""} ${aktivesHaus === g.haus.name ? "fokus" : ""}`}
               >
-                <circle cx={hausPunkt[index].x} cy={hausPunkt[index].y} r={30} className="knoten-flaeche" />
-                <circle
-                  cx={hausPunkt[index].x}
-                  cy={hausPunkt[index].y}
-                  r={14}
-                  className={`knoten ${hatWerkstatt(index) ? "werkstatt" : ""} ${hausIndexAktiv === index ? "fokus" : ""}`}
+                <rect
+                  x={g.x}
+                  y={oben}
+                  width={BREITE}
+                  height={g.hoehe}
+                  rx="3"
+                  className="sk-wand"
+                  tabIndex={0}
+                  role="button"
+                  aria-label={g.haus.name}
+                  onMouseEnter={() => setSchwebe({ art: "haus", key: g.haus.name })}
+                  onMouseLeave={() => setSchwebe(null)}
+                  onFocus={() => setSchwebe({ art: "haus", key: g.haus.name })}
+                  onBlur={() => setSchwebe(null)}
+                  onClick={() => heftAn({ art: "haus", key: g.haus.name })}
+                  onKeyDown={nachTaste({ art: "haus", key: g.haus.name })}
                 />
-                <title>{haus.name}</title>
+                <rect x={g.x - 5} y={oben - 8} width={BREITE + 10} height="8" rx="2" className="sk-dach" />
+                {g.fenster.map((modul, nummer) => {
+                  const an = gewaehlt.has(modul.key);
+                  const p = fensterPunkt(g, nummer);
+                  const gedimmtFenster = zeige?.art === "modul" && zeige.key !== modul.key;
+                  const klasse = [
+                    "sk-fenster",
+                    an ? (modul.core ? "kern" : modul.stage === "beta" ? "beta" : "an") : "offen",
+                    gedimmtFenster ? "dim" : "",
+                    zeige?.art === "modul" && zeige.key === modul.key ? "fokus" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ");
+                  return (
+                    <rect
+                      key={modul.key}
+                      x={p.x - 13}
+                      y={p.y - 14}
+                      width="26"
+                      height="28"
+                      rx="2"
+                      className={klasse}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`${g.haus.name}: ${modul.label}, ${an ? "in Ihrer Auswahl" : "nicht in Ihrer Auswahl"}`}
+                      onMouseEnter={() => setSchwebe({ art: "modul", key: modul.key })}
+                      onMouseLeave={() => setSchwebe(null)}
+                      onFocus={() => setSchwebe({ art: "modul", key: modul.key })}
+                      onBlur={() => setSchwebe(null)}
+                      onClick={() => heftAn({ art: "modul", key: modul.key })}
+                      onKeyDown={nachTaste({ art: "modul", key: modul.key })}
+                    />
+                  );
+                })}
+                {hatWerkstatt(g.haus) ? (
+                  <g aria-hidden="true">
+                    <rect x={g.x + BREITE - 34} y={BODEN - 24} width="26" height="24" className="sk-tor" />
+                    {[0, 1, 2, 3].map((linie) => (
+                      <line
+                        key={linie}
+                        x1={g.x + BREITE - 34}
+                        x2={g.x + BREITE - 8}
+                        y1={BODEN - 20 + linie * 6}
+                        y2={BODEN - 20 + linie * 6}
+                        className="sk-tor-linie"
+                      />
+                    ))}
+                  </g>
+                ) : null}
+                <text x={g.x + BREITE / 2} y={BODEN + 20} textAnchor="middle" className="sk-name">
+                  {g.haus.name
+                    .replace(/^(Autopark|Autohaus|Gebrauchtwagenzentrum) /, "")
+                    .replace("CUPRA GARAGE ", "")
+                    .replace(" Hannover", "")}
+                </text>
               </g>
-            ))}
+            );
+          })}
 
-            <text className="mitte-zahl" x={MITTE} y={MITTE + 4} textAnchor="middle">
-              {gewaehlt.size}
-            </text>
-            <text className="mitte-text" x={MITTE} y={MITTE + 44} textAnchor="middle">
-              von {MODULE_DEFINITIONS.length} Modulen
-            </text>
-          </svg>
-
-          <ul className="legende" aria-label="Legende">
-            <li>
-              <i className="l-modul an" /> in Ihrer Auswahl
-            </li>
-            <li>
-              <i className="l-modul aus" /> nicht in Ihrer Auswahl
-            </li>
-            <li>
-              <i className="l-modul kern" /> Kernmodul, immer dabei
-            </li>
-            <li>
-              <i className="l-knoten werkstatt" /> Haus mit Werkstatt
-            </li>
-            <li>
-              <i className="l-knoten" /> Verkaufshaus
-            </li>
-            <li>
-              <i className="l-verbund" /> gemeinsamer Standort
-            </li>
-          </ul>
-        </div>
-
-        <aside className="panel detail graf-detail" aria-live="polite">
-          {!zeige ? (
-            <>
-              <span className="eyebrow">Ihre Auswahl</span>
-              <h3>
-                {gewaehlt.size} Module für {haeuser.length} Häuser
-              </h3>
-              <p style={{ margin: 0, color: "var(--muted)" }}>
-                {kern.length} Kernmodule sind immer dabei, dazu {nichtKern.length} gewählte. Die feinen Bahnen zeigen,
-                wo wir den Einsatz im Alltag eines Hauses sehen. Wählen Sie links etwas aus.
-              </p>
-            </>
-          ) : zeige.art === "modul" ? (
-            <ModulDetail
-              schluessel={zeige.key}
-              gewaehlt={gewaehlt.has(zeige.key)}
-              haeuser={bahnen
-                .filter((eintrag) => eintrag.modul === zeige.key)
-                .map((eintrag) => haeuser[eintrag.haus].name)}
-              onAngebot={onAngebot}
-            />
-          ) : (
-            <HausDetail
-              haus={haeuser.find((haus) => haus.name === zeige.key)!}
-              gewaehlt={gewaehlt}
-              onModul={(key) => setAngeheftet({ art: "modul", key })}
-            />
-          )}
-        </aside>
+          {bahnPunkte.slice(1).map((nach, i) => {
+            const von = bahnPunkte[i];
+            const bogen = Math.min(von.y, nach.y) - 40 - Math.abs(nach.x - von.x) * 0.18;
+            return (
+              <path
+                key={`${von.x}-${nach.x}`}
+                className="sk-bahn"
+                d={`M${von.x} ${von.y} Q${(von.x + nach.x) / 2} ${bogen} ${nach.x} ${nach.y}`}
+                pathLength={1}
+              />
+            );
+          })}
+        </svg>
       </div>
+
+      <ul className="legende" aria-label="Legende">
+        <li>
+          <i className="l-fenster an" /> in Ihrer Auswahl
+        </li>
+        <li>
+          <i className="l-fenster offen" /> nicht in Ihrer Auswahl
+        </li>
+        <li>
+          <i className="l-fenster kern" /> Kernmodul, immer dabei
+        </li>
+        <li>
+          <i className="l-tor" /> Haus mit Werkstatt
+        </li>
+        <li>
+          <i className="l-platte" /> gemeinsamer Standort
+        </li>
+      </ul>
+
+      <aside className="panel detail graf-detail" aria-live="polite" style={{ marginTop: 16 }}>
+        {!zeige ? (
+          <>
+            <span className="eyebrow">Ihre Auswahl</span>
+            <h3>
+              {gewaehlt.size} Module für {haeuser.length} Häuser
+            </h3>
+            <p style={{ margin: 0, color: "var(--muted)" }}>
+              Drei Kernmodule sind immer dabei, dazu {nichtKern.length} gewählte.
+              {offen.length > 0 ? ` ${offen.length} weitere gibt es dazu, sie bleiben dunkel.` : ""} Fahren Sie über ein
+              Haus oder ein Fenster. Ein gewähltes Modul zieht Bahnen zu allen Häusern, die es nutzen.
+            </p>
+          </>
+        ) : zeige.art === "modul" ? (
+          <ModulDetail
+            schluessel={zeige.key}
+            gewaehlt={gewaehlt.has(zeige.key)}
+            haeuser={gebaeude
+              .filter((g) => g.fenster.some((modul) => modul.key === zeige.key) && !getModule(zeige.key)?.core)
+              .map((g) => g.haus.name)}
+            onAngebot={onAngebot}
+          />
+        ) : (
+          <HausDetail
+            haus={haeuser.find((haus) => haus.name === zeige.key)!}
+            gewaehlt={gewaehlt}
+            onModul={(key) => setAngeheftet({ art: "modul", key })}
+          />
+        )}
+      </aside>
 
       <div className="chips" role="group" aria-label="Haus wählen" style={{ marginTop: 28 }}>
         {haeuser.map((haus, index) => (
