@@ -106,8 +106,12 @@ services:
       - "443:443"
     environment:
       BASE_DOMAIN: ${BASE_DOMAIN:?BASE_DOMAIN fehlt in .env}
+      # Kontakt für Let's Encrypt (Ablaufwarnungen); nur mit Caddyfile.tls gebraucht.
+      ACME_EMAIL: ${ACME_EMAIL:-}
     volumes:
-      - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      # Erprobung ohne Domain: Caddyfile.prod (HTTP). Betrieb mit Domain und
+      # Zertifikaten: CADDYFILE=./Caddyfile.tls in der .env.
+      - ${CADDYFILE:-./Caddyfile.prod}:/etc/caddy/Caddyfile:ro
       - ./landing:/srv/landing:ro
       # Zertifikate müssen einen Neustart überstehen, sonst stellt Caddy sie
       # jedes Mal neu aus und läuft in die Ausstellungsgrenzen.

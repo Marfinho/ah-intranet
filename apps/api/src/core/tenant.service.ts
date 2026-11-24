@@ -111,6 +111,15 @@ export class TenantService implements OnModuleInit {
     });
   }
 
+  /**
+   * Gehört die Adresse zu einem aktiven Haus? Bewusst ohne den Rückfall auf den
+   * einzigen Mandanten aus `resolve`: wer das hier mit "ja" beantwortet, lässt
+   * ein Zertifikat ausstellen, und das darf nie für beliebige Namen geschehen.
+   */
+  async kenntHost(host: string): Promise<boolean> {
+    return (await this.byHost(host)) !== null;
+  }
+
   /** Erwartet `<slug>.basis.tld` oder eine als `domain` hinterlegte eigene Adresse. */
   private async byHost(host: string | undefined): Promise<TenantContext | null> {
     const hostname = host?.split(":")[0]?.toLowerCase();

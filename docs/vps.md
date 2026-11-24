@@ -64,6 +64,36 @@ keine Demodaten – der Seed leert die Datenbank und gehört nicht auf diesen Se
 Neue Häuser brauchen einen Eintrag in `FRONTEND_URL`, danach
 `docker compose -f docker-compose.prod.yml up -d api`.
 
+## HTTPS mit eigener Domain
+
+Die Erprobung läuft über HTTP; für Echtdaten (Abwesenheiten, Schichten,
+Anmeldungen) nicht mehr: Passwort und Sitzung liefen unverschlüsselt durchs
+Netz. Der Betrieb mit Domain:
+
+1. DNS: `A`-Eintrag für `BASE_DOMAIN` und `*.BASE_DOMAIN` auf den Server.
+2. Ports 80 und 443 in der Firewall und beim Anbieter öffnen.
+3. In der `.env`:
+
+   ```
+   BASE_DOMAIN=beispiel.de
+   FRONTEND_URL=https://verwaltung.beispiel.de,https://haus1.beispiel.de
+   CADDYFILE=./Caddyfile.tls
+   ACME_EMAIL=it@beispiel.de
+   ```
+
+4. `docker compose -f docker-compose.prod.yml up -d --build`
+
+Caddy holt je Haus beim ersten Aufruf ein Zertifikat bei Let's Encrypt; ob ein
+Name dazu berechtigt ist, entscheidet die API (`/api/tls/erlaubt`). Ein neues
+Haus braucht also weder einen Eintrag im Proxy noch einen Neustart - nur den in
+`FRONTEND_URL`. Das erste Laden einer neuen Adresse dauert wenige Sekunden.
+Let's Encrypt begrenzt die Ausstellung (50 Zertifikate je Woche und
+Hauptdomain); bei sehr vielen neuen Häusern auf einmal ist ein Wildcard-Zertifikat
+mit DNS-Anbindung der bessere Weg.
+
+Die Antwortkopfzeile `Strict-Transport-Security` setzt das Frontend ohnehin;
+über HTTPS merkt sich der Browser damit die Verschlüsselung für ein Jahr.
+
 ## Aktualisieren und sichern
 
 ```bash
