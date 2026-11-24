@@ -232,6 +232,9 @@ Erfolg des Restores.
 - Vorlagen für Auftragsverarbeitung und Betriebsvereinbarung:
   [`docs/vorlagen/`](docs/vorlagen/).
 - Einzelheiten und die Mitbestimmung nach § 87 BetrVG: [`docs/datenschutz.md`](docs/datenschutz.md).
+- **Sicherheitsmaßnahmen, offene Punkte und Vorbereitung des Penetrationstests:**
+  [`docs/sicherheit.md`](docs/sicherheit.md). Der Maßstab ist OWASP ASVS Level 2 –
+  eine Orientierung, keine Bescheinigung.
 
 ## Bekannte Lücken
 
