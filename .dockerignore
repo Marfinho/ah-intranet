@@ -1,0 +1,15 @@
+# Nichts davon gehört in ein Image. Vor allem `.env`: `COPY . .` nähme sonst die
+# lokalen Geheimnisse mit, und jede Schicht des Images trüge sie weiter.
+.git
+.github
+node_modules
+**/node_modules
+**/.next
+**/dist
+.env
+.env.*
+!.env.*.example
+!.env.example
+e2e
+*.log
+.DS_Store
