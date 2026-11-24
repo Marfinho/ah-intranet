@@ -23,6 +23,19 @@ export function slugFromHost(host: string | undefined): string | null {
   return parts.length >= 3 || istLokaleSubdomain ? parts[0] : null;
 }
 
+/** Der Client einer laufenden Transaktion. */
+type Transaktion = Parameters<Parameters<PrismaClient["$transaction"]>[0]>[0];
+
+/** Was ein neues Haus über die Startausstattung hinaus mitbekommt. */
+export interface HausVorlage {
+  plan: {
+    standorte: { name: string; code: string; adresse: string | null; marken: string[]; abteilungen: string[] }[];
+    marken: { name: string; code: string }[];
+    abteilungen: { name: string; code: string }[];
+  };
+  module: { key: string; enabled: boolean }[];
+}
+
 /**
  * Löst den Mandanten einer Anfrage auf.
  *
@@ -298,6 +311,7 @@ export class TenantService implements OnModuleInit {
     adminEmail?: string;
     licensedSeats?: number | null;
     locationLimit?: number | null;
+    vorlage?: HausVorlage;
   }) {
     const slug = input.slug.trim().toLowerCase();
     const kennungsfehler = pruefeKennung(slug);
@@ -363,15 +377,9 @@ export class TenantService implements OnModuleInit {
         });
       }
 
-      // Ein Standort und eine Abteilung als Startpunkt - benennen und ergänzen
-      // kann sie das Haus danach selbst.
-      const location = await tx.location.create({
-        data: { tenantId, name: input.name.trim(), code: "HB" },
-      });
-      const department = await tx.department.create({ data: { tenantId, name: "Verwaltung", code: "VWL" } });
-      await tx.locationDepartment.create({
-        data: { tenantId, locationId: location.id, departmentId: department.id },
-      });
+      const { location, department } = input.vorlage
+        ? await this.richteAusVorlageEin(tx, tenantId, input.vorlage)
+        : await this.richteStartpunktEin(tx, tenantId, input.name.trim());
 
       const adminRole = await tx.role.findFirstOrThrow({ where: { tenantId, key: "admin" } });
       await tx.user.create({
@@ -396,6 +404,61 @@ export class TenantService implements OnModuleInit {
       this.invalidate();
       return tenant;
     });
+  }
+
+  /**
+   * Ein Standort und eine Abteilung als Startpunkt - benennen und ergänzen kann
+   * sie das Haus danach selbst.
+   */
+  private async richteStartpunktEin(tx: Transaktion, tenantId: string, name: string) {
+    const location = await tx.location.create({ data: { tenantId, name, code: "HB" } });
+    const department = await tx.department.create({ data: { tenantId, name: "Verwaltung", code: "VWL" } });
+    await tx.locationDepartment.create({ data: { tenantId, locationId: location.id, departmentId: department.id } });
+    return { location, department };
+  }
+
+  /**
+   * Standorte, Marken, Abteilungen und Module aus einer Vorlage, etwa einem
+   * Interessenten. Läuft in der Transaktion des Hauses: entweder ist alles da
+   * oder nichts. Der erste Standort trägt das erste Administrationskonto, die
+   * Abteilung `VWL` dessen Verwaltung.
+   */
+  private async richteAusVorlageEin(tx: Transaktion, tenantId: string, vorlage: HausVorlage) {
+    if (vorlage.plan.standorte.length === 0) {
+      throw new BadRequestException("Ohne mindestens ein Haus lässt sich kein Mandant einrichten.");
+    }
+
+    const marken = new Map<string, string>();
+    for (const marke of vorlage.plan.marken) {
+      marken.set(marke.code, (await tx.brand.create({ data: { tenantId, name: marke.name, code: marke.code } })).id);
+    }
+    const abteilungen = new Map<string, { id: string; code: string }>();
+    for (const abteilung of vorlage.plan.abteilungen) {
+      const angelegt = await tx.department.create({ data: { tenantId, name: abteilung.name, code: abteilung.code } });
+      abteilungen.set(abteilung.code, angelegt);
+    }
+
+    let ersterStandort: { id: string; code: string } | null = null;
+    for (const standort of vorlage.plan.standorte) {
+      const angelegt = await tx.location.create({
+        data: { tenantId, name: standort.name, code: standort.code, address: standort.adresse },
+      });
+      ersterStandort ??= angelegt;
+      for (const code of standort.marken) {
+        await tx.locationBrand.create({ data: { tenantId, locationId: angelegt.id, brandId: marken.get(code)! } });
+      }
+      for (const code of standort.abteilungen) {
+        await tx.locationDepartment.create({
+          data: { tenantId, locationId: angelegt.id, departmentId: abteilungen.get(code)!.id },
+        });
+      }
+    }
+
+    await tx.moduleSetting.createMany({
+      data: vorlage.module.map((modul) => ({ tenantId, key: modul.key, enabled: modul.enabled })),
+    });
+
+    return { location: ersterStandort!, department: abteilungen.get("VWL")! };
   }
 
   async setActive(id: string, isActive: boolean) {

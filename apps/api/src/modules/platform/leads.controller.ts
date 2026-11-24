@@ -5,6 +5,7 @@ import {
   ArrayMaxSize,
   IsArray,
   IsIn,
+  IsEmail,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -12,6 +13,7 @@ import {
   Max,
   MaxLength,
   Min,
+  MinLength,
   ValidateNested,
 } from "class-validator";
 import { HAEUSER_MAX, LEAD_STATUS, NUTZER_MAX, type LeadStatusKey } from "@ah-intranet/shared";
@@ -105,6 +107,26 @@ class StatusDto {
   status!: LeadStatusKey;
 }
 
+class HausAnlegenDto {
+  @IsString()
+  @IsNotEmpty({ message: "Kennung ist erforderlich" })
+  slug!: string;
+
+  @IsOptional() @IsString() domain?: string;
+
+  @IsString()
+  @IsNotEmpty({ message: "Benutzername des ersten Kontos ist erforderlich" })
+  adminUsername!: string;
+
+  @IsString()
+  @MinLength(10, { message: "Das Startpasswort muss mindestens 10 Zeichen lang sein" })
+  adminPassword!: string;
+
+  @IsOptional() @IsString() adminFirstName?: string;
+  @IsOptional() @IsString() adminLastName?: string;
+  @IsOptional() @IsEmail({}, { message: "Bitte eine gültige E-Mail-Adresse angeben" }) adminEmail?: string;
+}
+
 class LinkDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(LINK_TAGE_MAX) linkTage?: number;
 }
@@ -148,6 +170,16 @@ export class LeadsController {
   @Post(":id/link")
   neuerLink(@Param("id") id: string, @Body() dto: LinkDto, @CurrentUser() user: RequestUser) {
     return this.leads.neuerLink(user, id, dto.linkTage);
+  }
+
+  @Get(":id/haus")
+  hausVorschau(@Param("id") id: string) {
+    return this.leads.hausVorschau(id);
+  }
+
+  @Post(":id/haus")
+  hausAnlegen(@Param("id") id: string, @Body() dto: HausAnlegenDto, @CurrentUser() user: RequestUser) {
+    return this.leads.hausAnlegen(user, id, dto);
   }
 
   @Post(":id/widerrufen")

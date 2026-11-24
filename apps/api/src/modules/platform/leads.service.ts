@@ -1,12 +1,14 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import type { Lead, LeadStandort, Prisma } from "@prisma/client";
 import {
   PREISLISTE_VERSION,
   berechneAngebot,
+  betaModules,
   formatEuro,
   isTierKey,
   waehlbareModule,
   type Angebot,
+  type HausVorschau,
   type LeadDetail,
   type LeadKonfiguration,
   type LeadStandortItem,
@@ -20,6 +22,8 @@ import { NotificationsService } from "../../core/notifications.service";
 import { PrismaService } from "../../core/prisma.service";
 import type { RequestUser } from "../../core/request-user";
 import { currentTenant } from "../../core/tenant-context";
+import { TenantService } from "../../core/tenant.service";
+import { modulEinstellungen, planeHaus, vorschlagKennung } from "./haus-aus-interessent";
 import {
   LINK_TAGE_STANDARD,
   hashToken,
@@ -81,6 +85,8 @@ export function bereinigeKonfiguration(eingabe: KonfigurationEingabe, bisher: Le
     module,
   };
 }
+
+const betaKeys = () => betaModules().map((modul) => modul.key as string);
 
 function konfiguration(lead: Lead): LeadKonfiguration {
   return {
@@ -153,6 +159,7 @@ export class LeadsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly notifications: NotificationsService,
+    private readonly tenants: TenantService,
   ) {}
 
   /* ------------------------------------------------- Verwaltung */
@@ -319,6 +326,97 @@ export class LeadsService {
     });
   }
 
+  /* ------------------------------------------------- Haus anlegen */
+
+  /** Was aus dem Interessenten würde, ohne etwas anzulegen. */
+  async hausVorschau(id: string): Promise<HausVorschau> {
+    const lead = await this.laden(id);
+    return this.plane(lead);
+  }
+
+  /**
+   * Legt aus dem Interessenten das Haus an: Standorte, Marken, Abteilungen,
+   * Module und Lizenzkontingent kommen aus seinen Angaben und seiner Auswahl.
+   *
+   * Dasselbe Anlegen wie in der Mandantenverwaltung (eine Transaktion, Rollen
+   * und erstes Konto inklusive) - nur mit einer Vorlage statt des leeren
+   * Startpunkts. Ein Interessent wird höchstens einmal zum Haus.
+   */
+  async hausAnlegen(
+    actor: RequestUser,
+    id: string,
+    input: {
+      slug: string;
+      domain?: string;
+      adminUsername: string;
+      adminPassword: string;
+      adminFirstName?: string;
+      adminLastName?: string;
+      adminEmail?: string;
+    },
+  ) {
+    const lead = await this.laden(id);
+    if (lead.hausId) {
+      throw new BadRequestException("Aus diesem Interessenten wurde bereits ein Haus angelegt.");
+    }
+    if (lead.standorte.length === 0) {
+      throw new BadRequestException("Ohne Häuser lässt sich kein Mandant anlegen. Bitte zuerst Häuser erfassen.");
+    }
+
+    const vorschau = this.plane(lead);
+    const tenant = await this.tenants.create({
+      slug: input.slug,
+      name: lead.name,
+      domain: input.domain,
+      notes: `Aus Interessent ${lead.id}${lead.preislisteVersion ? ` (Preisliste ${lead.preislisteVersion})` : ""}`,
+      adminUsername: input.adminUsername,
+      adminPassword: input.adminPassword,
+      adminFirstName: input.adminFirstName,
+      adminLastName: input.adminLastName,
+      adminEmail: input.adminEmail,
+      licensedSeats: vorschau.lizenzen,
+      // Häuser kosten nur Einrichtung, keine Gebühr: eine Obergrenze wäre erfunden.
+      locationLimit: null,
+      vorlage: { plan: vorschau.plan, module: vorschau.moduleZustand },
+    });
+
+    await this.prisma.lead.update({ where: { id }, data: { hausId: tenant.id, status: "gewonnen" } });
+
+    await this.audit.log({
+      actor,
+      action: "lead.haus",
+      entityType: "lead",
+      entityId: id,
+      detail: `Haus "${tenant.name}" (${tenant.slug}) aus Interessent angelegt: ${vorschau.plan.standorte.length} Standorte, ${vorschau.lizenzen} Lizenzen`,
+    });
+    await this.audit.log({
+      actor,
+      action: "tenant.create",
+      entityType: "tenant",
+      entityId: tenant.id,
+      detail: `Mandant "${tenant.name}" (${tenant.slug}) aus Interessent angelegt`,
+    });
+
+    return { tenantId: tenant.id, slug: tenant.slug, name: tenant.name };
+  }
+
+  private plane(lead: LeadMitStandorten): HausVorschau {
+    const konf = konfiguration(lead);
+    const angebot = rechne(konf);
+    const plan = planeHaus(lead.standorte);
+    const moduleZustand = modulEinstellungen(angebot.module);
+    return {
+      bereitsAngelegt: lead.hausId !== null,
+      hausId: lead.hausId,
+      kennung: vorschlagKennung(lead.name),
+      lizenzen: konf.nutzer,
+      plan,
+      moduleZustand,
+      modulAn: moduleZustand.filter((modul) => modul.enabled).map((modul) => modul.key),
+      modulErprobung: konf.tier === "komplett" ? betaKeys() : [],
+    };
+  }
+
   /* ---------------------------------------------- Pitch-Seite (öffentlich) */
 
   async ansicht(token: string): Promise<PitchAnsicht> {
@@ -468,6 +566,7 @@ export class LeadsService {
     const konf = konfiguration(lead);
     return {
       ...summary(lead),
+      hausId: lead.hausId,
       ansprechperson: lead.ansprechperson,
       notiz: lead.notiz,
       standortListe: lead.standorte.map(standortItem),

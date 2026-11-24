@@ -1556,6 +1556,8 @@ model Lead {
 
   /// Gesetzt, wenn der Interessent eine Anfrage abgeschickt hat.
   angefragtAm       DateTime?
+  /// Das aus diesem Interessenten angelegte Haus. Gesetzt heißt: nicht noch einmal anlegen.
+  hausId            String?
   /// Das Angebot zum Zeitpunkt der Anfrage, samt Version der Preisliste.
   angebot           Json?
   preislisteVersion String?

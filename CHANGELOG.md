@@ -17,7 +17,9 @@ Erster vollständiger Stand. Lauffähig, aber in keinem Haus im Einsatz.
   stellt der Interessent Häuser, Nutzer und Module ein und sieht sofort den
   Preis. Drei Pakete (Basis, Prozesse, Komplett) oder Einzelmodule; ein Paket
   ist nie teurer als dieselben Module einzeln. Siehe
-  [`docs/vertrieb.md`](docs/vertrieb.md).
+  [`docs/vertrieb.md`](docs/vertrieb.md). Aus einem Interessenten legt die
+  Plattformverwaltung das Haus mit einem Klick an: Standorte, Marken,
+  Abteilungen, Module und Lizenzkontingent kommen aus der Pitch-Auswahl.
 - **22 Fachmodule**, je Haus einzeln ein- und ausschaltbar, jedes mit einem
   Reifegrad. Erprobungen schaltet nur die Plattformverwaltung frei und sind in
   der Oberfläche als solche erkennbar. Abhängige Module

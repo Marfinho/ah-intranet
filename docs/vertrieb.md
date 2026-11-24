@@ -19,6 +19,16 @@ Plattformverwaltung (`@PlatformAdmin()`), nicht für ein Haus.
 4. **Anfrage** setzt den Status auf _angefragt_, hält das vom Server gerechnete
    Angebot samt Version der Preisliste fest und benachrichtigt alle Konten der
    Plattformverwaltung (auch per Mail, wenn SMTP eingerichtet ist).
+5. **Haus anlegen** auf der Seite des Interessenten. Die Vorschau zeigt, was
+   entsteht; nur Kennung und erstes Administrationskonto kommen von Hand.
+   Übernommen werden: Standorte (Kürzel aus den Namen, eindeutig je Haus),
+   Marken, Abteilungen aus den Leistungen (Verkauf `VKF`, Service `SRV`,
+   Teiledienst `TLD`, Disposition `DSP`, sonst abgeleitet), Zuordnung von Marken
+   und Abteilungen zu Standorten, Lizenzkontingent = Nutzerzahl der Auswahl und
+   der Modulzustand. Das Standortlimit bleibt unbegrenzt, weil Häuser nur
+   Einrichtung kosten. Erprobungen bleiben aus, auch im Tier Komplett. Es
+   geschieht in einer Transaktion wie bei jedem Haus; ein Interessent wird
+   höchstens einmal zum Haus und danach auf _gewonnen_ gesetzt.
 
 Die Adresse der Pitch-Seite gehört zum Plattform-Mandanten (`verwaltung.<domain>`).
 Unter der Adresse eines Kundenhauses findet sie keinen Interessenten.
@@ -55,8 +65,5 @@ Ansprechperson. Frist: 2 Jahre nach letzter Änderung, gewonnene bleiben
 
 ## Noch nicht gebaut
 
-- „Haus anlegen aus Interessent": Standorte, Marken, Module und Kontingent
-  würden aus dem Interessenten übernommen. Bisher legt die Plattformverwaltung
-  das Haus von Hand an.
 - PDF-Export des Angebots, elektronische Unterschrift.
 - Bearbeitbare Preisliste in der Oberfläche.

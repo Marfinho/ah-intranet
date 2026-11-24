@@ -52,7 +52,28 @@ export interface LeadSummary {
   updatedAt: string;
 }
 
+/** Was beim Anlegen des Hauses aus einem Interessenten entsteht. */
+export interface HausVorschau {
+  bereitsAngelegt: boolean;
+  hausId: string | null;
+  /** Vorschlag, `null` wenn aus dem Namen keine gültige Kennung wird. */
+  kennung: string | null;
+  lizenzen: number;
+  plan: {
+    standorte: { name: string; code: string; adresse: string | null; marken: string[]; abteilungen: string[] }[];
+    marken: { name: string; code: string }[];
+    abteilungen: { name: string; code: string }[];
+  };
+  moduleZustand: { key: string; enabled: boolean }[];
+  /** Module, die im Haus eingeschaltet sind. */
+  modulAn: string[];
+  /** Erprobungen, die zum Paket gehören, aber erst die Plattformverwaltung freischaltet. */
+  modulErprobung: string[];
+}
+
 export interface LeadDetail extends LeadSummary {
+  /** Das aus diesem Interessenten angelegte Haus. */
+  hausId: string | null;
   ansprechperson: string | null;
   notiz: string | null;
   standortListe: LeadStandortItem[];

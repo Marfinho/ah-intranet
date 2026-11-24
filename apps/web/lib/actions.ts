@@ -1006,3 +1006,26 @@ export async function deleteLeadAction(id: string): Promise<ActionState> {
   }
   return ergebnis;
 }
+
+export async function hausAusLeadAction(id: string, _previous: ActionState, formData: FormData): Promise<ActionState> {
+  const text = (name: string) => String(formData.get(name) ?? "").trim() || undefined;
+  const payload = {
+    slug: String(formData.get("slug") ?? ""),
+    domain: text("domain"),
+    adminUsername: String(formData.get("adminUsername") ?? ""),
+    adminPassword: String(formData.get("adminPassword") ?? ""),
+    adminFirstName: text("adminFirstName"),
+    adminLastName: text("adminLastName"),
+    adminEmail: text("adminEmail"),
+  };
+
+  let tenantId: string;
+  try {
+    tenantId = (await apiSend<{ tenantId: string }>("POST", `/leads/${id}/haus`, payload)).tenantId;
+  } catch (error) {
+    return { ok: false, message: error instanceof ApiError ? error.message : "Unerwarteter Fehler." };
+  }
+  revalidatePath("/plattform");
+  revalidatePath(`/plattform/interessenten/${id}`);
+  redirect(`/plattform/mandanten/${tenantId}`);
+}
