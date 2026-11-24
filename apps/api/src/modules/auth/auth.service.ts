@@ -120,7 +120,10 @@ export class AuthService {
   async anmeldenMitFaktor(mfaToken: string, code: string): Promise<{ token: string; user: SessionUser }> {
     let zwischen: ZwischenToken;
     try {
-      zwischen = await this.jwt.verifyAsync<ZwischenToken>(mfaToken, { secret: zwischenSchluessel() });
+      zwischen = await this.jwt.verifyAsync<ZwischenToken>(mfaToken, {
+        secret: zwischenSchluessel(),
+        algorithms: ["HS256"],
+      });
     } catch {
       throw new UnauthorizedException("Die Anmeldung ist abgelaufen. Bitte Benutzername und Passwort erneut eingeben.");
     }
@@ -158,7 +161,7 @@ export class AuthService {
       { sub: userId, tenantId: tenant?.tenantId },
       // Anderer Schlüssel als die Sitzung: ein Zwischentoken lässt sich so nie
       // als Sitzung vorlegen, selbst wenn die Prüfung dort einmal Lücken hätte.
-      { secret: zwischenSchluessel(), expiresIn: "5m" },
+      { secret: zwischenSchluessel(), algorithm: "HS256", expiresIn: "5m" },
     );
   }
 

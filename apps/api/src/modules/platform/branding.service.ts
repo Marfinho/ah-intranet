@@ -2,10 +2,9 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { PrismaService } from "../../core/prisma.service";
 import { AuditService } from "../../core/audit.service";
 import type { RequestUser } from "../../core/request-user";
+import { erkenneBildtyp } from "../../core/bild";
 import { requireTenantId } from "../../core/tenant-context";
 
-/** Nur Rasterbilder - SVG-Uploads könnten eingebetteten Code ausliefern. */
-const ERLAUBTE_TYPEN = new Set(["image/png", "image/jpeg", "image/webp"]);
 const MAX_BYTES = 2 * 1024 * 1024;
 
 export interface LogoFile {
@@ -46,16 +45,19 @@ export class BrandingService {
     if (!file) {
       throw new BadRequestException("Bitte eine Bilddatei auswählen.");
     }
-    if (!ERLAUBTE_TYPEN.has(file.mimetype)) {
-      throw new BadRequestException("Nur PNG, JPEG oder WebP werden unterstützt.");
-    }
     if (file.size > MAX_BYTES) {
       throw new BadRequestException("Die Datei darf höchstens 2 MB groß sein.");
+    }
+    // Nur Rasterbilder - SVG-Uploads könnten eingebetteten Code ausliefern. Der
+    // Typ kommt aus dem Inhalt, nicht aus der Angabe des Absenders.
+    const typ = erkenneBildtyp(file.buffer);
+    if (!typ) {
+      throw new BadRequestException("Nur PNG, JPEG oder WebP werden unterstützt.");
     }
 
     await this.prisma.tenant.update({
       where: { id: requireTenantId() },
-      data: { logo: file.buffer, logoMime: file.mimetype },
+      data: { logo: file.buffer, logoMime: typ },
     });
 
     await this.audit.log({
@@ -63,7 +65,7 @@ export class BrandingService {
       action: "branding.logo.upload",
       entityType: "tenant",
       entityId: actor.tenantId,
-      detail: `Eigenes Logo hinterlegt (${file.mimetype}, ${Math.round(file.size / 1024)} KB)`,
+      detail: `Eigenes Logo hinterlegt (${typ}, ${Math.round(file.size / 1024)} KB)`,
     });
 
     return { ok: true };

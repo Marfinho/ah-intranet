@@ -19,7 +19,11 @@ import { PasswortService } from "./passwort.service";
         }
         return {
           secret,
-          signOptions: { expiresIn: config.get<string>("JWT_EXPIRES_IN") ?? "12h" },
+          // Algorithmus fest vorgeben, statt ihn dem Token zu überlassen: so
+          // bleibt ausgeschlossen, dass ein Token mit `alg: none` oder einem
+          // anderen Verfahren als gültig durchgeht.
+          signOptions: { algorithm: "HS256" as const, expiresIn: config.get<string>("JWT_EXPIRES_IN") ?? "12h" },
+          verifyOptions: { algorithms: ["HS256" as const] },
         };
       },
     }),
