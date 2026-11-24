@@ -1,9 +1,36 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 
 export const SESSION_COOKIE = "ah_session";
 
 /** Serverseitige Basis-URL; im Container zeigt sie auf den API-Service. */
 const API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+
+/**
+ * Die API sieht bei jeder serverseitigen Anfrage nur den internen Namen
+ * (`api:3001`), nie die Adresse, unter der der Browser tatsächlich angefragt
+ * hat - deshalb löst sie den Mandanten sonst nie über die Subdomain auf.
+ * `x-forwarded-host` reicht die ursprüngliche Adresse weiter, wie es ein
+ * Reverse Proxy täte.
+ */
+export function tenantHostHeader(): Record<string, string> {
+  const eingang = headers();
+  const host = eingang.get("host");
+
+  // Dasselbe gilt für die Adresse des Browsers: ohne sie sieht die API für
+  // jeden Nutzer aller Häuser nur diesen Container. Die Drosselung der Anmeldung
+  // (zehn Versuche je Minute und Adresse) träfe dann alle gemeinsam - am
+  // Montagmorgen sperrte der Dienst sich selbst aus. Der Proxy davor
+  // überschreibt `x-forwarded-for` mit der echten Adresse; maßgeblich ist der
+  // letzte Eintrag, den der nächste Proxy angehängt hat, nie ein vom Browser
+  // mitgeschickter. Das Frontend darf deshalb nur über den Proxy erreichbar sein.
+  const kette = eingang.get("x-forwarded-for");
+  const adresse = kette?.split(",").pop()?.trim();
+
+  return {
+    ...(host ? { "x-forwarded-host": host } : {}),
+    ...(adresse ? { "x-forwarded-for": adresse } : {}),
+  };
+}
 
 export class ApiError extends Error {
   constructor(
@@ -26,7 +53,7 @@ export class ApiError extends Error {
 
 function authHeader(): Record<string, string> {
   const token = cookies().get(SESSION_COOKIE)?.value;
-  return token ? { cookie: `${SESSION_COOKIE}=${token}` } : {};
+  return { ...tenantHostHeader(), ...(token ? { cookie: `${SESSION_COOKIE}=${token}` } : {}) };
 }
 
 async function parseError(response: Response): Promise<string> {
@@ -95,4 +122,23 @@ export async function apiSend<T>(
 
 export function apiBaseUrl() {
   return API_URL;
+}
+
+/** Wie `apiSend`, aber für Multipart-Uploads - kein `Content-Type` von Hand, `fetch` setzt die Grenze selbst. */
+export async function apiSendFile<T>(path: string, formData: FormData): Promise<T> {
+  const response = await fetch(`${API_URL}${path}`, {
+    method: "POST",
+    headers: authHeader(),
+    body: formData,
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new ApiError(response.status, await parseError(response));
+  }
+  if (response.status === 204) {
+    return undefined as T;
+  }
+  const text = await response.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }

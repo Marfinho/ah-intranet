@@ -7,7 +7,7 @@
     "start": "next start",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "echo 'web: Pr\u00fcfung \u00fcber e2e/'"
+    "test": "echo 'web: Prüfung über e2e/'"
   },
   "dependencies": {
     "@ah-intranet/shared": "workspace:*",

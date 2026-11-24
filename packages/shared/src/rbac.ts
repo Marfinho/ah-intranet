@@ -48,7 +48,7 @@ export const PERMISSION_DEFINITIONS: readonly PermissionDefinition[] = [
   },
   { key: "roles.manage", name: "Rollen verwalten", description: "Rollen und Rechte pflegen", bereich: "Verwaltung" },
   {
-    key: "org.manage",
+    key: "organisation.manage",
     name: "Standorte und Marken verwalten",
     description: "Standorte anlegen und ändern, Marken pflegen und Standorten zuordnen",
     bereich: "Verwaltung",
@@ -69,6 +69,12 @@ export const PERMISSION_DEFINITIONS: readonly PermissionDefinition[] = [
     key: "auth.manage",
     name: "Anmeldeverfahren verwalten",
     description: "Zusätzliche Anmeldearten des Hauses hinterlegen und freischalten",
+    bereich: "Verwaltung",
+  },
+  {
+    key: "branding.manage",
+    name: "Erscheinungsbild verwalten",
+    description: "Eigenes Logo hinterlegen - ersetzt das AHOI-Zeichen in diesem Haus",
     bereich: "Verwaltung",
   },
   {

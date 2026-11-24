@@ -141,10 +141,14 @@ export class ModuleRegistryService {
       }
     }
 
+    // Der Kontext, nicht `actor.tenantId`: die Plattformverwaltung schaltet
+    // Erprobungsmodule für ein Haus frei, in dem sie selbst kein Konto hat -
+    // `runWithTenant` setzt für genau diesen Aufruf das fremde Haus als
+    // Kontext, `actor` bleibt trotzdem die Plattformperson für das Protokoll.
     await this.prisma.$transaction(
       [...affected].map(([moduleKey, moduleEnabled]) =>
         this.prisma.moduleSetting.upsert({
-          where: { tenantId_key: { tenantId: actor.tenantId, key: moduleKey } },
+          where: { tenantId_key: { tenantId: requireTenantId(), key: moduleKey } },
           update: { enabled: moduleEnabled, updatedBy: actor.username },
           create: { key: moduleKey, enabled: moduleEnabled, updatedBy: actor.username },
         }),
@@ -170,7 +174,7 @@ export class ModuleRegistryService {
     await this.prisma.$transaction(
       MODULE_DEFINITIONS.map((module) =>
         this.prisma.moduleSetting.upsert({
-          where: { tenantId_key: { tenantId: actor.tenantId, key: module.key } },
+          where: { tenantId_key: { tenantId: requireTenantId(), key: module.key } },
           update: { enabled: module.defaultEnabled, updatedBy: actor.username },
           create: { key: module.key, enabled: module.defaultEnabled, updatedBy: actor.username },
         }),

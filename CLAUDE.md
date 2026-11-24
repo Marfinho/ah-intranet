@@ -55,8 +55,24 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
   ungefiltert. Rohabfragen müssen den Mandanten selbst filtern.
 - **Plattformverwaltung ≠ Adminrolle.** `admin` verwaltet das eigene Haus;
   Häuser anlegen und sperren darf nur `isPlatformAdmin` (`@PlatformAdmin()`).
+- **Die Plattformverwaltung wohnt in einem eigenen Mandanten**, nicht bei
+  einem Kunden. Kein Sonderfall im Code: der Betreiber ist einfach ein
+  Mandant wie jeder andere (Kennung `verwaltung`, eigene Subdomain), nur ohne
+  Geschäftsdaten und mit Konten, die `isPlatformAdmin` tragen. Wer Häuser
+  anlegen darf, meldet sich dort an, nicht bei einem Kunden mit.
 - Auflösung des Hauses: eigene Domain oder Subdomain, sonst die Kennung im
   Anmeldeformular. Nur bei genau einem Haus entfällt die Angabe.
+- **Lizenzkontingent** (`Tenant.licensedSeats`, `null` = unbegrenzt): Höchstzahl
+  aktiver Konten, von der Plattformverwaltung gesetzt. Geprüft beim Anlegen und
+  beim Reaktivieren eines Kontos (`PeopleService.pruefeLizenzkontingent`) – ein
+  erreichtes Kontingent blockt hart, statt nur zu warnen.
+- **Fremdes Haus aus der Plattformverwaltung heraus bedienen** (Module,
+  Kennzahlen): `runWithTenant(context, …)` setzt für die Dauer eines Aufrufs
+  den Kontext auf ein fremdes Haus, obwohl die Plattformperson dort kein
+  eigenes Konto hat. Genau der dokumentierte Zweck dieser Funktion – kein
+  Sonderfall, keine Umgehung der Trennung. Gilt nur für Zählwerte und
+  Einstellungen, nie für Personendaten: die fehlen der Plattformverwaltung
+  ohne Auftragsverarbeitungsvertrag mit dem Haus zu Recht.
 - Ein neues Haus entsteht samt Rollen, Rechten und erstem Administrationskonto
   in einer Transaktion – ein halb eingerichteter Mandant wäre nicht benutzbar.
 
@@ -228,5 +244,9 @@ Offen vor dem Produktivbetrieb:
   und ist **anwaltlich zu prüfen**, bevor sie unterschrieben wird.
 - **Dateiupload:** Dokumente und Anhänge sind Verweise (`Document.url`), keine
   hochgeladenen Dateien. Das kann so bleiben, wenn das Haus ein Laufwerk hat –
-  es ist eine Entscheidung, keine Selbstverständlichkeit.
+  es ist eine Entscheidung, keine Selbstverständlichkeit. **Ausnahme:** das
+  Logo eines Hauses (`Tenant.logo`, `core/…/branding.*`) liegt als Bytea in
+  der Datenbank, nicht auf einem Dateisystem – ein einzelnes kleines Bild je
+  Haus braucht keinen eigenen Speicherort und läuft so in derselben Sicherung
+  wie der Rest der Daten mit.
 - **Arbeitszeitgrenzen im Schichtplan** (siehe Datenschutz).

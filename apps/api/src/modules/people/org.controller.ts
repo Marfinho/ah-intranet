@@ -31,7 +31,7 @@ class BrandPatchDto {
 }
 
 @Controller("standorte")
-@Permission("org.manage")
+@Permission("organisation.manage")
 export class LocationsController {
   constructor(private readonly org: OrgService) {}
 
@@ -57,7 +57,7 @@ export class LocationsController {
 }
 
 @Controller("marken")
-@Permission("org.manage")
+@Permission("organisation.manage")
 export class BrandsController {
   constructor(private readonly org: OrgService) {}
 

@@ -1,0 +1,29 @@
+# Reverse Proxy für den Betrieb auf einem einzelnen Server (docker-compose.prod.yml).
+#
+# Der Block auf :80 bleibt HTTP - so läuft AHOI in der Erprobung ohne Domain und
+# ohne Zertifikat. Zusätzlich bekommt LocalHub eine eigene Adresse mit echtem
+# Zertifikat: seine Anmeldung setzt nur Cookies mit Secure-Flag, die ein Browser
+# über HTTP verwirft - ohne HTTPS bliebe niemand angemeldet. Let's Encrypt stellt
+# das Zertifikat je Hostname aus (Wildcard ginge nur mit DNS-Challenge), deshalb
+# nur diese eine Adresse und nicht alle Subdomains.
+:80 {
+	@landingpage host {$BASE_DOMAIN}
+	handle @landingpage {
+		root * /srv/landing
+		file_server
+	}
+
+	handle {
+		# Ohne header_up ersetzt Caddy den Host-Kopf durch `web:3000`; die API
+		# erkennt das Haus aber gerade am Host, den der Browser gerufen hat.
+		reverse_proxy web:3000 {
+			header_up Host {http.request.host}
+		}
+	}
+}
+
+localhub.{$BASE_DOMAIN} {
+	# Der Container hängt über das gemeinsame Netz ahoi-proxy am Proxy; ist
+	# LocalHub nicht installiert, antwortet nur diese Adresse mit einem Fehler.
+	reverse_proxy localhub:3000
+}

@@ -4,6 +4,7 @@ import { PrismaService } from "../../core/prisma.service";
 import { AuditService } from "../../core/audit.service";
 import { resolveUserScopes } from "../../core/mappers";
 import type { RequestUser } from "../../core/request-user";
+import { requireTenantId } from "../../core/tenant-context";
 
 export interface LocationInput {
   name: string;
@@ -52,6 +53,10 @@ export class OrgService {
 
   async createLocation(actor: RequestUser, input: LocationInput) {
     const code = this.normalizeCode(input.code);
+    if (await this.prisma.location.findFirst({ where: { code }, select: { id: true } })) {
+      throw new BadRequestException(`Die Kennung "${code}" ist in diesem Haus bereits vergeben.`);
+    }
+    await this.pruefeStandortlimit();
 
     const location = await this.prisma.$transaction(async (tx) => {
       const created = await tx.location.create({
@@ -70,6 +75,29 @@ export class OrgService {
     });
 
     return this.listLocations();
+  }
+
+  /**
+   * Weist ein erreichtes Standortlimit ab, bevor ein weiterer Standort entsteht.
+   * `locationLimit: null` heißt unbegrenzt. Das Limit setzt die
+   * Plattformverwaltung; es gilt wie das Lizenzkontingent der Konten hart.
+   */
+  private async pruefeStandortlimit(): Promise<void> {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: requireTenantId() },
+      select: { locationLimit: true },
+    });
+    if (tenant.locationLimit === null) {
+      return;
+    }
+
+    const vorhandeneStandorte = await this.prisma.location.count();
+    if (vorhandeneStandorte >= tenant.locationLimit) {
+      throw new BadRequestException(
+        `Das Standortlimit ist erreicht (${tenant.locationLimit} Standorte). ` +
+          "Bitte das Limit von der Plattformverwaltung erweitern lassen.",
+      );
+    }
   }
 
   async updateLocation(actor: RequestUser, id: string, input: Partial<LocationInput>) {
