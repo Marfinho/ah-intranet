@@ -3,7 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { ApiError, SESSION_COOKIE, apiBaseUrl, apiSend, apiSendFile, tenantHostHeader } from "./api";
+import QRCode from "qrcode";
+import {
+  ApiError,
+  SESSION_COOKIE,
+  apiBaseUrl,
+  apiRaw,
+  apiRawFehler,
+  apiSend,
+  apiSendFile,
+  tenantHostHeader,
+} from "./api";
 
 /**
  * `next start` setzt `NODE_ENV` immer auf "production" - als Maßstab für
@@ -22,6 +32,13 @@ export interface ActionState {
   message?: string;
   /** Freitext für Erfolgsmeldungen, z. B. generierte Passwörter. */
   detail?: string;
+  /** Zwischentoken der Anmeldung: das Passwort war richtig, der zweite Faktor fehlt noch. */
+  mfaToken?: string;
+  /** Einrichtung des zweiten Faktors: Geheimnis zum Abtippen und QR-Code als Bild. */
+  mfaGeheimnis?: string;
+  mfaQr?: string;
+  /** Einmalige Anzeige nach dem Einrichten bzw. Erneuern. */
+  wiederherstellungscodes?: string[];
 }
 
 /**
@@ -136,8 +153,59 @@ export async function loginAction(_previous: ActionState, formData: FormData): P
     return { ok: false, message: body.message ?? "Anmeldung fehlgeschlagen." };
   }
 
-  // Das Set-Cookie der API in die Next-Antwort übernehmen, damit Server
-  // Components im selben Origin authentifiziert sind.
+  const antwort = (await response.json().catch(() => ({}))) as { mfaErforderlich?: boolean; mfaToken?: string };
+  if (antwort.mfaErforderlich && antwort.mfaToken) {
+    // Noch keine Sitzung: das Formular fragt jetzt den Code ab.
+    return { ok: true, mfaToken: antwort.mfaToken };
+  }
+
+  const fehler = await sitzungUebernehmen(response);
+  if (fehler) {
+    return fehler;
+  }
+  redirect(next.startsWith("/") ? next : "/");
+}
+
+/** Zweiter Schritt der Anmeldung: Code der App oder Wiederherstellungscode. */
+export async function loginMfaAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const mfaToken = String(formData.get("mfaToken") ?? "");
+  const code = String(formData.get("code") ?? "").trim();
+  const next = String(formData.get("next") ?? "/");
+
+  if (!code) {
+    return { ok: false, message: "Bitte den Code eingeben.", mfaToken };
+  }
+
+  const response = await fetch(`${apiBaseUrl()}/auth/login/mfa`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await tenantHostHeader()) },
+    body: JSON.stringify({ mfaToken, code }),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { message?: string };
+    // Bei abgelaufenem Zwischentoken zurück zum Passwort, sonst bleibt das Formular stehen.
+    const abgelaufen = response.status === 401 && /abgelaufen/i.test(body.message ?? "");
+    return {
+      ok: false,
+      message: body.message ?? "Anmeldung fehlgeschlagen.",
+      mfaToken: abgelaufen ? undefined : mfaToken,
+    };
+  }
+
+  const fehler = await sitzungUebernehmen(response);
+  if (fehler) {
+    return fehler;
+  }
+  redirect(next.startsWith("/") ? next : "/");
+}
+
+/**
+ * Das Set-Cookie der API in die Next-Antwort übernehmen, damit Server
+ * Components im selben Origin authentifiziert sind.
+ */
+async function sitzungUebernehmen(response: Response): Promise<ActionState | null> {
   const setCookie = response.headers.get("set-cookie") ?? "";
   const token = /ah_session=([^;]+)/.exec(setCookie)?.[1];
   if (!token) {
@@ -151,8 +219,78 @@ export async function loginAction(_previous: ActionState, formData: FormData): P
     maxAge: 12 * 60 * 60,
     path: "/",
   });
+  return null;
+}
 
-  redirect(next.startsWith("/") ? next : "/");
+/* ------------------------------------------------------ Zweiter Faktor */
+
+/** Beginnt die Einrichtung: Geheimnis anlegen, QR-Code zeichnen. */
+export async function mfaEinrichtenAction(): Promise<ActionState> {
+  try {
+    const antwort = await apiSend<{ geheimnis: string; adresse: string }>("POST", "/auth/mfa/einrichten");
+    // Als Bild gezeichnet auf dem Server: das Geheimnis verlässt die Seite nie
+    // in Richtung eines Drittdienstes, wie bei QR-Diensten im Netz.
+    const qr = await QRCode.toDataURL(antwort.adresse, { margin: 1, width: 220, errorCorrectionLevel: "M" });
+    return { ok: true, mfaGeheimnis: antwort.geheimnis, mfaQr: qr };
+  } catch (error) {
+    return { ok: false, message: error instanceof ApiError ? error.message : "Einrichtung fehlgeschlagen." };
+  }
+}
+
+/** Schließt die Einrichtung ab. Die API erneuert die Sitzung, das Cookie wird mitgenommen. */
+export async function mfaBestaetigenAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const code = String(formData.get("code") ?? "").trim();
+  const response = await apiRaw("/auth/mfa/bestaetigen", { code });
+  if (!response.ok) {
+    return { ok: false, message: (await apiRawFehler(response)).message };
+  }
+  const fehler = await sitzungUebernehmen(response);
+  if (fehler) {
+    return fehler;
+  }
+  const antwort = (await response.json()) as { wiederherstellungscodes: string[] };
+  revalidatePath("/", "layout");
+  return { ok: true, wiederherstellungscodes: antwort.wiederherstellungscodes };
+}
+
+export async function mfaNeueCodesAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const antwort = await apiSend<{ wiederherstellungscodes: string[] }>("POST", "/auth/mfa/wiederherstellungscodes", {
+      password: String(formData.get("password") ?? ""),
+      code: String(formData.get("code") ?? "").trim(),
+    });
+    return { ok: true, wiederherstellungscodes: antwort.wiederherstellungscodes };
+  } catch (error) {
+    return { ok: false, message: error instanceof ApiError ? error.message : "Erneuern fehlgeschlagen." };
+  }
+}
+
+export async function mfaDeaktivierenAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const response = await apiRaw("/auth/mfa/deaktivieren", {
+    password: String(formData.get("password") ?? ""),
+    code: String(formData.get("code") ?? "").trim(),
+  });
+  if (!response.ok) {
+    return { ok: false, message: (await apiRawFehler(response)).message };
+  }
+  const fehler = await sitzungUebernehmen(response);
+  if (fehler) {
+    return fehler;
+  }
+  revalidatePath("/", "layout");
+  return { ok: true, detail: "Der zweite Faktor ist abgeschaltet." };
+}
+
+export async function setMfaPflichtAction(pflicht: boolean): Promise<ActionState> {
+  return run(() => apiSend("PUT", "/anmeldeverfahren/mfa", { pflicht }), ["/admin/anmeldung"]);
+}
+
+export async function resetUserMfaAction(id: string): Promise<ActionState> {
+  return run(
+    () => apiSend("POST", `/users/${id}/mfa-zuruecksetzen`),
+    ["/admin/benutzer"],
+    "Zweiter Faktor zurückgesetzt.",
+  );
 }
 
 export async function logoutAction(): Promise<void> {

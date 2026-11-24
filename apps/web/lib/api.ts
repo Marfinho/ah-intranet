@@ -120,6 +120,23 @@ export async function apiSend<T>(
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
+/**
+ * Anfrage mit Sitzung, aber ohne Auswertung der Antwort - für Aufrufe, deren
+ * Kopfzeilen (neues Sitzungscookie) das Frontend selbst weiterreichen muss.
+ */
+export async function apiRaw(path: string, body?: unknown): Promise<Response> {
+  return fetch(`${API_URL}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeader()) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+    cache: "no-store",
+  });
+}
+
+export async function apiRawFehler(response: Response): Promise<ApiError> {
+  return new ApiError(response.status, await parseError(response));
+}
+
 export function apiBaseUrl() {
   return API_URL;
 }

@@ -10,6 +10,22 @@ hochzählt, steht in [`docs/entwicklung.md`](docs/entwicklung.md).
 
 Erster vollständiger Stand. Lauffähig, aber in keinem Haus im Einsatz.
 
+### Sicherheit
+
+- **Zweiter Faktor** per Authenticator-App (TOTP nach RFC 6238, gegen die
+  Testvektoren der RFC geprüft) mit zehn Wiederherstellungscodes. Ein Haus kann
+  ihn für alle Konten vorschreiben; Konten der Plattformverwaltung brauchen ihn
+  immer. Wer ihn noch nicht hat, meldet sich an, kommt aber nur zur Einrichtung.
+- **Next.js 15.5 und React 19** statt Next 14.2.21, das kritische Schwachstellen
+  trug. Transitive Pakete mit bekannten Lücken sind angehoben; im Betriebsbaum
+  bleibt eine mittlere Meldung zu `@nestjs/core`, die erst mit Nest 11 fällt.
+- **Content-Security-Policy mit Einmalkennung** und weitere Sicherheitsheader im
+  Frontend. Die Hausschrift wird mit der Anwendung ausgeliefert statt von Google.
+- **HTTPS im Betrieb:** `Caddyfile.tls` holt je Haus ein Zertifikat; die API
+  entscheidet, für welche Namen.
+- **CI:** Abhängigkeits-Audit ab „high“, CodeQL, Geheimnissuche, SBOM,
+  Dependabot.
+
 ### Funktionen
 
 - **22 Fachmodule**, je Haus einzeln ein- und ausschaltbar, jedes mit einem

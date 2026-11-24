@@ -1,3 +1,4 @@
+import { MfaService } from "../auth/mfa.service";
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from "@nestjs/common";
 import { Type } from "class-transformer";
 import {
@@ -156,7 +157,10 @@ export class ProfileController {
 
 @Controller("users")
 export class UsersController {
-  constructor(private readonly people: PeopleService) {}
+  constructor(
+    private readonly people: PeopleService,
+    private readonly mfa: MfaService,
+  ) {}
 
   @Get()
   @Permission("users.read")
@@ -180,6 +184,13 @@ export class UsersController {
   @Permission("users.manage")
   update(@CurrentUser() user: RequestUser, @Param("id") id: string, @Body() dto: UserPatchDto) {
     return this.people.updateUser(user, id, dto);
+  }
+
+  /** Für verlorene Telefone ohne Wiederherstellungscodes. Die Person richtet den Faktor danach neu ein. */
+  @Post(":id/mfa-zuruecksetzen")
+  @Permission("users.manage")
+  mfaZuruecksetzen(@CurrentUser() user: RequestUser, @Param("id") id: string) {
+    return this.mfa.zuruecksetzen(user, id);
   }
 
   @Post(":id/reset-password")
