@@ -182,7 +182,9 @@ export class TenantService implements OnModuleInit {
         isActive: tenant.isActive,
         notes: tenant.notes,
         userCount: tenant._count.users,
-        activeUserCount: await this.client.user.count({ where: { tenantId: tenant.id, status: "active" } }),
+        activeUserCount: await this.client.user.count({
+          where: { tenantId: tenant.id, status: "active", loginEnabled: true },
+        }),
         licensedSeats: tenant.licensedSeats,
         locationLimit: tenant.locationLimit,
         locationCount: await this.client.location.count({ where: { tenantId: tenant.id } }),
@@ -207,7 +209,7 @@ export class TenantService implements OnModuleInit {
     }
 
     const [activeUsers, totalUsers, locations, orders, tickets, news, letzterEintrag] = await Promise.all([
-      this.client.user.count({ where: { tenantId: id, status: "active" } }),
+      this.client.user.count({ where: { tenantId: id, status: "active", loginEnabled: true } }),
       this.client.user.count({ where: { tenantId: id } }),
       this.client.location.count({ where: { tenantId: id } }),
       this.client.order.count({ where: { tenantId: id } }),

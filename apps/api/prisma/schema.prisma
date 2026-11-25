@@ -382,7 +382,12 @@ model User {
   tenant             Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   username           String
   email              String?
-  passwordHash       String
+  /// Leer bei Personen ohne Zugang: wer sich nie anmeldet, hat kein Passwort -
+  /// ein Platzhalter-Hash wäre ein Passwort, das nur niemand kennt.
+  passwordHash       String?
+  /// Aus heißt: die Person ist im Personalstamm (Organigramm, Abwesenheiten,
+  /// Schichtplan), kann sich aber nicht anmelden und zählt nicht zum Lizenzkontingent.
+  loginEnabled       Boolean    @default(true)
   firstName          String
   lastName           String
   jobTitle           String     @default("Mitarbeitende:r")

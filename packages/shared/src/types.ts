@@ -314,6 +314,13 @@ export interface EmployeeDirectoryEntry {
   responsibilities: string[];
   presence: Presence;
   status: UserAccountStatus;
+  /** Falsch bei Personen ohne Anmeldung - sie stehen im Personalstamm, nicht im Login. */
+  hasAccess: boolean;
+}
+
+/** Eine Person im Organigramm samt den ihr direkt Unterstellten. */
+export interface OrganigrammKnoten extends EmployeeDirectoryEntry {
+  unterstellte: OrganigrammKnoten[];
 }
 
 /**

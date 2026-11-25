@@ -208,7 +208,8 @@ export class ShiftsService {
 
     // Die Zielperson muss im selben Haus und aktiv sein. Der Mandantenfilter
     // greift hier, weil die Kennung aus der Anfrage kommt.
-    const ziel = await this.prisma.user.findFirst({ where: { id: targetId, status: "active" } });
+    // Ohne Zugang kann die Person nicht zustimmen - ein Tausch braucht ihre Zustimmung.
+    const ziel = await this.prisma.user.findFirst({ where: { id: targetId, status: "active", loginEnabled: true } });
     if (!ziel) {
       throw new BadRequestException("Die angefragte Person ist in diesem Haus nicht verfügbar.");
     }
@@ -372,7 +373,7 @@ export class ShiftsService {
     const traeger = await this.prisma.userRole.findMany({
       where: {
         role: { permissions: { some: { permission: { key: "shifts.approve" } } } },
-        user: { status: "active" },
+        user: { status: "active", loginEnabled: true },
       },
       select: { userId: true },
     });

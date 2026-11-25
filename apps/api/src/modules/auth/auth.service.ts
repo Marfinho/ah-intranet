@@ -82,6 +82,11 @@ export class AuthService {
     if (user.status !== "active") {
       throw new UnauthorizedException("Dieses Konto ist deaktiviert");
     }
+    // Ohne Passwort kam es schon oben nicht bis hierher; die Prüfung bleibt
+    // trotzdem, damit ein später gesetzter Hash keine Sperre umgeht.
+    if (!user.loginEnabled) {
+      throw new UnauthorizedException("Ungültige Zugangsdaten");
+    }
     return user;
   }
 
@@ -135,7 +140,7 @@ export class AuthService {
     }
 
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: current.id } });
-    if (!(await bcrypt.compare(currentPassword, user.passwordHash))) {
+    if (!user.passwordHash || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
       throw new BadRequestException("Das aktuelle Passwort ist nicht korrekt.");
     }
 

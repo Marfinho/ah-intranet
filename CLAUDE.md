@@ -73,6 +73,15 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
   Sonderfall, keine Umgehung der Trennung. Gilt nur für Zählwerte und
   Einstellungen, nie für Personendaten: die fehlen der Plattformverwaltung
   ohne Auftragsverarbeitungsvertrag mit dem Haus zu Recht.
+- **Person ohne Zugang** (`User.loginEnabled = false`, `passwordHash = null`):
+  steht im Personalstamm, Organigramm, bei Abwesenheiten und im Schichtplan,
+  kann sich aber nicht anmelden - die Werkstatt ohne Rechner. Sie zählt weder
+  zum Lizenzkontingent noch zur Aussperrsperre und erhält keine Benachrichtigung
+  und keinen Tauschantrag (sie könnte nicht zustimmen). Zugang lässt sich
+  nachträglich einrichten und entziehen; Letzteres beendet die Sitzungen.
+- **Organigramm** (`modules/people/organigramm.ts`): reine Funktionen für
+  Kreisprüfung, Baum und Unterstellte. Die Kreisprüfung läuft bei jeder Änderung
+  des Vorgesetzten; `alleUnterstellten` trägt später die Erfassung für andere.
 - Ein neues Haus entsteht samt Rollen, Rechten und erstem Administrationskonto
   in einer Transaktion – ein halb eingerichteter Mandant wäre nicht benutzbar.
 

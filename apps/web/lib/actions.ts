@@ -566,7 +566,9 @@ export async function updateProfileAction(_previous: ActionState, formData: Form
 
 export async function createUserAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
   const payload = {
-    username: String(formData.get("username") ?? ""),
+    zugang: formData.get("zugang") === "on",
+    username: String(formData.get("username") ?? "") || undefined,
+    managerId: String(formData.get("managerId") ?? "") || undefined,
     firstName: String(formData.get("firstName") ?? ""),
     lastName: String(formData.get("lastName") ?? ""),
     email: String(formData.get("email") ?? "") || undefined,
@@ -583,10 +585,15 @@ export async function createUserAction(_previous: ActionState, formData: FormDat
   }
 
   try {
-    const result = await apiSend<{ initialPassword: string }>("POST", "/users", payload);
+    const result = await apiSend<{ initialPassword: string | null }>("POST", "/users", payload);
     revalidatePath("/admin/benutzer");
     revalidatePath("/mitarbeiter");
-    return { ok: true, detail: `Konto angelegt. Startpasswort: ${result.initialPassword}` };
+    return {
+      ok: true,
+      detail: result.initialPassword
+        ? `Konto angelegt. Startpasswort: ${result.initialPassword}`
+        : "Person ohne Zugang angelegt.",
+    };
   } catch (error) {
     return { ok: false, message: error instanceof ApiError ? error.message : "Konto konnte nicht angelegt werden." };
   }
@@ -604,6 +611,21 @@ export async function resetUserPasswordAction(id: string): Promise<ActionState> 
   } catch (error) {
     return { ok: false, message: error instanceof ApiError ? error.message : "Zurücksetzen fehlgeschlagen." };
   }
+}
+
+export async function grantAccessAction(id: string): Promise<ActionState> {
+  try {
+    const result = await apiSend<{ initialPassword: string }>("POST", `/users/${id}/zugang`);
+    revalidatePath("/admin/benutzer");
+    revalidatePath("/mitarbeiter");
+    return { ok: true, detail: `Zugang eingerichtet. Startpasswort: ${result.initialPassword}` };
+  } catch (error) {
+    return { ok: false, message: error instanceof ApiError ? error.message : "Zugang konnte nicht eingerichtet werden." };
+  }
+}
+
+export async function revokeAccessAction(id: string): Promise<ActionState> {
+  return run(() => apiSend("DELETE", `/users/${id}/zugang`), ["/admin/benutzer", "/mitarbeiter"]);
 }
 
 export async function setRolePermissionsAction(roleId: string, permissions: string[]): Promise<ActionState> {

@@ -99,7 +99,7 @@ export class NotificationsService {
   /** Alle Benutzer einer Rolle, z. B. zur Information der Freigebenden. */
   async userIdsWithRole(roleKey: string): Promise<string[]> {
     const rows = await this.prisma.userRole.findMany({
-      where: { role: { key: roleKey }, user: { status: "active" } },
+      where: { role: { key: roleKey }, user: { status: "active", loginEnabled: true } },
       select: { userId: true },
     });
     return rows.map((row) => row.userId);

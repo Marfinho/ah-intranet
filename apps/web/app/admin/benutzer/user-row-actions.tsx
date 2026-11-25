@@ -1,32 +1,68 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { resetUserPasswordAction, updateUserStatusAction } from "@/lib/actions";
+import { grantAccessAction, resetUserPasswordAction, revokeAccessAction, updateUserStatusAction } from "@/lib/actions";
 
-/** Passwort zurücksetzen und Konto sperren bzw. entsperren. */
-export function UserRowActions({ userId, status, name }: { userId: string; status: string; name: string }) {
+const buttonClass =
+  "rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60";
+
+/** Zugang einrichten bzw. entziehen, Passwort zurücksetzen, Konto sperren oder entsperren. */
+export function UserRowActions({
+  userId,
+  status,
+  name,
+  hasAccess,
+}: {
+  userId: string;
+  status: string;
+  name: string;
+  hasAccess: boolean;
+}) {
   const [pending, startTransition] = useTransition();
   const [password, setPassword] = useState<string | null>(null);
 
   return (
     <div className="flex shrink-0 flex-col items-start gap-2 md:items-end">
       <div className="flex flex-wrap gap-2">
+        {hasAccess ? (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() =>
+              startTransition(async () => {
+                const result = await resetUserPasswordAction(userId);
+                if (result.ok) {
+                  setPassword(result.detail ?? null);
+                } else {
+                  window.alert(result.message ?? "Fehlgeschlagen");
+                }
+              })
+            }
+            className={buttonClass}
+          >
+            Passwort zurücksetzen
+          </button>
+        ) : null}
+
         <button
           type="button"
           disabled={pending}
-          onClick={() =>
+          onClick={() => {
+            if (hasAccess && !window.confirm(`Zugang von ${name} entziehen? Die Person bleibt im Personalstamm.`)) {
+              return;
+            }
             startTransition(async () => {
-              const result = await resetUserPasswordAction(userId);
-              if (result.ok) {
+              const result = hasAccess ? await revokeAccessAction(userId) : await grantAccessAction(userId);
+              if (!hasAccess && result.ok) {
                 setPassword(result.detail ?? null);
-              } else {
+              } else if (!result.ok) {
                 window.alert(result.message ?? "Fehlgeschlagen");
               }
-            })
-          }
-          className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+            });
+          }}
+          className={buttonClass}
         >
-          Passwort zurücksetzen
+          {hasAccess ? "Zugang entziehen" : "Zugang einrichten"}
         </button>
 
         <button
@@ -44,7 +80,7 @@ export function UserRowActions({ userId, status, name }: { userId: string; statu
               }
             });
           }}
-          className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+          className={buttonClass}
         >
           {status === "active" ? "Deaktivieren" : "Aktivieren"}
         </button>

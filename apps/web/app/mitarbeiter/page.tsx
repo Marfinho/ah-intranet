@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { EmployeeDirectoryEntry } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
 import { FilterBar } from "@/components/filter-bar";
@@ -38,6 +39,11 @@ export default async function DirectoryPage({
         subtitle="Nach Name, Funktion, Standort oder Zuständigkeit suchen"
       >
         <div className="space-y-4">
+          <p className="text-sm">
+            <Link href="/mitarbeiter/organigramm" className="font-semibold text-brand-700 hover:underline">
+              Organigramm ansehen
+            </Link>
+          </p>
           <FilterBar
             searchPlaceholder="Name, Funktion oder Zuständigkeit"
             selects={[

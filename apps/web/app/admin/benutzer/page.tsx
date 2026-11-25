@@ -27,9 +27,13 @@ export default async function UsersAdminPage({ searchParams }: { searchParams: {
   ]);
 
   return (
-    <AppShell title="Benutzerverwaltung" subtitle="Konten anlegen, Rollen vergeben und Passwörter zurücksetzen">
+    <AppShell title="Benutzerverwaltung" subtitle="Konten und Personen anlegen, Rollen vergeben, Zugänge verwalten">
       <Section title="Neues Konto" subtitle="Das Startpasswort wird erzeugt und einmalig angezeigt">
-        <UserComposer organisation={organisation} roles={roles} />
+        <UserComposer
+          organisation={organisation}
+          roles={roles}
+          people={users.filter((user) => user.status === "active").map((user) => ({ id: user.id, displayName: user.displayName }))}
+        />
       </Section>
 
       <Section title={`${users.length} Konten`} subtitle="Nach Name, Benutzername oder Status filtern">
@@ -62,6 +66,7 @@ export default async function UsersAdminPage({ searchParams }: { searchParams: {
                       <p className="font-semibold text-slate-900">{user.displayName}</p>
                       <Tag>{user.username}</Tag>
                       <Tag>{user.role}</Tag>
+                      {!user.hasAccess ? <span className="badge bg-amber-100 text-amber-800">ohne Zugang</span> : null}
                       {user.status === "inactive" ? (
                         <span className="badge bg-rose-100 text-rose-800">deaktiviert</span>
                       ) : null}
@@ -72,7 +77,7 @@ export default async function UsersAdminPage({ searchParams }: { searchParams: {
                     <p className="mt-1 text-xs text-slate-500">{user.email ?? "keine E-Mail hinterlegt"}</p>
                   </div>
 
-                  <UserRowActions userId={user.id} status={user.status} name={user.displayName} />
+                  <UserRowActions userId={user.id} status={user.status} name={user.displayName} hasAccess={user.hasAccess} />
                 </li>
               ))}
             </ul>

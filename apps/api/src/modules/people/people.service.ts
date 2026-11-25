@@ -11,6 +11,7 @@ import {
 import type {
   AppRole,
   EmployeeDirectoryEntry,
+  OrganigrammKnoten,
   PermissionSummary,
   Presence,
   RoleSummary,
@@ -21,6 +22,7 @@ import { AuditService } from "../../core/audit.service";
 import { PRESENCE_LABELS, PRESENCE_VALUES, displayName, resolveUserScopes, sortiereRollen } from "../../core/mappers";
 import type { RequestUser } from "../../core/request-user";
 import { requireTenantId } from "../../core/tenant-context";
+import { baueBaum, wuerdeKreisBilden, type OrgKnoten } from "./organigramm";
 
 const directorySelect = {
   id: true,
@@ -34,6 +36,7 @@ const directorySelect = {
   presence: true,
   responsibilities: true,
   status: true,
+  loginEnabled: true,
   location: { select: { name: true, code: true } },
   department: { select: { name: true, code: true } },
   specialtyArea: { select: { name: true, code: true } },
@@ -41,7 +44,8 @@ const directorySelect = {
 } as const;
 
 export interface UserInput {
-  username: string;
+  /** Bei Personen ohne Zugang optional - dann wird eine interne Kennung erzeugt. */
+  username?: string;
   firstName: string;
   lastName: string;
   email?: string | null;
@@ -57,6 +61,8 @@ export interface UserInput {
   annualLeaveDays?: number;
   status?: UserAccountStatus;
   password?: string;
+  /** Aus = Person ohne Anmeldung (z. B. Werkstatt ohne Rechner). Standard: an. */
+  zugang?: boolean;
 }
 
 @Injectable()
@@ -101,6 +107,26 @@ export class PeopleService {
       locations: locations.map((entry) => entry.name),
       departments: departments.map((entry) => entry.name),
     };
+  }
+
+  /**
+   * Organigramm des Hauses: aktive Personen als Baum nach Vorgesetzten.
+   *
+   * Aktiv heißt `status`, nicht Zugang: Personen ohne Anmeldung gehören
+   * hinein, sonst fehlte gerade die Werkstatt, die der Baum abbilden soll.
+   */
+  async organigramm(): Promise<OrganigrammKnoten[]> {
+    const personen = await this.prisma.user.findMany({
+      where: { status: "active" },
+      select: { ...directorySelect, managerId: true },
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+    });
+    const nachId = new Map(personen.map((person) => [person.id, this.toDirectoryEntry(person)]));
+    const zuKnoten = (knoten: OrgKnoten<(typeof personen)[number]>): OrganigrammKnoten => ({
+      ...nachId.get(knoten.person.id)!,
+      unterstellte: knoten.unterstellte.map(zuKnoten),
+    });
+    return baueBaum(personen).map(zuKnoten);
   }
 
   /** Eigenes Profil pflegen - Kontaktdaten und Anwesenheit, keine Rollen. */
@@ -176,7 +202,8 @@ export class PeopleService {
       return;
     }
 
-    const aktiveKonten = await this.prisma.user.count({ where: { status: "active" } });
+    // Nur Konten mit Zugang: Personen ohne Anmeldung belegen keinen Platz.
+    const aktiveKonten = await this.prisma.user.count({ where: { status: "active", loginEnabled: true } });
     if (aktiveKonten >= tenant.licensedSeats) {
       throw new BadRequestException(
         `Das Lizenzkontingent ist erreicht (${tenant.licensedSeats} aktive Konten). ` +
@@ -188,16 +215,20 @@ export class PeopleService {
   async createUser(
     actor: RequestUser,
     input: UserInput,
-  ): Promise<{ user: EmployeeDirectoryEntry; initialPassword: string }> {
-    const username = input.username.trim().toLowerCase();
+  ): Promise<{ user: EmployeeDirectoryEntry; initialPassword: string | null }> {
+    const mitZugang = input.zugang !== false;
+    const username = input.username?.trim().toLowerCase() || (mitZugang ? "" : await this.interneKennung(input));
+    if (!username) {
+      throw new BadRequestException("Bitte einen Benutzernamen angeben.");
+    }
     if (await this.prisma.user.findFirst({ where: { username }, select: { id: true } })) {
       throw new BadRequestException(`Der Benutzername "${username}" ist bereits vergeben.`);
     }
-    if ((input.status ?? "active") === "active") {
+    if (mitZugang && (input.status ?? "active") === "active") {
       await this.pruefeLizenzkontingent();
     }
 
-    const initialPassword = input.password ?? this.generatePassword();
+    const initialPassword = mitZugang ? (input.password ?? this.generatePassword()) : null;
     const scopes = await resolveUserScopes(this.prisma, input);
 
     const created = await this.prisma.user.create({
@@ -217,8 +248,9 @@ export class PeopleService {
         annualLeaveDays: input.annualLeaveDays ?? 30,
         status: input.status ?? "active",
         scopes,
-        passwordHash: await bcrypt.hash(initialPassword, 12),
-        mustChangePassword: true,
+        passwordHash: initialPassword ? await bcrypt.hash(initialPassword, 12) : null,
+        loginEnabled: mitZugang,
+        mustChangePassword: mitZugang,
         roles: { create: await this.roleConnections(input.roles) },
       },
       select: directorySelect,
@@ -229,7 +261,7 @@ export class PeopleService {
       action: "user.create",
       entityType: "user",
       entityId: created.id,
-      detail: `Benutzer ${created.username} angelegt (${input.roles.join(", ")})`,
+      detail: `${mitZugang ? "Benutzer" : "Person ohne Zugang"} ${created.username} angelegt (${input.roles.join(", ")})`,
     });
 
     return { user: this.toDirectoryEntry(created), initialPassword };
@@ -240,8 +272,11 @@ export class PeopleService {
     if (!existing) {
       throw new NotFoundException("Benutzer nicht gefunden");
     }
-    if (input.status === "active" && existing.status !== "active") {
+    if (input.status === "active" && existing.status !== "active" && existing.loginEnabled) {
       await this.pruefeLizenzkontingent();
+    }
+    if (input.managerId) {
+      await this.pruefeVorgesetzte(id, input.managerId);
     }
 
     const scopes = await resolveUserScopes(this.prisma, {
@@ -287,9 +322,12 @@ export class PeopleService {
   }
 
   async resetPassword(actor: RequestUser, id: string): Promise<{ initialPassword: string }> {
-    const user = await this.prisma.user.findUnique({ where: { id }, select: { username: true } });
+    const user = await this.prisma.user.findUnique({ where: { id }, select: { username: true, loginEnabled: true } });
     if (!user) {
       throw new NotFoundException("Benutzer nicht gefunden");
+    }
+    if (!user.loginEnabled) {
+      throw new BadRequestException("Diese Person hat keinen Zugang. Richten Sie zuerst einen Zugang ein.");
     }
 
     const initialPassword = this.generatePassword();
@@ -313,6 +351,78 @@ export class PeopleService {
     });
 
     return { initialPassword };
+  }
+
+  /**
+   * Gibt einer Person ohne Zugang ein Konto. Das Kontingent wird geprüft wie bei
+   * jeder Neuanlage - sonst wäre das der Weg an der Lizenz vorbei.
+   */
+  async zugangEinrichten(actor: RequestUser, id: string): Promise<{ initialPassword: string }> {
+    const user = await this.prisma.user.findUnique({ where: { id }, select: { username: true, loginEnabled: true, status: true } });
+    if (!user) {
+      throw new NotFoundException("Benutzer nicht gefunden");
+    }
+    if (user.loginEnabled) {
+      throw new BadRequestException("Diese Person hat bereits einen Zugang.");
+    }
+    if (user.status === "deleted") {
+      throw new BadRequestException("Ein anonymisiertes Konto lässt sich nicht wieder einrichten.");
+    }
+    await this.pruefeLizenzkontingent();
+
+    const initialPassword = this.generatePassword();
+    await this.prisma.user.update({
+      where: { id },
+      data: {
+        loginEnabled: true,
+        passwordHash: await bcrypt.hash(initialPassword, 12),
+        mustChangePassword: true,
+        failedLoginCount: 0,
+        lockedUntil: null,
+      },
+    });
+
+    await this.audit.log({
+      actor,
+      action: "user.access_granted",
+      entityType: "user",
+      entityId: id,
+      detail: `Zugang für ${user.username} eingerichtet`,
+    });
+    return { initialPassword };
+  }
+
+  /**
+   * Nimmt den Zugang, behält aber die Person. Laufende Sitzungen enden sofort;
+   * Abwesenheiten, Schichten und Organigramm bleiben unberührt.
+   */
+  async zugangEntziehen(actor: RequestUser, id: string): Promise<EmployeeDirectoryEntry> {
+    const user = await this.prisma.user.findUnique({ where: { id }, select: { username: true, loginEnabled: true } });
+    if (!user) {
+      throw new NotFoundException("Benutzer nicht gefunden");
+    }
+    if (id === actor.id) {
+      throw new BadRequestException("Sie können sich den eigenen Zugang nicht entziehen.");
+    }
+
+    const aktualisiert = await this.prisma.$transaction(async (tx) => {
+      const row = await tx.user.update({
+        where: { id },
+        data: { loginEnabled: false, passwordHash: null, mustChangePassword: false, tokenVersion: { increment: 1 } },
+        select: directorySelect,
+      });
+      await this.assertVerwaltungErreichbar(tx);
+      return row;
+    });
+
+    await this.audit.log({
+      actor,
+      action: "user.access_revoked",
+      entityType: "user",
+      entityId: id,
+      detail: `Zugang von ${user.username} entzogen`,
+    });
+    return this.toDirectoryEntry(aktualisiert);
   }
 
   /* ----------------------------------------------------------- Rollen */
@@ -502,7 +612,10 @@ export class PeopleService {
   private async assertVerwaltungErreichbar(tx: Prisma.TransactionClient): Promise<void> {
     for (const recht of UNVERZICHTBARE_RECHTE) {
       const traeger = await tx.userRole.count({
-        where: { role: { permissions: { some: { permission: { key: recht } } } }, user: { status: "active" } },
+        where: {
+          role: { permissions: { some: { permission: { key: recht } } } },
+          user: { status: "active", loginEnabled: true },
+        },
       });
       if (traeger === 0) {
         throw new BadRequestException(
@@ -596,6 +709,53 @@ export class PeopleService {
     return rows.map((row) => ({ roleId: row.id }));
   }
 
+  /** Kennung für Personen, die sich nie anmelden: `vorname.nachname`, bei Kollision mit Zähler. */
+  private async interneKennung(input: Pick<UserInput, "firstName" | "lastName">): Promise<string> {
+    const teil = (text: string) =>
+      text
+        .trim()
+        .toLowerCase()
+        .replace(/ä/g, "ae")
+        .replace(/ö/g, "oe")
+        .replace(/ü/g, "ue")
+        .replace(/ß/g, "ss")
+        .replace(/[^a-z0-9]+/g, "");
+    const basis = `${teil(input.firstName)}.${teil(input.lastName)}`.replace(/^\.|\.$/g, "") || "person";
+    const belegt = new Set(
+      (await this.prisma.user.findMany({ where: { username: { startsWith: basis } }, select: { username: true } })).map(
+        (row) => row.username,
+      ),
+    );
+    if (!belegt.has(basis)) {
+      return basis;
+    }
+    for (let i = 2; i < 1000; i += 1) {
+      if (!belegt.has(`${basis}${i}`)) {
+        return `${basis}${i}`;
+      }
+    }
+    throw new BadRequestException("Es ist keine freie Kennung mehr zu finden.");
+  }
+
+  /**
+   * Verhindert Zyklen im Organigramm: wer (mittelbar) selbst unter der Person
+   * steht, kann nicht deren Vorgesetzte werden. Ein Kreis machte jede
+   * Aufwärtssuche zur Endlosschleife.
+   */
+  async pruefeVorgesetzte(personId: string, vorgesetzteId: string): Promise<void> {
+    const personen = await this.prisma.user.findMany({ select: { id: true, managerId: true } });
+    if (!personen.some((person) => person.id === vorgesetzteId)) {
+      throw new BadRequestException("Die gewählte Vorgesetzte existiert nicht.");
+    }
+    if (wuerdeKreisBilden(personen, personId, vorgesetzteId)) {
+      throw new BadRequestException(
+        personId === vorgesetzteId
+          ? "Eine Person kann nicht ihre eigene Vorgesetzte sein."
+          : "Das würde einen Kreis im Organigramm ergeben.",
+      );
+    }
+  }
+
   private generatePassword(): string {
     const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
     const bytes = Array.from({ length: 14 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]);
@@ -620,6 +780,7 @@ export class PeopleService {
       responsibilities: user.responsibilities,
       presence: PRESENCE_LABELS[user.presence] ?? "vor Ort",
       status: user.status,
+      hasAccess: user.loginEnabled,
     };
   }
 
@@ -641,7 +802,10 @@ export class PeopleService {
   /** Aktive Konten, deren Rollen das genannte Recht tragen. */
   async usersWithPermission(permission: string): Promise<string[]> {
     const traeger = await this.prisma.userRole.findMany({
-      where: { role: { permissions: { some: { permission: { key: permission } } } }, user: { status: "active" } },
+      where: {
+        role: { permissions: { some: { permission: { key: permission } } } },
+        user: { status: "active", loginEnabled: true },
+      },
       select: { userId: true },
     });
     return [...new Set(traeger.map((entry) => entry.userId))];

@@ -33,7 +33,9 @@ class ProfileDto {
 }
 
 class UserBodyDto {
-  @IsString() @MinLength(3) username!: string;
+  /** Entfällt bei Personen ohne Zugang. */
+  @IsOptional() @IsString() @MinLength(3) username?: string;
+  @IsOptional() @IsBoolean() zugang?: boolean;
   @IsString() @MinLength(2) firstName!: string;
   @IsString() @MinLength(2) lastName!: string;
   @IsOptional() @IsEmail({}, { message: "Bitte eine gültige E-Mail-Adresse angeben" }) email?: string;
@@ -142,6 +144,11 @@ export class DirectoryController {
   ) {
     return this.people.directory({ search, location, department });
   }
+
+  @Get("organigramm")
+  organigramm() {
+    return this.people.organigramm();
+  }
 }
 
 @Controller("profile")
@@ -186,6 +193,18 @@ export class UsersController {
   @Permission("users.manage")
   resetPassword(@CurrentUser() user: RequestUser, @Param("id") id: string) {
     return this.people.resetPassword(user, id);
+  }
+
+  @Post(":id/zugang")
+  @Permission("users.manage")
+  zugangEinrichten(@CurrentUser() user: RequestUser, @Param("id") id: string) {
+    return this.people.zugangEinrichten(user, id);
+  }
+
+  @Delete(":id/zugang")
+  @Permission("users.manage")
+  zugangEntziehen(@CurrentUser() user: RequestUser, @Param("id") id: string) {
+    return this.people.zugangEntziehen(user, id);
   }
 }
 

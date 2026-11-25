@@ -48,7 +48,7 @@ export class PasswortService {
   async anfordern(benutzername: string): Promise<void> {
     const kennung = benutzername.trim().toLowerCase();
     const user = await this.prisma.user.findFirst({
-      where: { username: kennung, status: "active" },
+      where: { username: kennung, status: "active", loginEnabled: true },
       select: {
         id: true,
         email: true,
