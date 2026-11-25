@@ -42,6 +42,10 @@ export default async function DirectoryPage(props: {
             <Link href="/mitarbeiter/organigramm" className="font-semibold text-brand-700 hover:underline">
               Organigramm ansehen
             </Link>
+            {" · "}
+            <Link href="/admin/schluesselfunktionen" className="font-semibold text-brand-700 hover:underline">
+              Wer ist wofür zuständig?
+            </Link>
           </p>
           <FilterBar
             searchPlaceholder="Name, Funktion oder Zuständigkeit"

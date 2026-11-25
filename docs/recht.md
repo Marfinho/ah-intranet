@@ -154,6 +154,10 @@ Abs. 1 DSGVO, für die ein Verarbeitungsverbot mit Erlaubnisvorbehalt gilt.
   Abteilungen sieht niemand ohne `absences.viewAll`. Der Server liefert für
   „abwesend" weder Art noch Status aus - die Beschränkung liegt nicht in der
   Oberfläche.
+- **Meldung an Vertretungen:** Fehlt ein Träger einer Schlüsselfunktion,
+  informieren Intranet und Mail die anderen Träger bzw. die Geschäftsführung.
+  Die Nachricht nennt Person und Zeitraum und sagt „abwesend" - **nie die Art**.
+  Das Haus kann die Meldung abschalten (Administration → Schlüsselfunktionen).
 - **Keine Freigabe für Krankmeldungen:** Sie gelten mit dem Eintrag. Wer sich
   krank meldet, braucht keine Erlaubnis; eine Freigabe machte aus der Meldung
   einen Antrag. Die Führungskraft wird zur Kenntnis benachrichtigt.

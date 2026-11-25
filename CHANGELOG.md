@@ -10,6 +10,22 @@ hochzählt, steht in [`docs/entwicklung.md`](docs/entwicklung.md).
 
 Erster vollständiger Stand. Lauffähig, aber in keinem Haus im Einsatz.
 
+### Personal und Vertretung
+
+- **Personen ohne Zugang** stehen im Personalstamm, Organigramm, bei
+  Abwesenheiten und im Schichtplan, ohne sich anmelden zu können.
+- **Organigramm** als Baum von oben nach unten, mit Kreisprüfung beim Setzen der
+  Vorgesetzten.
+- **Betriebskalender** mit Feiertagsvorschlägen je Bundesland, Brückentagen,
+  verkaufsoffenen Sonntagen und Betriebsurlaub, je Standort oder fürs ganze Haus.
+- **Abwesenheiten:** Krankmeldung ohne Freigabe, halbe Tage, Arbeitstage mit
+  Betriebskalender, Eintrag für Unterstellte (auch ohne Zugang), Teamkalender
+  mit „abwesend" für das Team und dem Grund nur für Betroffene und Teamleitung.
+- **Schlüsselfunktionen** mit Key User, zwei Vertretungen und der neuen Rolle
+  Geschäftsführung als letzter Stufe; Meldung bei Abwesenheit per Intranet und
+  Mail (Einstellung des Hauses). Anträge gehen an die nächste anwesende
+  Führungskraft.
+
 ### Sicherheit
 
 - **Zweiter Faktor** per Authenticator-App (TOTP nach RFC 6238, gegen die

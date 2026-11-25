@@ -113,6 +113,24 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
   in bestehende Häuser ohne Rollenzuordnung an. Der Teamkalender (`kalenderSicht`)
   zeigt dem Team nur „abwesend", den Grund nur der Person selbst, ihrer
   Führungskraft mit Freigaberecht und `absences.viewAll`.
+- **Schlüsselfunktionen** (`packages/shared/src/schluessel.ts`,
+  `modules/people/schluessel*`, `schluesselregeln.ts` als reine Funktionen): vier
+  zentrale Aufgaben (Benutzerverwaltung, Zweiter Faktor, Rollen und Rechte,
+  Datenschutz), je mit drei Stufen - Key User, 1. und 2. Vertreter - und der
+  Geschäftsführung als letzter. Die Liste steht im Code, **jede Funktion ist an
+  ein Recht gebunden**; eine Stufe zählt nur, wenn das Konto aktiv ist, sich
+  anmelden kann und dieses Recht trägt (sonst „zählt nicht", Ampel rot). Eine
+  Funktion fällt nie unter zwei gültige Träger (`darfLeeren`). Wer heute
+  zuständig ist, bestimmt die erste gültige und anwesende Stufe; ist niemand da,
+  gehört der Fall dem Recht `schluessel.eskalation` (Rolle „Geschäftsführung"),
+  ohne Träger der Benutzerverwaltung - Eskalation läuft nie ins Leere. Fehlt ein
+  Träger, informieren Intranet und Mail die anderen Träger (nur „abwesend", nie
+  der Grund). Einstellung je Haus (`Tenant.vertretungsMeldung`): sofort, am
+  ersten Tag (Tageslauf `scripts/vertretung.ts`) oder aus. Rollen der
+  Grundausstattung, die einem Haus fehlen (Geschäftsführung), legt der Start an -
+  hat das Haus unter dem Schlüssel schon eine eigene Rolle, bleibt sie unberührt.
+  Abwesenheitsanträge gehen an die nächste **anwesende** Führungskraft in der
+  Kette (`approversFor`), nicht mehr starr an die direkte Vorgesetzte.
 - Ein neues Haus entsteht samt Rollen, Rechten und erstem Administrationskonto
   in einer Transaktion – ein halb eingerichteter Mandant wäre nicht benutzbar.
 

@@ -1127,3 +1127,19 @@ export async function uebertrageBetriebstagAction(id: string, locationIds: strin
 export async function deleteBetriebstagAction(id: string): Promise<ActionState> {
   return run(() => apiSend("DELETE", `/betriebskalender/${id}`), KALENDER);
 }
+
+/* ----------------------------------------------- Schlüsselfunktionen */
+
+const SCHLUESSEL = ["/admin/schluesselfunktionen"];
+
+export async function besetzeSchluesselAction(funktion: string, stufe: number, userId: string): Promise<ActionState> {
+  return run(() => apiSend("PUT", `/schluessel/${funktion}/${stufe}`, { userId }), SCHLUESSEL);
+}
+
+export async function leereSchluesselAction(funktion: string, stufe: number): Promise<ActionState> {
+  return run(() => apiSend("DELETE", `/schluessel/${funktion}/${stufe}`), SCHLUESSEL);
+}
+
+export async function setzeVertretungsMeldungAction(vertretungsMeldung: string): Promise<ActionState> {
+  return run(() => apiSend("PATCH", "/schluessel/einstellung", { vertretungsMeldung }), SCHLUESSEL);
+}

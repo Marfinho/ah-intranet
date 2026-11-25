@@ -420,6 +420,40 @@
         }
       }
 
+      .stufe {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 0;
+        border-top: 1px solid var(--linie);
+        font-size: 13px;
+      }
+      .stufe .nm {
+        width: 96px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--leise);
+      }
+      .stufe .w {
+        flex: 1;
+        min-width: 150px;
+      }
+      .mail {
+        background: var(--flaeche);
+        border: 1px solid var(--linie);
+        border-radius: 14px;
+        padding: 14px 16px;
+        font-size: 13px;
+      }
+      .mail .kopf2 {
+        color: var(--leise);
+        font-size: 12px;
+        margin-bottom: 8px;
+      }
+
       label.check {
         display: flex;
         gap: 10px;
@@ -1056,20 +1090,132 @@
       <section class="block">
         <div class="kopf">
           <h2>D · Schlüsselfunktionen und Vertretung</h2>
-          <span class="stand offen">folgt</span>
+          <span class="stand fertig">fertig</span>
         </div>
-        <p class="klein">
-          Key User → 1. Vertreter → 2. Vertreter → Geschäftsführung, Mail bei Abwesenheit (Einstellung des Hausadmins).
-        </p>
+        <ul class="liste">
+          <li>
+            <strong>Vier Funktionen</strong> mit je drei Stufen: Key User, 1. Vertreter, 2. Vertreter. Danach die
+            <strong>Geschäftsführung</strong> (neue Rolle mit dem Recht, Eskalationen zu erhalten).
+          </li>
+          <li>
+            <strong>Jede Funktion ist an ein Recht gebunden.</strong> Einsetzen lässt sich nur, wer es trägt. Verliert
+            ein Konto das Recht, wird die Stufe rot markiert („zählt nicht").
+          </li>
+          <li>
+            <strong>Mindestens zwei Träger:</strong> eine Stufe lässt sich nur freimachen, wenn zwei gültige Träger
+            bleiben.
+          </li>
+          <li>
+            <strong>Bei Abwesenheit</strong> informieren Intranet und Mail die anderen Träger – nur mit „abwesend", nie
+            mit dem Grund. Sind alle weg, geht die Meldung an die Geschäftsführung.
+          </li>
+          <li><strong>Einstellung des Hausadmins:</strong> Meldung sofort, am ersten Tag oder aus.</li>
+          <li>
+            <strong>Abwesenheitsanträge</strong> gehen an die nächste anwesende Führungskraft in der Kette – bis zur
+            Geschäftsführung.
+          </li>
+        </ul>
+        <h3>Administration → Schlüsselfunktionen</h3>
+        <div class="mock">
+          <div class="karte">
+            <div class="zeile">
+              <div>
+                <span class="name">Benutzerverwaltung</span>
+                <div class="klein">Konten anlegen, sperren und Passwörter zurücksetzen</div>
+              </div>
+              <span class="badge ok">vollständig besetzt</span>
+            </div>
+            <p class="klein" style="margin: 8px 0 0">Heute zuständig: Karin Meyer (Key User)</p>
+            <div class="stufe">
+              <span class="nm">Key User</span><span class="w sel" style="display: block">Karin Meyer ▾</span
+              ><span class="btn primaer" style="padding: 5px 12px">Einsetzen</span>
+            </div>
+            <div class="stufe">
+              <span class="nm">1. Vertreter</span><span class="w sel" style="display: block">Selin Aydin ▾</span
+              ><span class="btn primaer" style="padding: 5px 12px">Einsetzen</span>
+            </div>
+            <div class="stufe">
+              <span class="nm">2. Vertreter</span><span class="w sel" style="display: block">Tom Hagen ▾</span
+              ><span class="btn primaer" style="padding: 5px 12px">Einsetzen</span>
+            </div>
+            <p class="klein" style="margin: 8px 0 0">
+              Einsetzen kann man nur Konten mit dem Recht „users.manage" – sonst könnte die Vertretung im Ernstfall
+              nichts tun.
+            </p>
+          </div>
+          <div class="karte" style="margin-top: 12px">
+            <div class="zeile">
+              <div>
+                <span class="name">Zweiter Faktor</span>
+                <div class="klein">Verlorene Telefone: den zweiten Faktor zurücksetzen</div>
+              </div>
+              <span class="badge warn">Mindestbesetzung</span>
+            </div>
+            <p class="klein" style="margin: 8px 0 0">Heute zuständig: Selin Aydin (1. Vertreter)</p>
+            <div class="stufe">
+              <span class="nm">Key User</span><span class="w sel" style="display: block">Karin Meyer ▾</span
+              ><span class="btn primaer" style="padding: 5px 12px">Einsetzen</span
+              ><span class="badge warn">heute abwesend</span>
+            </div>
+            <div class="stufe">
+              <span class="nm">1. Vertreter</span><span class="w sel" style="display: block">Selin Aydin ▾</span
+              ><span class="btn primaer" style="padding: 5px 12px">Einsetzen</span>
+            </div>
+            <div class="stufe">
+              <span class="nm">2. Vertreter</span><span class="w sel" style="display: block">– frei – ▾</span
+              ><span class="btn primaer" style="padding: 5px 12px">Einsetzen</span>
+            </div>
+          </div>
+          <div class="karte" style="margin-top: 12px">
+            <div class="zeile"><span class="name">Einstellung</span></div>
+            <span class="feld" style="max-width: 360px"
+              >Meldung an Vertretungen
+              <div class="eingabe">Sofort ▾</div>
+              <span class="klein"
+                >Sobald die Abwesenheit eingetragen oder genehmigt ist. Die Meldung nennt nur „abwesend", nie den
+                Grund.</span
+              ></span
+            >
+          </div>
+          <p class="klein">
+            Namen sind erfunden. Alle Beschäftigten sehen die Zuständigkeiten, pflegen darf nur die Benutzerverwaltung.
+          </p>
+        </div>
+        <h3>Mail an die Vertretung</h3>
+        <div class="mock">
+          <div class="mail">
+            <div class="kopf2">Von AHOI · An Selin Aydin</div>
+            <strong>Karin Meyer ist abwesend – Sie vertreten</strong><br /><br />
+            Karin Meyer fehlt vom 21.12.2026 bis 31.12.2026. Sie sind in dieser Zeit: 1. Vertreter für
+            Benutzerverwaltung; 1. Vertreter für Zweiter Faktor.<br /><br />
+            <span class="klein">Im Intranet ansehen: …/admin/schluesselfunktionen</span>
+          </div>
+          <p class="klein">
+            Fehlen alle Träger, lautet die Zeile: „Geschäftsführung für Benutzerverwaltung (niemand sonst ist
+            erreichbar)".
+          </p>
+        </div>
       </section>
       <section class="block">
         <div class="kopf">
           <h2>E · Zweiter Faktor (TOTP)</h2>
-          <span class="stand offen">in main · Anbindung folgt</span>
+          <span class="stand fertig">fertig</span>
         </div>
-        <p class="klein">
-          TOTP liegt bereits in <code>main</code>. Offen ist nur die Verknüpfung mit den Schlüsselfunktionen aus D.
-        </p>
+        <ul class="liste">
+          <li>
+            TOTP kam mit <code>main</code>. Hier ergänzt:
+            <strong>„Zweiter Faktor" ist eine Schlüsselfunktion</strong> mit Key User und zwei Vertretungen, damit ein
+            verlorenes Telefon nie an einer abwesenden Person hängt.
+          </li>
+          <li>
+            Das Zurücksetzen selbst bleibt beim Recht „Benutzer verwalten" – die Funktion sagt, wer es tut, sie ändert
+            nicht, wer es darf.
+          </li>
+          <li>
+            Offen: Die Anmeldeseite nennt die zuständige Person nicht. Das wäre vor der Anmeldung ein Namensverzeichnis
+            des Hauses.
+          </li>
+        </ul>
       </section>
       <section class="block">
         <div class="kopf">

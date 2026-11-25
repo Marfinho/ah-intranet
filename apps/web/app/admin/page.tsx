@@ -22,6 +22,12 @@ const ADMIN_LINKS = [
     detail: "Feiertage, Brückentage, verkaufsoffene Sonntage",
     recht: "organisation.manage",
   },
+  {
+    href: "/admin/schluesselfunktionen",
+    label: "Schlüsselfunktionen",
+    detail: "Key User, Vertretungen und Eskalation",
+    recht: "users.manage",
+  },
   { href: "/admin/rollen", label: "Rollen & Rechte", detail: "Eigene Rollen anlegen", recht: "roles.manage" },
   {
     href: "/admin/standorte",
