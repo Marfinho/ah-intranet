@@ -398,6 +398,10 @@
         background: #fde68a;
         color: #78350f;
       }
+      .kalt .a {
+        background: #cbd5e1;
+        color: #1e293b;
+      }
       .kalt .b {
         opacity: 0.55;
       }
@@ -777,8 +781,8 @@
             Zugang. Der Eintrag gilt sofort und nennt, wer ihn gemacht hat.
           </li>
           <li>
-            <strong>Abwesenheitskalender:</strong> wer fehlt wann – nur für den eigenen Zuständigkeitsbereich, nicht für
-            alle Kolleginnen.
+            <strong>Abwesenheitskalender:</strong> das Team sieht sich nur als „abwesend". Den Grund sehen die Person
+            selbst, ihre Teamleitung und wer alle Abwesenheiten lesen darf.
           </li>
         </ul>
         <h3>Abwesenheiten → Neuer Antrag oder Eintrag (Führungskraft)</h3>
@@ -855,7 +859,9 @@
         </div>
         <h3>Abwesenheiten → Kalender</h3>
         <div class="mock">
-          <div class="titel">Dezember 2026 &nbsp;·&nbsp; ← Vormonat &nbsp; Folgemonat →</div>
+          <div class="titel">
+            Dezember 2026 &nbsp;·&nbsp; Ansicht: Selin Aydin &nbsp;·&nbsp; ← Vormonat &nbsp; Folgemonat →
+          </div>
           <div class="tree-scroll">
             <table class="kalt">
               <thead>
@@ -896,7 +902,7 @@
               </thead>
               <tbody>
                 <tr>
-                  <th class="p">Karin Meyer</th>
+                  <th class="p">Karin Meyer <span class="klein">Teamleitung</span></th>
                   <td class=""></td>
                   <td class=""></td>
                   <td class=""></td>
@@ -917,24 +923,24 @@
                   <td class=""></td>
                   <td class="w"></td>
                   <td class="w"></td>
-                  <td class="u"></td>
-                  <td class="u"></td>
-                  <td class="u"></td>
-                  <td class="u"></td>
+                  <td class="a"></td>
+                  <td class="a"></td>
+                  <td class="a"></td>
+                  <td class="a"></td>
                   <td class="w"></td>
                   <td class="w"></td>
                   <td class="w"></td>
-                  <td class="u"></td>
-                  <td class="u"></td>
-                  <td class="u"></td>
-                  <td class="u"></td>
+                  <td class="a"></td>
+                  <td class="a"></td>
+                  <td class="a"></td>
+                  <td class="a"></td>
                 </tr>
                 <tr>
-                  <th class="p">Jonas Brandt <span class="klein">ohne Zugang</span></th>
+                  <th class="p">Jonas Brandt</th>
                   <td class=""></td>
-                  <td class="k"></td>
-                  <td class="k"></td>
-                  <td class="k"></td>
+                  <td class="a"></td>
+                  <td class="a"></td>
+                  <td class="a"></td>
                   <td class="w"></td>
                   <td class="w"></td>
                   <td class=""></td>
@@ -964,7 +970,7 @@
                   <td class=""></td>
                 </tr>
                 <tr>
-                  <th class="p">Selin Aydin</th>
+                  <th class="p">Selin Aydin <span class="klein">Sie</span></th>
                   <td class=""></td>
                   <td class=""></td>
                   <td class=""></td>
@@ -998,7 +1004,7 @@
                   <td class=""></td>
                 </tr>
                 <tr>
-                  <th class="p">Lena Vogt <span class="klein">ohne Zugang</span></th>
+                  <th class="p">Lena Vogt</th>
                   <td class=""></td>
                   <td class=""></td>
                   <td class=""></td>
@@ -1012,7 +1018,7 @@
                   <td class=""></td>
                   <td class="w"></td>
                   <td class="w"></td>
-                  <td class="u">½</td>
+                  <td class="a">½</td>
                   <td class=""></td>
                   <td class=""></td>
                   <td class=""></td>
@@ -1037,11 +1043,13 @@
           <p class="klein" style="margin: 10px 0 0">
             <span class="badge" style="background: #bae6fd; color: #0c4a6e; border: 0">Urlaub</span>
             <span class="badge" style="background: #fecdd3; color: #881337; border: 0">Krank</span>
-            <span class="badge" style="background: #fde68a; color: #78350f; border: 0">Schulung</span> &nbsp; Blass =
+            <span class="badge" style="background: #fde68a; color: #78350f; border: 0">Schulung</span>
+            <span class="badge" style="background: #cbd5e1; color: #1e293b; border: 0">Abwesend</span> &nbsp; Blass =
             beantragt · ½ = halber Tag · grau = Wochenende oder frei
           </p>
           <p class="klein">
-            Zu sehen sind nur Personen, für die man zuständig ist. Wer nichts freigeben darf, sieht nur sich selbst.
+            Ansicht von Selin Aydin (Team Werkstatt): eigene Einträge mit Grund, Kolleginnen nur „abwesend". Die
+            Teamleitung sieht dieselben Einträge mit Grund.
           </p>
         </div>
       </section>

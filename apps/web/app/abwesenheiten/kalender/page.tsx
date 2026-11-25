@@ -11,6 +11,7 @@ const ART_STIL: Record<string, string> = {
   gleitzeit: "bg-slate-200 text-slate-800",
   sonderurlaub: "bg-violet-200 text-violet-900",
   fortbildung: "bg-amber-200 text-amber-900",
+  abwesend: "bg-slate-300 text-slate-800",
 };
 
 const ART_NAME: Record<string, string> = {
@@ -19,6 +20,7 @@ const ART_NAME: Record<string, string> = {
   gleitzeit: "Gleitzeit",
   sonderurlaub: "Sonderurlaub",
   fortbildung: "Schulung",
+  abwesend: "Abwesend",
 };
 
 function monatsgrenzen(monat: string): { von: string; bis: string; tage: string[]; vorher: string; nachher: string } {
@@ -46,7 +48,9 @@ export default async function AbwesenheitsKalenderPage(props: { searchParams: Pr
   const { von, bis, tage, vorher, nachher } = monatsgrenzen(monat);
 
   const kalender = await apiGet<AbwesenheitsKalender>(`/absences/kalender?von=${von}&bis=${bis}`);
-  const freiesDatum = new Set(kalender.tage.filter((tag) => tag.arbeitsfrei && tag.locationId === null).map((tag) => tag.datum));
+  const freiesDatum = new Set(
+    kalender.tage.filter((tag) => tag.arbeitsfrei && tag.locationId === null).map((tag) => tag.datum),
+  );
   const titel = new Date(`${monat}-01T00:00:00Z`).toLocaleDateString("de-DE", {
     month: "long",
     year: "numeric",
@@ -55,7 +59,10 @@ export default async function AbwesenheitsKalenderPage(props: { searchParams: Pr
 
   return (
     <AppShell title="Abwesenheitskalender" subtitle="Wer fehlt wann - Urlaub, Krankheit, Schulung">
-      <Section title={titel} subtitle="Zu sehen sind nur Personen, für die Sie zuständig sind">
+      <Section
+        title={titel}
+        subtitle="Ihr Team sehen Sie als „abwesend“, den Grund nur bei sich selbst und den Personen, die Sie führen"
+      >
         <div className="mb-4 flex items-center gap-4 text-sm font-semibold">
           <Link href={`/abwesenheiten/kalender?monat=${vorher}`} className="text-brand-700 hover:underline">
             ← Vormonat
@@ -75,7 +82,9 @@ export default async function AbwesenheitsKalenderPage(props: { searchParams: Pr
             <table className="min-w-full border-separate border-spacing-0 text-xs">
               <thead>
                 <tr>
-                  <th className="sticky left-0 z-10 bg-white px-3 py-2 text-left font-semibold text-slate-600">Person</th>
+                  <th className="sticky left-0 z-10 bg-white px-3 py-2 text-left font-semibold text-slate-600">
+                    Person
+                  </th>
                   {tage.map((tag) => {
                     const wochentag = new Date(`${tag}T00:00:00Z`).getUTCDay();
                     const frei = wochentag === 0 || wochentag === 6 || freiesDatum.has(tag);
@@ -102,11 +111,17 @@ export default async function AbwesenheitsKalenderPage(props: { searchParams: Pr
                       const wochentag = new Date(`${tag}T00:00:00Z`).getUTCDay();
                       const frei = wochentag === 0 || wochentag === 6 || freiesDatum.has(tag);
                       const eintrag = person.eintraege.find((e) => e.von <= tag && e.bis >= tag);
-                      const halb = eintrag && ((eintrag.von === tag && eintrag.startHalb) || (eintrag.bis === tag && eintrag.endHalb));
+                      const halb =
+                        eintrag &&
+                        ((eintrag.von === tag && eintrag.startHalb) || (eintrag.bis === tag && eintrag.endHalb));
                       return (
                         <td
                           key={tag}
-                          title={eintrag ? `${ART_NAME[eintrag.art]}${eintrag.status === "submitted" ? " (beantragt)" : ""}` : undefined}
+                          title={
+                            eintrag
+                              ? `${ART_NAME[eintrag.art]}${eintrag.status === "submitted" ? " (beantragt)" : ""}`
+                              : undefined
+                          }
                           className={`h-8 border-t border-slate-100 text-center ${
                             eintrag ? ART_STIL[eintrag.art] : frei ? "bg-slate-100" : ""
                           } ${eintrag?.status === "submitted" ? "opacity-60" : ""}`}

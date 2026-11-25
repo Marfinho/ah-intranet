@@ -146,10 +146,14 @@ Abs. 1 DSGVO, für die ein Verarbeitungsverbot mit Erlaubnisvorbehalt gilt.
   die Oberfläche ziehen. Die Auskunft läuft über die Administration
   (_Administration → Datenschutz_); das Haus muss diesen Weg den Betroffenen
   nennen.
-- **Teamkalender:** zeigt Abwesenheitsarten (auch „krank") nur den Personen mit
-  Freigaberecht für ihren Zuständigkeitsbereich. Wer nichts freigeben darf,
-  sieht nur sich selbst. Ein Kalender, der allen Kolleginnen die Art zeigte,
-  wäre eine Offenlegung von Gesundheitsdaten.
+- **Teamkalender:** Das Team sieht sich gegenseitig nur als „abwesend", ohne
+  Art und ohne noch unentschiedene Anträge. Den Grund (auch „krank") sieht, wer
+  die Abwesenheit selbst hat, wer die Person mit `absences.approve` führt
+  (auch mittelbar) und wer `absences.viewAll` trägt. Team heißt: dieselbe
+  Vorgesetzte, die Vorgesetzte selbst und die direkt Unterstellten. Andere
+  Abteilungen sieht niemand ohne `absences.viewAll`. Der Server liefert für
+  „abwesend" weder Art noch Status aus - die Beschränkung liegt nicht in der
+  Oberfläche.
 - **Keine Freigabe für Krankmeldungen:** Sie gelten mit dem Eintrag. Wer sich
   krank meldet, braucht keine Erlaubnis; eine Freigabe machte aus der Meldung
   einen Antrag. Die Führungskraft wird zur Kenntnis benachrichtigt.

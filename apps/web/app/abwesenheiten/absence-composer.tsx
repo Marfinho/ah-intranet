@@ -88,10 +88,8 @@ export function AbsenceComposer({ erfassbar }: { erfassbar: ErfassbarePerson[] }
       <div className="md:col-span-2">
         <SubmitButton>{sofort ? "Eintragen" : "Antrag einreichen"}</SubmitButton>
         <p className="mt-2 text-xs text-slate-500">
-          {sofort
-            ? "Gilt sofort, ohne Freigabe."
-            : "Geht zur Freigabe an Ihre Führungskraft."}{" "}
-          Wochenenden und freie Tage aus dem Betriebskalender zählen nicht.
+          {sofort ? "Gilt sofort, ohne Freigabe." : "Geht zur Freigabe an Ihre Führungskraft."} Wochenenden und freie
+          Tage aus dem Betriebskalender zählen nicht.
         </p>
       </div>
     </form>

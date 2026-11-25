@@ -8,7 +8,7 @@ import { displayName, toIso } from "../../core/mappers";
 import { can, type RequestUser } from "../../core/request-user";
 import { PeopleService } from "./people.service";
 import { alleUnterstellten } from "./organigramm";
-import { anfangsstatus, arbeitstage, darfErfassen, freieTage } from "./abwesenheitsregeln";
+import { anfangsstatus, arbeitstage, darfErfassen, freieTage, kalenderSicht } from "./abwesenheitsregeln";
 
 const absenceInclude = {
   user: { select: { username: true, firstName: true, lastName: true } },
@@ -330,9 +330,10 @@ export class AbsencesService {
   /**
    * Teamkalender: wer fehlt wann.
    *
-   * Wer nichts freigeben darf, sieht nur sich selbst - die Art einer
-   * Abwesenheit (auch Krankheit) geht an Kolleginnen nur, wenn das Haus es über
-   * Rechte so vorsieht. Führungskräfte sehen ihre Unterstellten, die Verwaltung alle.
+   * Die Art einer Abwesenheit - auch Krankheit - sieht nur, wer sie selbst hat
+   * oder die Person führt (`kalenderSicht`). Das Team untereinander sieht
+   * „abwesend", und das nur für genehmigte Einträge: ein Antrag, über den noch
+   * nicht entschieden ist, geht Kolleginnen nichts an.
    */
   async kalender(user: RequestUser, vonText: string, bisText: string): Promise<AbwesenheitsKalender> {
     const von = new Date(`${vonText}T00:00:00Z`);
@@ -344,18 +345,28 @@ export class AbsencesService {
       throw new BadRequestException("Der Kalender zeigt höchstens zwei Monate.");
     }
 
-    let sichtbar: Prisma.UserWhereInput;
-    if (can(user, "absences.viewAll")) {
-      sichtbar = {};
-    } else if (can(user, "absences.approve")) {
-      sichtbar = { id: { in: [user.id, ...alleUnterstellten(await this.personen(), user.id)] } };
-    } else {
-      sichtbar = { id: user.id };
-    }
+    const alle = await this.personen();
+    const sichten = new Map(
+      alle
+        .map(
+          (person) =>
+            [
+              person.id,
+              kalenderSicht({
+                akteurId: user.id,
+                zielId: person.id,
+                personen: alle,
+                darfFreigeben: can(user, "absences.approve"),
+                sieheAlle: can(user, "absences.viewAll"),
+              }),
+            ] as const,
+        )
+        .filter(([, sicht]) => sicht !== "keine"),
+    );
 
     const [personen, tage] = await Promise.all([
       this.prisma.user.findMany({
-        where: { status: "active", ...sichtbar },
+        where: { status: "active", id: { in: [...sichten.keys()] } },
         select: {
           id: true,
           firstName: true,
@@ -378,21 +389,27 @@ export class AbsencesService {
     return {
       von: vonText,
       bis: bisText,
-      personen: personen.map((person) => ({
-        id: person.id,
-        name: displayName(person),
-        hasAccess: person.loginEnabled,
-        location: person.location?.name ?? null,
-        eintraege: person.absences.map((absence) => ({
-          id: absence.id,
-          art: absence.type,
-          status: absence.status,
-          von: absence.startDate.toISOString().slice(0, 10),
-          bis: absence.endDate.toISOString().slice(0, 10),
-          startHalb: absence.startHalb,
-          endHalb: absence.endHalb,
-        })),
-      })),
+      personen: personen.map((person) => {
+        const sicht = sichten.get(person.id) === "voll" ? "voll" : "abwesend";
+        const eintraege = person.absences.filter((absence) => sicht === "voll" || absence.status === "approved");
+        return {
+          id: person.id,
+          name: displayName(person),
+          hasAccess: person.loginEnabled,
+          location: person.location?.name ?? null,
+          sicht,
+          eintraege: eintraege.map((absence) => ({
+            id: absence.id,
+            // Bei „abwesend" verlässt weder Art noch Status den Server.
+            art: sicht === "voll" ? absence.type : ("abwesend" as const),
+            status: sicht === "voll" ? absence.status : ("approved" as const),
+            von: absence.startDate.toISOString().slice(0, 10),
+            bis: absence.endDate.toISOString().slice(0, 10),
+            startHalb: absence.startHalb,
+            endHalb: absence.endHalb,
+          })),
+        };
+      }),
       tage: tage.map((tag) => ({
         datum: tag.datum.toISOString().slice(0, 10),
         locationId: tag.locationId,

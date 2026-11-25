@@ -110,8 +110,9 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
   sofort**, nur der eigene Urlaubsantrag wartet auf Freigabe. Für andere trägt
   ein, wer `absences.approve` hat und die Person (auch mittelbar) unter sich
   hat, oder `absences.viewAll` - bewusst kein neues Recht: ein neues Recht käme
-  in bestehende Häuser ohne Rollenzuordnung an. Der Teamkalender zeigt Arten nur
-  mit Freigaberecht für den eigenen Bereich.
+  in bestehende Häuser ohne Rollenzuordnung an. Der Teamkalender (`kalenderSicht`)
+  zeigt dem Team nur „abwesend", den Grund nur der Person selbst, ihrer
+  Führungskraft mit Freigaberecht und `absences.viewAll`.
 - Ein neues Haus entsteht samt Rollen, Rechten und erstem Administrationskonto
   in einer Transaktion – ein halb eingerichteter Mandant wäre nicht benutzbar.
 

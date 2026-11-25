@@ -126,3 +126,50 @@ export function darfErfassen({ akteurId, zielId, personen, darfFreigeben, sieheA
   }
   return sieheAlle || alleUnterstellten(personen, akteurId).includes(zielId);
 }
+
+export type KalenderSicht = "voll" | "abwesend" | "keine";
+
+export interface KalenderSichtEingabe {
+  akteurId: string;
+  zielId: string;
+  personen: readonly PersonRef[];
+  darfFreigeben: boolean;
+  sieheAlle: boolean;
+}
+
+/**
+ * Was der Akteur im Teamkalender über die Zielperson sieht.
+ *
+ * - `voll`: Art der Abwesenheit (auch „krank") - die eigene, die Unterstellten
+ *   einer Führungskraft, bei `absences.viewAll` jede.
+ * - `abwesend`: nur, dass die Person fehlt - das Team untereinander. Als Team
+ *   gilt, wer dieselbe Vorgesetzte hat, plus die Vorgesetzte selbst und die
+ *   direkt Unterstellten.
+ * - `keine`: gar nichts - andere Abteilungen gehen den Akteur nichts an.
+ *
+ * Der Grund ist Gesundheitsdatum; „abwesend" reicht, um Vertretungen zu planen.
+ */
+export function kalenderSicht({
+  akteurId,
+  zielId,
+  personen,
+  darfFreigeben,
+  sieheAlle,
+}: KalenderSichtEingabe): KalenderSicht {
+  if (akteurId === zielId || sieheAlle) {
+    return "voll";
+  }
+  if (darfFreigeben && alleUnterstellten(personen, akteurId).includes(zielId)) {
+    return "voll";
+  }
+  const akteur = personen.find((person) => person.id === akteurId);
+  const ziel = personen.find((person) => person.id === zielId);
+  if (!akteur || !ziel) {
+    return "keine";
+  }
+  const gleicheVorgesetzte = akteur.managerId !== null && akteur.managerId === ziel.managerId;
+  const istVorgesetzte = akteur.managerId === ziel.id;
+  // Wer eine Person führt, plant mit ihrer Anwesenheit - auch ohne Freigaberecht.
+  const istUnterstellte = ziel.managerId === akteur.id;
+  return gleicheVorgesetzte || istVorgesetzte || istUnterstellte ? "abwesend" : "keine";
+}

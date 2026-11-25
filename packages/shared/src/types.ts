@@ -468,7 +468,13 @@ export interface ErfassbarePerson {
   hasAccess: boolean;
 }
 
-/** Teamkalender: wer wann fehlt. Nur Personen, die der Akteur sehen darf. */
+/**
+ * Teamkalender: wer wann fehlt.
+ *
+ * Die Art einer Abwesenheit sieht nur, wer sie selbst hat oder die Person
+ * führt. Alle anderen im Team sehen `abwesend`: der Grund ist ein
+ * Gesundheitsdatum, die Planung braucht nur die Tatsache.
+ */
 export interface AbwesenheitsKalender {
   von: string;
   bis: string;
@@ -477,9 +483,11 @@ export interface AbwesenheitsKalender {
     name: string;
     hasAccess: boolean;
     location: string | null;
+    /** `voll` = mit Art und Status, `abwesend` = nur die Tatsache (nur genehmigte Einträge). */
+    sicht: "voll" | "abwesend";
     eintraege: {
       id: string;
-      art: AbsenceType;
+      art: AbsenceType | "abwesend";
       status: AbsenceStatus;
       /** `YYYY-MM-DD` */
       von: string;

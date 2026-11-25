@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { anfangsstatus, arbeitstage, darfErfassen, freieTage } from "./abwesenheitsregeln";
+import { anfangsstatus, arbeitstage, darfErfassen, freieTage, kalenderSicht } from "./abwesenheitsregeln";
 
 const tag = (text: string) => new Date(`${text}T00:00:00Z`);
 const keine = new Set<string>();
@@ -130,5 +130,53 @@ describe("darfErfassen", () => {
 
   it("verweigert Unterstellten den Eintrag für die Vorgesetzte", () => {
     expect(mit("a", "leitung")).toBe(false);
+  });
+});
+
+describe("kalenderSicht", () => {
+  const personen = [
+    { id: "gf", managerId: null },
+    { id: "leitung", managerId: "gf" },
+    { id: "a", managerId: "leitung" },
+    { id: "b", managerId: "leitung" },
+    { id: "nachbar", managerId: "gf" },
+    { id: "c", managerId: "nachbar" },
+  ];
+  const sicht = (akteurId: string, zielId: string, darfFreigeben = false, sieheAlle = false) =>
+    kalenderSicht({ akteurId, zielId, personen, darfFreigeben, sieheAlle });
+
+  it("zeigt die eigene Abwesenheit mit Grund", () => {
+    expect(sicht("a", "a")).toBe("voll");
+  });
+
+  it("zeigt Teamkolleginnen nur als abwesend", () => {
+    expect(sicht("a", "b")).toBe("abwesend");
+  });
+
+  it("zeigt auch die Vorgesetzte nur als abwesend", () => {
+    expect(sicht("a", "leitung")).toBe("abwesend");
+  });
+
+  it("zeigt nichts aus anderen Teams", () => {
+    expect(sicht("a", "c")).toBe("keine");
+    expect(sicht("a", "nachbar")).toBe("keine");
+  });
+
+  it("zeigt der Teamleitung ihre Unterstellten mit Grund, auch mittelbar", () => {
+    expect(sicht("leitung", "a", true)).toBe("voll");
+    expect(sicht("gf", "a", true)).toBe("voll");
+  });
+
+  it("zeigt der Teamleitung ihre Gleichgestellten nur als abwesend", () => {
+    expect(sicht("leitung", "nachbar", true)).toBe("abwesend");
+  });
+
+  it("zeigt Teamleitung ohne Freigaberecht ihre direkt Unterstellten nur als abwesend", () => {
+    expect(sicht("leitung", "a", false)).toBe("abwesend");
+    expect(sicht("gf", "a", false)).toBe("keine");
+  });
+
+  it("zeigt mit dem Recht auf alle Abwesenheiten jede Person mit Grund", () => {
+    expect(sicht("a", "c", false, true)).toBe("voll");
   });
 });
