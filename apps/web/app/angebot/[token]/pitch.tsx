@@ -116,6 +116,8 @@ function Start({ ansicht }: { ansicht: PitchAnsicht }) {
         an einer Stelle. Das Autogeschäft bleibt im DMS, wo es hingehört. Diese Seite ist auf Ihre Standorte
         zugeschnitten. Stellen Sie ein, was Sie brauchen, und sehen Sie sofort, was es kostet.
       </p>
+      <Namensherkunft />
+
       <div className="facts">
         <div className="fact">
           <b>{ansicht.standorte.length}</b>
@@ -140,6 +142,210 @@ function Start({ ansicht }: { ansicht: PitchAnsicht }) {
         Weiter mit der Schaltfläche, den Pfeiltasten oder den Reitern oben.
       </p>
     </section>
+  );
+}
+
+/* ------------------------------------------------------------------- Name */
+
+type Buchstabe = "A" | "H" | "O" | "I";
+
+const BUCHSTABEN: Record<Buchstabe, { wort: string; titel: string; text: string }> = {
+  A: {
+    wort: "Auto",
+    titel: "Auto",
+    text: "Das Autogeschäft selbst bleibt in Ihrem DMS. AHOI kümmert sich um alles, was drumherum im Betrieb passiert.",
+  },
+  H: {
+    wort: "Haus",
+    titel: "Haus",
+    text: "Gebaut für Autohäuser mit mehreren Standorten, Marken und Abteilungen. Jede Person sieht, was für ihr Haus gilt.",
+  },
+  O: {
+    wort: "Organisation",
+    titel: "Organisation",
+    text: "Bestellungen, Freigaben, Anträge, Serviceanfragen, Einarbeitung: der Betriebsalltag an einer Stelle.",
+  },
+  I: {
+    wort: "Information",
+    titel: "Information",
+    text: "Aushänge, Wissen, Dokumente, Verzeichnis: jede Person erfährt, was für sie gilt.",
+  },
+};
+
+/** Das Wort, aus dem der Name entsteht. Die Buchstaben des Namens tragen ihren Schlüssel. */
+const NAMENSZEICHEN: { zeichen: string; buchstabe?: Buchstabe }[] = [
+  ..."AUTOHAUS".split("").map((zeichen, index) => ({
+    zeichen,
+    buchstabe: index === 0 ? ("A" as const) : index === 4 ? ("H" as const) : undefined,
+  })),
+  { zeichen: "\u00A0" },
+  ..."ORGANISATION"
+    .split("")
+    .map((zeichen, index) => ({ zeichen, buchstabe: index === 0 ? ("O" as const) : undefined })),
+  { zeichen: "\u00A0" },
+  { zeichen: "&" },
+  { zeichen: "\u00A0" },
+  ..."INFORMATION"
+    .split("")
+    .map((zeichen, index) => ({ zeichen, buchstabe: index === 0 ? ("I" as const) : undefined })),
+];
+
+/**
+ * Woher der Name kommt: Autohaus Organisation & Information.
+ *
+ * Ein Regler zieht das Wort auf seine vier Buchstaben zusammen, bis AHOI übrig
+ * bleibt. Der Name ist eine Abkürzung und kein Bild; das Zeichen daneben baut
+ * sich aus seinen vier Feldern auf, drei gefüllt und eines offen.
+ */
+function Namensherkunft() {
+  const [fortschritt, setFortschritt] = useState(0);
+  const [angeheftet, setAngeheftet] = useState<Buchstabe | null>(null);
+  const [schwebe, setSchwebe] = useState<Buchstabe | null>(null);
+  const lauf = useRef<number | null>(null);
+  const aktiv = schwebe ?? angeheftet;
+
+  const stoppe = () => {
+    if (lauf.current !== null) {
+      cancelAnimationFrame(lauf.current);
+      lauf.current = null;
+    }
+  };
+  useEffect(() => stoppe, []);
+
+  const spiele = () => {
+    stoppe();
+    const ziel = fortschritt >= 0.99 ? 0 : 1;
+    const von = fortschritt;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setFortschritt(ziel);
+      return;
+    }
+    const dauer = 2200;
+    const start = performance.now();
+    const schritt = (jetzt: number) => {
+      const t = Math.min(1, (jetzt - start) / dauer);
+      const weich = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      setFortschritt(von + (ziel - von) * weich);
+      lauf.current = t < 1 ? requestAnimationFrame(schritt) : null;
+    };
+    lauf.current = requestAnimationFrame(schritt);
+  };
+
+  const fertig = fortschritt >= 0.99;
+  const heftAn = (buchstabe: Buchstabe) => setAngeheftet((alt) => (alt === buchstabe ? null : buchstabe));
+
+  return (
+    <div className="name">
+      <div className="name-kopf">
+        <span className="eyebrow">Woher der Name kommt</span>
+        <button type="button" className="btn" onClick={spiele}>
+          {fertig ? "Zurück zum Wort" : "Zusammenziehen"}
+        </button>
+      </div>
+
+      <div className="name-bild">
+        <div
+          className="name-wort"
+          role="group"
+          aria-label="Autohaus Organisation und Information, zusammengezogen zu AHOI"
+        >
+          {NAMENSZEICHEN.map((eintrag, index) =>
+            eintrag.buchstabe ? (
+              <button
+                key={index}
+                type="button"
+                className={`n-key ${aktiv === eintrag.buchstabe ? "fokus" : ""}`}
+                aria-label={`${eintrag.buchstabe}: ${BUCHSTABEN[eintrag.buchstabe].wort}`}
+                onMouseEnter={() => setSchwebe(eintrag.buchstabe!)}
+                onMouseLeave={() => setSchwebe(null)}
+                onFocus={() => setSchwebe(eintrag.buchstabe!)}
+                onBlur={() => setSchwebe(null)}
+                onClick={() => heftAn(eintrag.buchstabe!)}
+              >
+                {eintrag.zeichen}
+              </button>
+            ) : (
+              <span
+                key={index}
+                className="n-weg"
+                aria-hidden="true"
+                style={{ maxWidth: `${(1 - fortschritt) * 1.2}em`, opacity: Math.max(0, 1 - fortschritt * 1.7) }}
+              >
+                {eintrag.zeichen}
+              </span>
+            ),
+          )}
+        </div>
+
+        <svg
+          className="name-zeichen"
+          viewBox="0 0 76 76"
+          role="img"
+          aria-label="Das AHOI-Zeichen: vier Felder, drei gefüllt, eines offen"
+        >
+          {[
+            { x: 0, y: 0, offen: false },
+            { x: 40, y: 0, offen: true },
+            { x: 0, y: 40, offen: false },
+            { x: 40, y: 40, offen: false },
+          ].map((feld, index) => {
+            const sichtbar = Math.max(0, Math.min(1, (fortschritt - (0.45 + index * 0.1)) / 0.12));
+            return feld.offen ? (
+              <rect
+                key={index}
+                className="z-offen"
+                x={feld.x + 2}
+                y={feld.y + 2}
+                width="32"
+                height="32"
+                opacity={sichtbar}
+              />
+            ) : (
+              <rect key={index} className="z-voll" x={feld.x} y={feld.y} width="36" height="36" opacity={sichtbar} />
+            );
+          })}
+        </svg>
+      </div>
+
+      <label className="name-regler">
+        <span>Vom Wort zum Namen</span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={Math.round(fortschritt * 100)}
+          onChange={(e) => {
+            stoppe();
+            setFortschritt(Number(e.target.value) / 100);
+          }}
+        />
+      </label>
+
+      <div className="name-karten" role="group" aria-label="Die vier Buchstaben">
+        {(Object.keys(BUCHSTABEN) as Buchstabe[]).map((buchstabe) => (
+          <button
+            key={buchstabe}
+            type="button"
+            className="name-karte"
+            aria-pressed={aktiv === buchstabe}
+            onMouseEnter={() => setSchwebe(buchstabe)}
+            onMouseLeave={() => setSchwebe(null)}
+            onFocus={() => setSchwebe(buchstabe)}
+            onBlur={() => setSchwebe(null)}
+            onClick={() => heftAn(buchstabe)}
+          >
+            <span className="name-buchstabe">{buchstabe}</span>
+            <b>{BUCHSTABEN[buchstabe].titel}</b>
+            <span>{BUCHSTABEN[buchstabe].text}</span>
+          </button>
+        ))}
+      </div>
+
+      <p className="hint" style={{ marginTop: 12 }}>
+        AHOI ist eine Abkürzung, kein Bild. Das Zeichen zeigt vier Felder, drei gefüllt und eines offen: die Module, die
+        ein Haus einschaltet, und das eine, das es nicht braucht.
+      </p>
+    </div>
   );
 }
 
