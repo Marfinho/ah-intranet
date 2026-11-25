@@ -170,6 +170,34 @@ const SCHNELL: { text: string; zeile: Zeile }[] = [
   { text: "Eine Hebebühne ist defekt", zeile: 1 },
   { text: "Wer ist für die Zulassung zuständig?", zeile: 2 },
   { text: "Hr. Schulz möchte den Sonntagsdienst tauschen", zeile: 1 },
+  { text: "Der Standort Nord eröffnet am Montag", zeile: 0 },
+  { text: "Welche Öffnungszeiten gelten an Feiertagen?", zeile: 2 },
+  { text: "Visitenkarten für die neue Verkäuferin", zeile: 1 },
+  { text: "Das Verkaufshaus hat samstags länger geöffnet", zeile: 0 },
+  { text: "Heute ist die Schulung zur neuen Marke", zeile: 2 },
+  { text: "Der Urlaubsantrag wartet auf die Leitung", zeile: 1 },
+  { text: "Haus Süd hat keine eigene Werkstatt", zeile: 0 },
+  { text: "Wo ist die Preisliste vom letzten Jahr?", zeile: 2 },
+  { text: "Wer hat den Schlüssel zum Vorführwagen?", zeile: 1 },
+  { text: "Ein Haus wechselt die Marke", zeile: 0 },
+  { text: "Wie läuft eine Probefahrt ab?", zeile: 2 },
+  { text: "Die Sammelbestellung geht Freitag raus", zeile: 1 },
+  { text: "Die Werkstatt braucht eigene Abläufe", zeile: 0 },
+  { text: "Wer vertritt Fr. Hülse nächste Woche?", zeile: 2 },
+  { text: "Der neue Kollege startet am Montag", zeile: 1 },
+  { text: "Das Autohaus plant den Tag der offenen Tür", zeile: 0 },
+  { text: "Hat jeder den Aushang zum Arbeitsschutz gelesen?", zeile: 2 },
+  { text: "Die Schulung am Dienstag braucht einen Raum", zeile: 1 },
+  { text: "Alle Häuser brauchen dieselben Vorgaben", zeile: 0 },
+  { text: "Wo steht die Anleitung für die Inzahlungnahme?", zeile: 2 },
+  { text: "Hr. Albers beantragt einen Tag Gleitzeit", zeile: 1 },
+  { text: "Zwei Marken unter einem Dach brauchen getrennte Zuständigkeiten", zeile: 0 },
+  { text: "Wer ist im Haus Süd für Teile zuständig?", zeile: 2 },
+  { text: "Ein Kundenschlüssel geht an die Werkstatt", zeile: 1 },
+  { text: "Ein neuer Standort braucht Konten, Rollen und Abteilungen", zeile: 0 },
+  { text: "Gilt die neue Preisaktion auch im Nachbarhaus?", zeile: 2 },
+  { text: "Eine Idee zur besseren Terminplanung der Werkstatt", zeile: 1 },
+  { text: "Eine Marke wird an zwei Standorten verkauft", zeile: 0 },
 ];
 const BEISPIELE = [...LANGSAM, ...SCHNELL];
 
@@ -187,9 +215,22 @@ const NAME_AUFLOESEN = 1.5;
 const NAME_AUFLOESEN_SCHNELL = 0.9;
 /** Wie lange die ersten drei Beispiele stehen, in Sekunden. */
 const LESEZEIT = [3, 5, 4];
-const SCHNELL_VERWEILEN = [1.3, 1.1, 0.95, 0.8, 0.7, 0.5, 0.4, 0.3, 0.25];
-const SCHNELL_FLUG = [1.0, 0.9, 0.8, 0.7, 0.65, 0.55, 0.5, 0.45, 0.4];
-const SCHNELL_ABSTAND = [2.0, 1.7, 1.45, 1.25, 1.05, 0.8, 0.65, 0.5, 0.4];
+/**
+ * Zeitkurven der schnellen Beispiele. Die ersten fünf (Nr. 4 bis 8) sind fest
+ * gewählt, damit man sie noch liest. Danach werden Verweildauer, Flugzeit und
+ * Abstand gleichmäßig kürzer und erreichen bei Nr. 31 ihren Boden: die letzten
+ * zehn stehen nur noch eine Zehntelsekunde.
+ */
+const SCHNELL_ANFANG = {
+  verweilen: [1.3, 1.1, 0.95, 0.8, 0.7],
+  flug: [1.0, 0.9, 0.8, 0.7, 0.65],
+  abstand: [2.0, 1.7, 1.45, 1.25, 1.05],
+};
+const schnellwert = (anfang: number[], i: number, start: number, faktor: number, boden: number) =>
+  i < anfang.length ? anfang[i] : Math.max(boden, start * Math.pow(faktor, i - anfang.length));
+const SCHNELL_VERWEILEN = SCHNELL.map((_, i) => schnellwert(SCHNELL_ANFANG.verweilen, i, 0.55, 0.934, 0.1));
+const SCHNELL_FLUG = SCHNELL.map((_, i) => schnellwert(SCHNELL_ANFANG.flug, i, 0.6, 0.9726, 0.3));
+const SCHNELL_ABSTAND = SCHNELL.map((_, i) => schnellwert(SCHNELL_ANFANG.abstand, i, 0.85, 0.918, 0.1));
 
 /** Wann jedes Beispiel erscheint, losfliegt und sich auflöst, und wie lange das Auflösen dauert. */
 const BEISPIEL_BEGINN: number[] = [];
@@ -395,8 +436,6 @@ function baueSzene(breite: number, hoehe: number, kartenSchrift: number) {
     const ziel1 = woerter[i % woerter.length];
     const verfuegbar = jeZeile[ziel1.zeile];
     const beispiel = verfuegbar[zaehlerZeile[ziel1.zeile]++ % verfuegbar.length];
-    // Schnelle Karten fliegen an eine Stelle ihres Wortes und platzen dort auf.
-    if (!ziele[beispiel] && beispiel >= LANGSAM.length) ziele[beispiel] = ziel1;
     let ziel2: Punkt;
     if (ziel1.merkmal) {
       const liste = jeBuchstabe[ziel1.merkmal];
@@ -416,6 +455,15 @@ function baueSzene(breite: number, hoehe: number, kartenSchrift: number) {
       verzug: zufallswert() * 0.4,
     });
   }
+
+  // Schnelle Karten fliegen an eine zufällige Stelle ihres Wortes und platzen dort auf.
+  const jeZeilePunkte: Punkt[][] = [[], [], []];
+  for (const punkt of woerter) jeZeilePunkte[punkt.zeile].push(punkt);
+  BEISPIELE.forEach((beispiel, k) => {
+    if (k < LANGSAM.length) return;
+    const punkte = jeZeilePunkte[beispiel.zeile];
+    ziele[k] = punkte[Math.floor(zufallswert() * punkte.length)];
+  });
 
   // Alle Karten sind gleich groß und erscheinen an derselben Stelle oben in der Mitte.
   messen.font = `600 ${kartenSchrift}px ${SCHRIFT}`;
@@ -555,7 +603,7 @@ function Namensseite({ onWeiter }: { onWeiter: () => void }) {
             alpha = Math.min(1, da * 1.4) * (1 - weich((t - BEISPIEL_AUFLOESUNG[k]) / 0.6));
           } else {
             const i = k - LANGSAM.length;
-            const da = (t - BEISPIEL_BEGINN[k]) / 0.25;
+            const da = (t - BEISPIEL_BEGINN[k]) / Math.min(0.25, SCHNELL_VERWEILEN[i]);
             alpha = Math.min(1, da);
             mass = 0.94 + 0.06 * Math.min(1, da);
             const flug = (t - BEISPIEL_LOS[k]) / SCHNELL_FLUG[i];
