@@ -1,6 +1,6 @@
 import { Global, Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
-import { JwtModule } from "@nestjs/jwt";
+import { JwtModule, type JwtSignOptions } from "@nestjs/jwt";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { MfaService } from "./mfa.service";
@@ -22,7 +22,10 @@ import { PasswortService } from "./passwort.service";
           // Algorithmus fest vorgeben, statt ihn dem Token zu überlassen: so
           // bleibt ausgeschlossen, dass ein Token mit `alg: none` oder einem
           // anderen Verfahren als gültig durchgeht.
-          signOptions: { algorithm: "HS256" as const, expiresIn: config.get<string>("JWT_EXPIRES_IN") ?? "12h" },
+          signOptions: {
+            algorithm: "HS256" as const,
+            expiresIn: (config.get<string>("JWT_EXPIRES_IN") ?? "12h") as JwtSignOptions["expiresIn"],
+          },
           verifyOptions: { algorithms: ["HS256" as const] },
         };
       },

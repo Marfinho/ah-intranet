@@ -21,11 +21,6 @@ das vorher unabhängig prüfen lassen.
 
 ## Bewusst offen
 
-- **`@nestjs/core` (mittlere Meldung):** erst mit Nest 11 behoben. Der Umstieg ist
-  ein eigener Schritt mit eigener Prüfung. Die Meldung betrifft eine
-  Ausgabeneutralisierung, die AHOI nach heutigem Stand nicht berührt – **das ist
-  eine Einschätzung, keine Prüfung des Advisories**; bitte vor dem Verschieben
-  gegenlesen.
 - **Entwicklungswerkzeuge (Vite, Vitest u. a.):** `pnpm audit` ohne `--prod` zeigt
   Meldungen. Sie laufen nie auf einem Server und blockieren die CI nicht.
 - **Basis-Images nicht auf Digest gepinnt:** Dependabot hebt die Tags an, ein

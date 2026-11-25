@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
 import { ConfigModule } from "@nestjs/config";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
@@ -56,6 +56,7 @@ export class AppModule implements NestModule {
     // Reihenfolge: Das Protokoll läuft zuerst, damit es auch Anfragen erfasst,
     // die in der Mandantenauflösung scheitern. Den Mandanten liest es erst beim
     // Abschluss der Antwort aus, da steht er.
-    consumer.apply(RequestLogMiddleware, TenantMiddleware).forRoutes("*");
+    // `{*splat}` statt `*`: Express 5 verlangt benannte Platzhalter.
+    consumer.apply(RequestLogMiddleware, TenantMiddleware).forRoutes({ path: "{*splat}", method: RequestMethod.ALL });
   }
 }
