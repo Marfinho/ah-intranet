@@ -7,9 +7,10 @@ import type { ActionState } from "@/lib/actions";
 const start: ActionState = { ok: true };
 
 const HILFE =
-  "Eine Zeile je Haus: Name | Straße | PLZ Ort | Marken | Leistungen | Öffnungszeiten | Verbund | eigener Text. " +
-  "Marken und Leistungen mit Komma trennen. Alles nach dem Namen darf fehlen. Häuser mit gleichem Verbund " +
-  "(z. B. dieselbe Straße) nutzen Raumbuchung und Kalender gemeinsam.";
+  "Eine Zeile je Haus. Der Name genügt – die Pitch-Seite entsteht daraus sofort, der Interessent ergänzt den Rest selbst. " +
+  "Mehr geht so: Name | Straße | PLZ Ort | Marken | Leistungen | Öffnungszeiten | Verbund | eigener Text. " +
+  "Marken und Leistungen mit Komma trennen. Häuser mit gleichem Verbund (z. B. dieselbe Straße) nutzen " +
+  "Raumbuchung und Kalender gemeinsam.";
 
 /** Anlage und Änderung eines Interessenten: dasselbe Formular, nur eine andere Aktion. */
 export function LeadForm({
@@ -34,10 +35,6 @@ export function LeadForm({
           placeholder="HACKEROTT Autohaus Gruppe"
         />
       </Field>
-      <Field label="Ansprechperson" hint="Sieht der Interessent nicht.">
-        <input name="ansprechperson" defaultValue={vorgabe?.ansprechperson} className={inputClass} />
-      </Field>
-
       <Field label="Häuser *" hint={HILFE} wide>
         <textarea
           name="standorte"
@@ -51,20 +48,29 @@ export function LeadForm({
         />
       </Field>
 
-      <Field label="Notiz" hint="Interne Notiz, sieht der Interessent nicht." wide>
-        <input name="notiz" defaultValue={vorgabe?.notiz} className={inputClass} />
-      </Field>
+      <details className="md:col-span-2 rounded-lg border border-slate-200 p-3" open={!neu}>
+        <summary className="cursor-pointer text-sm font-medium">Weitere Angaben (alles freiwillig)</summary>
+        <div className="mt-3 grid gap-4 md:grid-cols-2">
+          <Field label="Ansprechperson" hint="Sieht der Interessent nicht.">
+            <input name="ansprechperson" defaultValue={vorgabe?.ansprechperson} className={inputClass} />
+          </Field>
 
-      {neu ? (
-        <>
-          <Field label="Startwert Nutzer" hint="Der Interessent stellt seine Zahl selbst ein. Leer: 25 je Haus.">
-            <input name="nutzer" type="number" min={1} className={inputClass} />
+          <Field label="Notiz" hint="Interne Notiz, sieht der Interessent nicht." wide>
+            <input name="notiz" defaultValue={vorgabe?.notiz} className={inputClass} />
           </Field>
-          <Field label="Link gültig (Tage)" hint="Leer: 60 Tage, höchstens 365.">
-            <input name="linkTage" type="number" min={1} max={365} className={inputClass} />
-          </Field>
-        </>
-      ) : null}
+
+          {neu ? (
+            <>
+              <Field label="Startwert Nutzer" hint="Der Interessent stellt seine Zahl selbst ein. Leer: 25 je Haus.">
+                <input name="nutzer" type="number" min={1} className={inputClass} />
+              </Field>
+              <Field label="Link gültig (Tage)" hint="Leer: 60 Tage, höchstens 365.">
+                <input name="linkTage" type="number" min={1} max={365} className={inputClass} />
+              </Field>
+            </>
+          ) : null}
+        </div>
+      </details>
 
       <div className="md:col-span-2 space-y-3">
         <FormAlert state={state} />
