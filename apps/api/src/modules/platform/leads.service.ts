@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma, type Lead, type LeadStandort } from "../../generated/prisma/client";
 import {
@@ -408,21 +409,43 @@ export class LeadsService {
     }
 
     const vorschau = this.plane(lead);
-    const tenant = await this.tenants.create({
-      slug: input.slug,
-      name: lead.name,
-      domain: input.domain,
-      notes: `Aus Interessent ${lead.id}${lead.preislisteVersion ? ` (Preisliste ${lead.preislisteVersion})` : ""}`,
-      adminUsername: input.adminUsername,
-      adminPassword: input.adminPassword,
-      adminFirstName: input.adminFirstName,
-      adminLastName: input.adminLastName,
-      adminEmail: input.adminEmail,
-      licensedSeats: vorschau.lizenzen,
-      // Häuser kosten nur Einrichtung, keine Gebühr: eine Obergrenze wäre erfunden.
-      locationLimit: null,
-      vorlage: { plan: vorschau.plan, module: vorschau.moduleZustand },
+
+    // Reservieren, bevor der Mandant entsteht: zwei gleichzeitige Aufrufe lesen
+    // beide „noch kein Haus“, und der zweite Mandant bliebe sonst verwaist zurück.
+    // Das Update mit Bedingung entscheidet in der Datenbank, wer gewinnt.
+    const reservierung = `wird-angelegt:${randomUUID()}`;
+    const reserviert = await this.prisma.lead.updateMany({
+      where: { id, hausId: null },
+      data: { hausId: reservierung },
     });
+    if (reserviert.count === 0) {
+      throw new BadRequestException(
+        "Aus diesem Interessenten wird gerade ein Haus angelegt oder wurde bereits eines angelegt.",
+      );
+    }
+
+    let tenant: Awaited<ReturnType<typeof this.tenants.create>>;
+    try {
+      tenant = await this.tenants.create({
+        slug: input.slug,
+        name: lead.name,
+        domain: input.domain,
+        notes: `Aus Interessent ${lead.id}${lead.preislisteVersion ? ` (Preisliste ${lead.preislisteVersion})` : ""}`,
+        adminUsername: input.adminUsername,
+        adminPassword: input.adminPassword,
+        adminFirstName: input.adminFirstName,
+        adminLastName: input.adminLastName,
+        adminEmail: input.adminEmail,
+        licensedSeats: vorschau.lizenzen,
+        // Häuser kosten nur Einrichtung, keine Gebühr: eine Obergrenze wäre erfunden.
+        locationLimit: null,
+        vorlage: { plan: vorschau.plan, module: vorschau.moduleZustand },
+      });
+    } catch (fehler) {
+      // Misslungen (z. B. Kennung vergeben): Reservierung lösen, damit es erneut geht.
+      await this.prisma.lead.updateMany({ where: { id, hausId: reservierung }, data: { hausId: null } });
+      throw fehler;
+    }
 
     await this.prisma.lead.update({ where: { id }, data: { hausId: tenant.id, status: "gewonnen" } });
 

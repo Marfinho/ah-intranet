@@ -109,7 +109,7 @@ class CreateLeadDto {
   @IsOptional() @IsString() tier?: string | null;
 
   @IsArray()
-  @ArrayMaxSize(HAEUSER_MAX)
+  @ArrayMaxSize(KUNDEN_HAEUSER_MAX)
   @ValidateNested({ each: true })
   @Type(() => StandortDto)
   standorte!: StandortDto[];
@@ -122,7 +122,7 @@ class UpdateLeadDto {
 
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(HAEUSER_MAX)
+  @ArrayMaxSize(KUNDEN_HAEUSER_MAX)
   @ValidateNested({ each: true })
   @Type(() => StandortDto)
   standorte?: StandortDto[];
