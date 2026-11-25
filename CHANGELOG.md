@@ -23,6 +23,8 @@ Erster vollständiger Stand. Lauffähig, aber in keinem Haus im Einsatz.
   Frontend. Die Hausschrift wird mit der Anwendung ausgeliefert statt von Google.
 - **HTTPS im Betrieb:** `Caddyfile.tls` holt je Haus ein Zertifikat; die API
   entscheidet, für welche Namen.
+- **Node 26 (LTS)** in CI, Images und Typen; Node 20 ist seit April 2026 und
+  22 ab April 2027 nicht mehr unterstützt.
 - **CI:** Abhängigkeits-Audit ab „high“, CodeQL, Geheimnissuche, SBOM,
   Dependabot.
 
