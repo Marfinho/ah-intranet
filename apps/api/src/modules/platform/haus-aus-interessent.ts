@@ -138,12 +138,21 @@ export function modulEinstellungen(gewaehlt: readonly string[]): { key: string; 
   }));
 }
 
+/** Schneidet ein Zeichen von beiden Enden ab, ohne Regex (kein Rückverfolgen bei langen Eingaben). */
+function ohneRand(text: string, zeichen: string): string {
+  let von = 0;
+  let bis = text.length;
+  while (von < bis && text[von] === zeichen) von++;
+  while (bis > von && text[bis - 1] === zeichen) bis--;
+  return text.slice(von, bis);
+}
+
 /** Vorschlag für die Kennung aus dem Namen; `null`, wenn daraus keine gültige wird. */
 export function vorschlagKennung(name: string): string | null {
-  const kennung = ohneAkzente(name)
+  const zusammen = ohneAkzente(name)
     .toLowerCase()
     .replace(/\b(gmbh|co|kg|ag|ug|gruppe|autohaus|autohaeuser|group)\b/g, " ")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/[^a-z0-9]+/g, "-");
+  const kennung = ohneRand(zusammen, "-");
   return kennung && !pruefeKennung(kennung) ? kennung : null;
 }

@@ -123,6 +123,21 @@ export interface PitchAnsicht {
  * fehlen. Ein Textfeld statt zehn Eingabefelder je Haus: wer acht Häuser aus
  * einer Webseite übernimmt, fügt sie in einem Zug ein.
  */
+/**
+ * Trennt „30938 Burgwedel“ in PLZ und Ort. Ohne Regex mit Rückverfolgung: die
+ * Eingabe kommt aus einem Formular und darf beliebig viele Leerzeichen enthalten,
+ * ohne die Auswertung zu verlangsamen.
+ */
+function trenneOrt(text: string | undefined): { plz: string | null; ort: string | null } {
+  const wert = (text ?? "").trim();
+  if (!wert) return { plz: null, ort: null };
+  let ende = 0;
+  while (ende < wert.length && wert[ende] >= "0" && wert[ende] <= "9") ende++;
+  const rest = wert.slice(ende).trim();
+  const istPlz = ende >= 4 && ende <= 5 && rest !== "" && /\s/.test(wert[ende]);
+  return istPlz ? { plz: wert.slice(0, ende), ort: rest } : { plz: null, ort: wert };
+}
+
 export function parseStandortText(text: string): LeadStandortItem[] {
   const liste = (wert: string | undefined) =>
     (wert ?? "")
@@ -139,12 +154,12 @@ export function parseStandortText(text: string): LeadStandortItem[] {
       const [name, strasse, plzOrt, marken, leistungen, zeiten, campus, vorschlag] = zeile
         .split("|")
         .map((teil) => teil.trim());
-      const treffer = /^(\d{4,5})\s+(.+)$/.exec(plzOrt ?? "");
+      const { plz, ort } = trenneOrt(plzOrt);
       return {
         name,
         strasse: leer(strasse),
-        plz: treffer ? treffer[1] : null,
-        ort: treffer ? treffer[2] : leer(plzOrt),
+        plz,
+        ort,
         marken: liste(marken),
         leistungen: liste(leistungen),
         oeffnungszeiten: leer(zeiten),
@@ -157,8 +172,8 @@ export function parseStandortText(text: string): LeadStandortItem[] {
 
 export function formatStandortText(standorte: readonly LeadStandortItem[]): string {
   return standorte
-    .map((standort) =>
-      [
+    .map((standort) => {
+      const felder = [
         standort.name,
         standort.strasse ?? "",
         [standort.plz, standort.ort].filter(Boolean).join(" "),
@@ -167,9 +182,10 @@ export function formatStandortText(standorte: readonly LeadStandortItem[]): stri
         standort.oeffnungszeiten ?? "",
         standort.campus ?? "",
         standort.vorschlag ?? "",
-      ]
-        .join(" | ")
-        .replace(/(\s\|\s)+$/, ""),
-    )
+      ];
+      // Leere Felder am Ende weglassen, damit die Zeile kurz bleibt.
+      while (felder.length > 1 && felder[felder.length - 1] === "") felder.pop();
+      return felder.join(" | ");
+    })
     .join("\n");
 }

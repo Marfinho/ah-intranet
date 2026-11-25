@@ -38,3 +38,23 @@ describe("parseStandortText", () => {
     expect(formatStandortText(parseStandortText(text))).toBe(text);
   });
 });
+
+describe("parseStandortText: PLZ und Ort", () => {
+  it("trennt PLZ und Ort, auch bei mehreren Leerzeichen", () => {
+    const [haus] = parseStandortText("Nord | Weg 1 | 30938   Burgwedel");
+    expect(haus.plz).toBe("30938");
+    expect(haus.ort).toBe("Burgwedel");
+  });
+
+  it("nimmt Text ohne PLZ ganz als Ort", () => {
+    const [haus] = parseStandortText("Nord | Weg 1 | Burgwedel Mitte");
+    expect(haus.plz).toBeNull();
+    expect(haus.ort).toBe("Burgwedel Mitte");
+  });
+
+  it("bleibt bei sehr vielen Leerzeichen schnell", () => {
+    const start = Date.now();
+    parseStandortText(`Nord | Weg | 30938${" ".repeat(50000)}x ${" ".repeat(50000)}`);
+    expect(Date.now() - start).toBeLessThan(500);
+  });
+});
