@@ -1,4 +1,5 @@
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "../generated/prisma/client";
+import { MODELL_META } from "../generated/modell-meta";
 
 /** Modelle ohne Mandantenbezug: die Mandantentabelle selbst. */
 const GLOBAL_MODELS = new Set<string>(["Tenant"]);
@@ -65,14 +66,10 @@ function meta(model: string): ModelMeta {
   }
 
   hit = { ownedRelations: new Set(), relationTarget: new Map() };
-  const definition = Prisma.dmmf.datamodel.models.find((entry) => entry.name === model);
-  for (const field of definition?.fields ?? []) {
-    if (field.kind !== "object") {
-      continue;
-    }
-    hit.relationTarget.set(field.name, field.type);
-    if ((field.relationFromFields?.length ?? 0) > 0 && field.name !== "tenant") {
-      hit.ownedRelations.add(field.name);
+  for (const [feld, beziehung] of Object.entries(MODELL_META[model] ?? {})) {
+    hit.relationTarget.set(feld, beziehung.target);
+    if (beziehung.owned && feld !== "tenant") {
+      hit.ownedRelations.add(feld);
     }
   }
 

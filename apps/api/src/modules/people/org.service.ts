@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
-import { PrismaService } from "../../core/prisma.service";
+import { Prisma } from "../../generated/prisma/client";
+import { PrismaService, type TransaktionsClient } from "../../core/prisma.service";
 import { AuditService } from "../../core/audit.service";
 import { resolveUserScopes } from "../../core/mappers";
 import type { RequestUser } from "../../core/request-user";
@@ -248,7 +248,7 @@ export class OrgService {
 
   /* ---------------------------------------------------------- Helfer */
 
-  private async setLocationBrands(tx: Prisma.TransactionClient, locationId: string, brandIds: string[]): Promise<void> {
+  private async setLocationBrands(tx: TransaktionsClient, locationId: string, brandIds: string[]): Promise<void> {
     const unique = [...new Set(brandIds)];
     if (unique.length) {
       const gueltig = await tx.brand.count({ where: { id: { in: unique } } });
@@ -268,7 +268,7 @@ export class OrgService {
    * wirken, nicht erst nach Ablauf des Tokens - deshalb enden zugleich die
    * Sitzungen der betroffenen Konten, genau wie bei einer Rechteänderung.
    */
-  private async recomputeScopesForLocation(tx: Prisma.TransactionClient, locationId: string): Promise<void> {
+  private async recomputeScopesForLocation(tx: TransaktionsClient, locationId: string): Promise<void> {
     const users = await tx.user.findMany({
       where: { locationId },
       select: { id: true, departmentId: true, specialtyAreaId: true },

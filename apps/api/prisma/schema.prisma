@@ -1,15 +1,15 @@
 generator client {
-  provider = "prisma-client-js"
-  // "native" fürs Entwickeln außerhalb von Docker; die musl-Variante fürs
-  // Alpine-Image der Dockerfiles. Explizit statt der Selbsterkennung, die auf
-  // aktuellem Alpine (OpenSSL 3, keine libssl.so.1.1 mehr im Repo) zur
-  // falschen Engine griff und die API beim Start abstürzen ließ.
-  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  provider     = "prisma-client"
+  // Prisma 7 legt den Client nicht mehr in node_modules ab, der Ausgabeort ist
+  // Pflicht. Er liegt im Quellbaum und wird beim Bauen mitübersetzt; erzeugt
+  // wird er mit `pnpm --filter api prisma:generate` (git-ignoriert).
+  output       = "../src/generated/prisma"
+  // Die API ist CommonJS (Nest-Module werden per require() geladen).
+  moduleFormat = "cjs"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ---------------------------------------------------------------- Enums

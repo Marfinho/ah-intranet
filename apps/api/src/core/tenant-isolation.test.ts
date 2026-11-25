@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "../generated/prisma/client";
 import { applyTenantScope, isGlobalModel, stampTenant } from "./tenant-isolation";
 
 const TENANT = "haus-a";

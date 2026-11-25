@@ -15,7 +15,7 @@ import {
   MinLength,
   ValidateNested,
 } from "class-validator";
-import type { AbsenceType } from "@prisma/client";
+import type { AbsenceType } from "../../generated/prisma/client";
 import type { AppRole, Presence } from "@ah-intranet/shared";
 import { PeopleService } from "./people.service";
 import { AbsencesService } from "./absences.service";

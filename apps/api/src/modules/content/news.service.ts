@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../../generated/prisma/client";
 import type { NewsItem, NewsPriority, NewsStatus } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
 import { requireTenantId } from "../../core/tenant-context";

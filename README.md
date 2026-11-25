@@ -40,7 +40,7 @@ cp apps/web/.env.example apps/web/.env.local
 
 pnpm --filter @ah-intranet/shared build
 pnpm --filter api prisma:generate
-pnpm --filter api prisma:migrate deploy   # oder: prisma:migrate dev
+pnpm --filter api prisma:migrate deploy   # oder: prisma:migrate dev (danach prisma:generate)
 pnpm --filter api prisma:seed
 
 pnpm dev

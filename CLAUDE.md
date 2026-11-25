@@ -39,9 +39,19 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
 
 - Der Mandant der Anfrage steht in einem `AsyncLocalStorage`
   (`core/tenant-context.ts`), gesetzt von `TenantMiddleware` **vor** allen Guards.
-- Eine Prisma-Middleware (`core/prisma.service.ts`, Logik in
-  `core/tenant-isolation.ts`) hängt den Mandanten an jede Bedingung und jede
-  Neuanlage. Fachcode führt `tenantId` nirgends mit.
+- Eine Prisma-Client-Erweiterung (`core/mandanten-erweiterung.ts`, angehängt in
+  `core/prisma.service.ts`, Logik in `core/tenant-isolation.ts`) hängt den
+  Mandanten an jede Bedingung und jede Neuanlage. Fachcode führt `tenantId`
+  nirgends mit. Die Erweiterung ersetzt die Middleware, die Prisma 7 nicht mehr
+  kennt; `PrismaService` gibt den erweiterten Client aus dem Konstruktor zurück,
+  damit die Klasse Einspritzmarke bleibt. Für Hilfsfunktionen, die in und außerhalb
+  einer Transaktion laufen, gibt es den Typ `TransaktionsClient`.
+- **Was die Trennung absichert:** `prisma/pruefung-trennung.ts` läuft in der CI
+  gegen eine echte Datenbank (kein Kontext, zwei Häuser, fremde Datensätze lesen,
+  ändern, löschen, Anlage mit gefälschtem Mandanten, Transaktionen).
+  `core/modell-meta.test.ts` hält fest, dass jedes Modell außer `Tenant` ein
+  `tenantId` und eine besitzende Beziehung `tenant` trägt - ein neues Modell ohne
+  Mandanten fällt dort auf, nicht erst im Betrieb.
 - **Fail-closed:** ohne Mandantenkontext scheitert der Datenzugriff hart, statt
   über alle Häuser zu laufen. Abläufe, die das fachlich brauchen (Anmeldung,
   Mandantenverwaltung, das Einlösen eines Zurücksetz-Links), markieren sich mit
@@ -141,11 +151,19 @@ Die Begründungen dazu stehen im Versionsverlauf, nicht mehr im Code.
 pnpm typecheck    # alle Pakete
 pnpm build        # alle Pakete
 pnpm --filter api prisma:migrate dev --name <beschreibung>
+pnpm --filter api prisma:generate   # Prisma 7: migrate dev erzeugt den Client nicht mehr
 pnpm --filter api prisma:seed
 ```
 
 Nach Änderungen an `packages/shared` muss das Paket gebaut werden, bevor die API
 typprüft: `pnpm --filter @ah-intranet/shared build`.
+
+Der Datenbank-Client liegt seit Prisma 7 im Quellbaum (`apps/api/src/generated`,
+git-ignoriert) und entsteht mit `pnpm --filter api prisma:generate`; ohne ihn
+typprüft und testet die API nicht. Dasselbe Kommando schreibt `modell-meta.ts`
+aus dem Schema. Die Datenbank-Adresse liest Prisma aus `apps/api/prisma.config.ts`
+(`DATABASE_URL`, für den Abweichungsvergleich `SHADOW_DATABASE_URL`), nicht mehr
+aus dem Schema.
 
 Browserprüfungen liegen in `e2e/` und brauchen laufende Dienste sowie ein
 installiertes Playwright (siehe `e2e/README.md`).

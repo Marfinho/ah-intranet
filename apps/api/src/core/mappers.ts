@@ -1,10 +1,10 @@
-import type { PrismaClient } from "@prisma/client";
+import type { TransaktionsClient } from "./prisma.service";
 import type { AppRole, Presence } from "@ah-intranet/shared";
 import { GLOBAL_SCOPE } from "@ah-intranet/shared";
 import type { RequestUser } from "./request-user";
 
 /** Reicht für `resolveUserScopes`: passt sowohl auf `PrismaService` als auch auf ein `$transaction`-Client. */
-type ScopeLookupClient = Pick<PrismaClient, "location" | "department" | "specialtyArea">;
+type ScopeLookupClient = Pick<TransaktionsClient, "location" | "department" | "specialtyArea">;
 
 /** Minimale Benutzerfelder, die für Anzeigezwecke überall selektiert werden. */
 export const userDisplaySelect = {
