@@ -30,6 +30,7 @@ class ShiftDto {
   @IsOptional() @IsString() departmentId?: string;
   @IsOptional() @IsString() assigneeId?: string;
   @IsOptional() @IsString() note?: string;
+  @IsOptional() @IsInt() @Min(0) @Max(240) pauseMinuten?: number;
 }
 
 class ShiftPatchDto {
@@ -40,6 +41,7 @@ class ShiftPatchDto {
   @IsOptional() @IsString() departmentId?: string;
   @IsOptional() @IsString() assigneeId?: string;
   @IsOptional() @IsString() note?: string;
+  @IsOptional() @IsInt() @Min(0) @Max(240) pauseMinuten?: number;
 }
 
 class SwapRequestDto {

@@ -244,6 +244,7 @@ model Tenant {
   mealOffers                   MealOffer[]
   betriebstage                 Betriebstag[]
   schluesselbesetzungen        Schluesselbesetzung[]
+  schichtarten                 Schichtart[]
   mealOptions                  MealOption[]
   mealOrders                   MealOrder[]
 
@@ -299,6 +300,7 @@ model Location {
   updatedAt  DateTime @updatedAt
 
   betriebstage        Betriebstag[]
+  schichtarten        Schichtart[]
   users               User[]
   orderCycles         OrderCycle[]
   locationDepartments LocationDepartment[]
@@ -345,6 +347,7 @@ model Department {
   updatedAt DateTime @updatedAt
 
   users               User[]
+  schichtarten        Schichtart[]
   locationDepartments LocationDepartment[]
   shifts              Shift[]
 
@@ -424,6 +427,13 @@ model User {
   /// Zielgruppen-Tokens (global, location:*, department:*, specialty:*) - bei Stammdatenänderung neu berechnet.
   scopes             String[]   @default([])
   annualLeaveDays    Int        @default(30)
+  /// Vereinbarte Wochenarbeitszeit in Stunden; leer = nicht hinterlegt (dann gilt keine Obergrenze).
+  wochenstunden      Float?
+  /// Zeitfenster, in dem die Person arbeiten kann (HH:MM), z. B. nur vormittags. Leer = ganztags.
+  zeitfensterVon     String?
+  zeitfensterBis     String?
+  /// Wochentage, an denen die Person arbeiten kann (ISO: 1 = Montag ... 7 = Sonntag).
+  arbeitstage        Int[]      @default([1, 2, 3, 4, 5])
   mustChangePassword Boolean    @default(false)
   lastLoginAt        DateTime?
   /// Zeitpunkt der Anonymisierung nach Art. 17 DSGVO. Gesetzt heißt: die
@@ -479,6 +489,7 @@ model User {
   absenceDecisions      Absence[]              @relation("AbsenceDecider")
   absencesRecorded      Absence[]              @relation("AbsenceRecorder")
   schluesselbesetzungen Schluesselbesetzung[]
+  schichtartenImTeam    Schichtart[]           @relation("SchichtartTeam")
   roomBookings          RoomBooking[]
   wikiArticles          WikiArticle[]          @relation("WikiAuthor")
   ideas                 Idea[]                 @relation("IdeaAuthor")
@@ -1126,6 +1137,44 @@ model OnboardingItem {
   @@index([tenantId])
 }
 
+// ------------------------------------------------------ Schichtarten
+
+/// Vorlage für Schichten: ein Zeitblock mit Soll-Besetzung, gültig für einen
+/// Standort, eine Abteilung oder ein Team (oder eine Kombination; alle leer =
+/// ganzes Haus). Aus ihr plant die Autoplanung konkrete Schichten.
+model Schichtart {
+  id               String      @id @default(cuid())
+  tenantId         String      @default("")
+  tenant           Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name             String
+  /// Beginn und Ende als HH:MM in Ortszeit. Ende <= Beginn heißt: über Mitternacht.
+  startZeit        String
+  endZeit          String
+  pauseMinuten     Int         @default(0)
+  /// Darunter ist die Schicht unterbesetzt - Pflichtangabe.
+  mindestBesetzung Int
+  /// Zielwert der Planung - Pflichtangabe, mindestens die Mindestbesetzung.
+  idealBesetzung   Int
+  /// Wochentage der Schicht (ISO: 1 = Montag ... 7 = Sonntag).
+  tage             Int[]
+  /// Auch an sonst freien Tagen planen, an denen laut Betriebskalender gearbeitet wird (verkaufsoffener Sonntag).
+  beiSondertag     Boolean     @default(false)
+  locationId       String?
+  location         Location?   @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  departmentId     String?
+  department       Department? @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  /// Team = die direkt Unterstellten dieser Führungskraft.
+  teamLeadId       String?
+  teamLead         User?       @relation("SchichtartTeam", fields: [teamLeadId], references: [id], onDelete: Cascade)
+  aktiv            Boolean     @default(true)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  shifts Shift[]
+
+  @@index([tenantId])
+}
+
 // ------------------------------------------------------ Schlüsselfunktionen
 
 /// Wer eine Schlüsselfunktion (Registry: SCHLUESSELFUNKTIONEN) in welcher Stufe
@@ -1406,6 +1455,11 @@ model Shift {
   location     Location?   @relation(fields: [locationId], references: [id], onDelete: SetNull)
   departmentId String?
   department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  /// Aus welcher Schichtart die Schicht entstand (Planung); leer bei einzeln angelegten.
+  schichtartId String?
+  schichtart   Schichtart? @relation(fields: [schichtartId], references: [id], onDelete: SetNull)
+  /// Unbezahlte Pause in Minuten - die Arbeitszeitprüfung rechnet mit der Nettozeit.
+  pauseMinuten Int         @default(0)
   /// Offen, solange niemand eingeteilt ist.
   assigneeId   String?
   assignee     User?       @relation("ShiftAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)

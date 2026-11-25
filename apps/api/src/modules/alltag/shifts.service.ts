@@ -29,6 +29,8 @@ export interface ShiftInput {
   departmentId?: string | null;
   assigneeId?: string | null;
   note?: string | null;
+  /** Unbezahlte Pause in Minuten - Grundlage der Arbeitszeitprüfung. */
+  pauseMinuten?: number;
 }
 
 /**
@@ -78,6 +80,7 @@ export class ShiftsService {
         departmentId: input.departmentId || null,
         assigneeId: input.assigneeId || null,
         note: input.note?.trim() || null,
+        pauseMinuten: input.pauseMinuten ?? 0,
         createdById: user.id,
       },
       include: shiftInclude,
@@ -123,6 +126,7 @@ export class ShiftsService {
         ...(input.departmentId !== undefined ? { departmentId: input.departmentId || null } : {}),
         ...(input.assigneeId !== undefined ? { assigneeId: input.assigneeId || null } : {}),
         ...(input.note !== undefined ? { note: input.note?.trim() || null } : {}),
+        ...(input.pauseMinuten !== undefined ? { pauseMinuten: input.pauseMinuten } : {}),
       },
       include: shiftInclude,
     });

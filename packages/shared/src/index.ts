@@ -4,3 +4,4 @@ export * from "./rbac";
 export * from "./retention";
 export * from "./kalender";
 export * from "./schluessel";
+export * from "./schichtplan";
