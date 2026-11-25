@@ -13,13 +13,25 @@ Plattformverwaltung (`@PlatformAdmin()`), nicht für ein Haus.
    er verloren: neuen Link erzeugen, der alte gilt sofort nicht mehr. Widerruf
    und Ablauf (60 Tage, höchstens 365) antworten von außen gleich wie ein
    Link, den es nie gab.
-3. **Pitch-Seite** (`/angebot/<token>`) ohne Anmeldung: Häuser mit Vorschlägen je
-   Haus, Funktionsübersicht, Preisrechner. Der Interessent stellt Häuser, Nutzer,
-   Key-User, Paket oder Einzelmodule ein. Die Auswahl wird gespeichert.
+3. **Pitch-Seite** (`/angebot/<token>`) ohne Anmeldung: Häuser, Funktionsübersicht,
+   Preisrechner und ein Schlussbild. Der Interessent stellt Häuser, Nutzer,
+   Key-User, Paket oder Einzelmodule ein. Die Seite beginnt mit einer Animation,
+   die zeigt, wie der Name AHOI entsteht, und lässt sich überspringen.
+   **Die Häuser kann er verändern**: umbenennen, Werkstatt, Teiledienst und
+   Sonntagsöffnung ein- und ausschalten, Marken ergänzen, einen gemeinsamen
+   Standort setzen, Häuser hinzufügen oder entfernen. Der Vorschlag je Haus rechnet
+   sofort mit (dieselben Regeln wie auf dem Server, aus `pitch-vorschlag.ts`), und
+   die Änderungen fließen in das Angebot (Zahl der Häuser, Einrichtung), in die
+   Funktionsübersicht und in das Schlussbild. Alles wird gespeichert; "Zurücksetzen"
+   führt auf die Angaben des Betreibers zurück.
 4. **Anfrage** setzt den Status auf _angefragt_, hält das vom Server gerechnete
    Angebot samt Version der Preisliste fest und benachrichtigt alle Konten der
    Plattformverwaltung (auch per Mail, wenn SMTP eingerichtet ist).
-5. **Haus anlegen** auf der Seite des Interessenten. Die Vorschau zeigt, was
+5. **Haus anlegen** auf der Seite des Interessenten. Hat der Interessent seine
+   Häuser verändert, gelten seine: das Angebot ist auf ihnen gerechnet, und die
+   Vorschau sagt, woher die Häuser stammen. Wer die eigenen Angaben neu festlegt
+   (Stammdaten und Häuser speichern), verwirft die Änderungen des Interessenten.
+   Die Vorschau zeigt, was
    entsteht; nur Kennung und erstes Administrationskonto kommen von Hand.
    Übernommen werden: Standorte (Kürzel aus den Namen, eindeutig je Haus),
    Marken, Abteilungen aus den Leistungen (Verkauf `VKF`, Service `SRV`,

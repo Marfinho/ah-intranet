@@ -76,12 +76,43 @@ export default async function InteressentPage({ params }: { params: { id: string
         ) : null}
       </Section>
 
+      {lead.kundenStandorte ? (
+        <Section
+          title="Häuser vom Interessenten verändert"
+          subtitle="Er hat auf der Pitch-Seite etwas an seinen Häusern geändert"
+        >
+          <p className="mb-3 text-sm text-slate-600">
+            Unten stehen die Häuser, wie der Interessent sie zuletzt eingestellt hat ({lead.kundenStandorte.length}{" "}
+            statt {lead.standortListe.length}). Das Angebot ist auf ihnen gerechnet, deshalb legt „Haus anlegen“ sie an.
+            Wer die eigenen Angaben neu festlegen will, speichert sie unter „Stammdaten und Häuser“. Das verwirft die
+            Änderungen des Interessenten.
+          </p>
+          <ul className="divide-y divide-slate-100 rounded-2xl border border-slate-200 text-sm">
+            {lead.kundenStandorte.map((standort, nummer) => (
+              <li
+                key={`${standort.name}-${nummer}`}
+                className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-2"
+              >
+                <span className="font-medium text-slate-900">{standort.name}</span>
+                <span className="text-slate-600">
+                  {[...standort.marken, ...standort.leistungen, standort.campus ? `Standort ${standort.campus}` : ""]
+                    .filter(Boolean)
+                    .join(" · ") || "–"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
+
       <Section
         title="Haus anlegen"
         subtitle={
           haus.bereitsAngelegt
             ? "Aus diesem Interessenten besteht bereits ein Haus"
-            : "Aus den Angaben und der Auswahl des Interessenten"
+            : haus.quelle === "interessent"
+              ? "Aus den Häusern und der Auswahl des Interessenten"
+              : "Aus Ihren Angaben und der Auswahl des Interessenten"
         }
       >
         {haus.bereitsAngelegt && haus.hausId ? (

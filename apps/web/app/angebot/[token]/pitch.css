@@ -1018,3 +1018,66 @@
 .pitch .ahoi-punkte i.jetzt {
   background: var(--accent);
 }
+
+/* Haus-Editor */
+.pitch .haeuser-leiste {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+.pitch .haeuser-leiste b {
+  font: 800 22px var(--head);
+  text-transform: uppercase;
+  margin-right: 8px;
+}
+.pitch .feld {
+  display: block;
+  margin-top: 14px;
+}
+.pitch .feld > span:first-child {
+  display: block;
+  font: 700 13px var(--head);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--quiet);
+  margin-bottom: 6px;
+}
+.pitch .feld input[type="text"] {
+  width: 100%;
+  font: 600 18px var(--body);
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+}
+.pitch .schalter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pitch .marke-weg {
+  border: 1px solid var(--line);
+  cursor: pointer;
+  font-family: var(--head);
+}
+.pitch .marke-weg:hover {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+.pitch .marke-neu {
+  display: flex;
+  gap: 8px;
+}
+.pitch .marke-neu input {
+  flex: 1;
+  min-width: 0;
+  font: 400 16px var(--body);
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+}

@@ -54,6 +54,8 @@ export interface LeadSummary {
 
 /** Was beim Anlegen des Hauses aus einem Interessenten entsteht. */
 export interface HausVorschau {
+  /** Woher die Häuser stammen: vom Interessenten, wenn er sie verändert hat. */
+  quelle: "betreiber" | "interessent";
   bereitsAngelegt: boolean;
   hausId: string | null;
   /** Vorschlag, `null` wenn aus dem Namen keine gültige Kennung wird. */
@@ -74,6 +76,8 @@ export interface HausVorschau {
 export interface LeadDetail extends LeadSummary {
   /** Das aus diesem Interessenten angelegte Haus. */
   hausId: string | null;
+  /** Die Häuser, die der Interessent auf der Pitch-Seite verändert hat. `null`: nicht verändert. */
+  kundenStandorte: LeadStandortItem[] | null;
   ansprechperson: string | null;
   notiz: string | null;
   standortListe: LeadStandortItem[];
@@ -93,13 +97,18 @@ export interface PitchStandort {
   campus: string | null;
   vorschlagText: string;
   vorschlagModule: string[];
+  /** Der Text stammt vom Betreiber, nicht aus den Regeln. Verändert der Interessent das Haus, rechnet die Seite neu. */
+  vorschlagVonHand: boolean;
 }
 
 export interface PitchAnsicht {
   name: string;
   gueltigBis: string;
   angefragt: boolean;
+  /** Die Häuser, wie sie gerade gelten: die des Interessenten, falls er sie verändert hat. */
   standorte: PitchStandort[];
+  /** Die Häuser, wie der Betreiber sie erfasst hat. Dahin führt "Zurücksetzen". */
+  ausgang: PitchStandort[];
   konfiguration: LeadKonfiguration;
 }
 

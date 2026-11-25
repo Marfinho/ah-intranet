@@ -13,13 +13,19 @@ import {
   einzelmodulPreis,
   formatEuro,
   getModule,
+  hatServiceOderWerkstatt,
+  istSonntagsgeoeffnet,
+  mitSonntag,
+  vorschlagFuerStandort,
   waehlbareModule,
   type LeadKonfiguration,
   type ModuleDefinition,
   type PitchAnsicht,
+  type PitchStandort,
+  type PitchStandortEingabe,
   type TierKey,
 } from "@ah-intranet/shared";
-import { pitchAnfrageAction, pitchSpeichernAction } from "@/lib/actions";
+import { pitchAnfrageAction, pitchSpeichernAction, type PitchKonfiguration } from "@/lib/actions";
 import { ModulSlideshow } from "./modul-slideshow";
 
 const STATIONEN = ["AHOI", "Start", "Ihre Häuser", "Funktionen", "Ihr Angebot", "Ihr Intranet"] as const;
@@ -31,6 +37,38 @@ export function Pitch({ token, ansicht }: { token: string; ansicht: PitchAnsicht
   const [station, setStation] = useState(0);
   // Die Auswahl gehört der ganzen Seite: das Angebot ändert sie, das Sternbild zeigt sie.
   const [konf, setKonf] = useState<LeadKonfiguration>(ansicht.konfiguration);
+  // Die Häuser gehören ebenfalls der ganzen Seite: wer sie hier verändert, sieht es im Angebot und im Intranet.
+  const [standorte, setStandorte] = useState<PitchStandort[]>(ansicht.standorte);
+  const [stand, setStand] = useState<Speicherstand>("bereit");
+  const live = useMemo<PitchAnsicht>(() => ({ ...ansicht, standorte }), [ansicht, standorte]);
+  const nutzlast = useMemo<PitchKonfiguration>(
+    () => ({ ...konf, standorte: standorte.map(alsEingabe) }),
+    [konf, standorte],
+  );
+
+  // Die Zahl der Häuser im Angebot folgt der Liste. Der Interessent kann sie dort weiter von Hand ändern.
+  const letzteAnzahl = useRef(standorte.length);
+  useEffect(() => {
+    if (letzteAnzahl.current === standorte.length) return;
+    letzteAnzahl.current = standorte.length;
+    setKonf((alt) => ({ ...alt, haeuser: standorte.length }));
+  }, [standorte.length]);
+
+  // Auswahl und Häuser bleiben erhalten, wenn jemand die Seite später noch einmal öffnet.
+  const erster = useRef(true);
+  useEffect(() => {
+    if (erster.current) {
+      erster.current = false;
+      return;
+    }
+    setStand("speichert");
+    const timer = setTimeout(async () => {
+      const ergebnis = await pitchSpeichernAction(token, nutzlast);
+      setStand(ergebnis.ok ? "gespeichert" : "fehler");
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [nutzlast, token]);
+
   const gehe = (nummer: number) => {
     setStation(Math.max(0, Math.min(STATIONEN.length - 1, nummer)));
     window.scrollTo({ top: 0 });
@@ -72,11 +110,15 @@ export function Pitch({ token, ansicht }: { token: string; ansicht: PitchAnsicht
 
       <main className="wrap">
         {station === 0 ? <Namensseite onWeiter={() => gehe(1)} /> : null}
-        {station === 1 ? <Start ansicht={ansicht} /> : null}
-        {station === 2 ? <Haeuser ansicht={ansicht} /> : null}
-        {station === 3 ? <Funktionen ansicht={ansicht} /> : null}
-        {station === 4 ? <Angebot token={token} ansicht={ansicht} konf={konf} setKonf={setKonf} /> : null}
-        {station === 5 ? <Intranet ansicht={ansicht} konf={konf} onAngebot={() => gehe(4)} /> : null}
+        {station === 1 ? <Start ansicht={live} /> : null}
+        {station === 2 ? (
+          <Haeuser standorte={standorte} setStandorte={setStandorte} ausgang={ansicht.ausgang} stand={stand} />
+        ) : null}
+        {station === 3 ? <Funktionen ansicht={live} /> : null}
+        {station === 4 ? (
+          <Angebot token={token} ansicht={ansicht} konf={konf} setKonf={setKonf} nutzlast={nutzlast} stand={stand} />
+        ) : null}
+        {station === 5 ? <Intranet ansicht={live} konf={konf} onAngebot={() => gehe(4)} /> : null}
 
         <div className="pager">
           <button type="button" className="btn" disabled={station === 0} onClick={() => gehe(station - 1)}>
@@ -773,64 +815,262 @@ function Namensseite({ onWeiter }: { onWeiter: () => void }) {
 
 /* ------------------------------------------------------------------ Häuser */
 
-function Haeuser({ ansicht }: { ansicht: PitchAnsicht }) {
+/** Die Felder eines Hauses, die der Interessent verändern darf, in der Form, die der Server annimmt. */
+function alsEingabe(haus: PitchStandort): PitchStandortEingabe {
+  return {
+    name: haus.name,
+    adresse: haus.adresse,
+    marken: haus.marken,
+    leistungen: haus.leistungen,
+    oeffnungszeiten: haus.oeffnungszeiten,
+    campus: haus.campus,
+  };
+}
+
+/**
+ * Rechnet die Vorschläge neu. Ein Text, den der Betreiber von Hand geschrieben hat, bleibt
+ * stehen, solange das Haus nicht verändert wird; ein verändertes Haus folgt den Regeln.
+ */
+function berechne(liste: PitchStandort[]): PitchStandort[] {
+  return liste.map((haus) => {
+    if (haus.vorschlagVonHand) return haus;
+    const regel = vorschlagFuerStandort(haus, liste);
+    return { ...haus, vorschlagText: regel.text, vorschlagModule: regel.module };
+  });
+}
+
+function sindGleich(a: PitchStandort[], b: PitchStandort[]): boolean {
+  return JSON.stringify(a.map(alsEingabe)) === JSON.stringify(b.map(alsEingabe));
+}
+
+const LEISTUNGEN: { name: string; bezeichnung: string; prueft: (leistungen: string[]) => boolean }[] = [
+  { name: "Verkauf", bezeichnung: "Verkauf", prueft: (l) => l.some((e) => /verkauf/i.test(e)) },
+  { name: "Service", bezeichnung: "Werkstatt", prueft: (l) => hatServiceOderWerkstatt(l) },
+  { name: "Teiledienst", bezeichnung: "Teiledienst", prueft: (l) => l.some((e) => /teile/i.test(e)) },
+];
+
+function Haeuser({
+  standorte,
+  setStandorte,
+  ausgang,
+  stand,
+}: {
+  standorte: PitchStandort[];
+  setStandorte: (liste: PitchStandort[]) => void;
+  ausgang: PitchStandort[];
+  stand: Speicherstand;
+}) {
   const [gewaehlt, setGewaehlt] = useState(0);
-  const haus = ansicht.standorte[gewaehlt];
+  const [neueMarke, setNeueMarke] = useState("");
+  const index = Math.min(gewaehlt, standorte.length - 1);
+  const haus = standorte[index];
+  const veraendert = !sindGleich(standorte, ausgang);
+  const verbuende = [
+    ...new Set(standorte.map((eintrag) => eintrag.campus).filter((name): name is string => Boolean(name))),
+  ];
+
+  // Jede Änderung markiert das Haus als verändert (der Regeltext ersetzt einen von Hand geschriebenen)
+  // und rechnet die Vorschläge aller Häuser neu: ein Verbund betrifft die Nachbarn mit.
+  const aendere = (nummer: number, teil: Partial<PitchStandort>) =>
+    setStandorte(
+      berechne(
+        standorte.map((eintrag, i) => (i === nummer ? { ...eintrag, ...teil, vorschlagVonHand: false } : eintrag)),
+      ),
+    );
+
+  const schalteLeistung = (name: string, prueft: (leistungen: string[]) => boolean) => {
+    const an = prueft(haus.leistungen);
+    const leistungen = an ? haus.leistungen.filter((eintrag) => !prueft([eintrag])) : [...haus.leistungen, name];
+    aendere(index, { leistungen });
+  };
+  const fuegeMarkeHinzu = () => {
+    const text = neueMarke.trim().slice(0, 60);
+    if (!text || haus.marken.some((marke) => marke.toLowerCase() === text.toLowerCase())) return setNeueMarke("");
+    aendere(index, { marken: [...haus.marken, text] });
+    setNeueMarke("");
+  };
+  const neuesHaus = () => {
+    let nummer = standorte.length + 1;
+    while (standorte.some((eintrag) => eintrag.name === `Neues Haus ${nummer}`)) nummer += 1;
+    const neu: PitchStandort = {
+      name: `Neues Haus ${nummer}`,
+      adresse: null,
+      marken: [],
+      leistungen: ["Verkauf"],
+      oeffnungszeiten: null,
+      campus: null,
+      vorschlagText: "",
+      vorschlagModule: [],
+      vorschlagVonHand: false,
+    };
+    setStandorte(berechne([...standorte, neu]));
+    setGewaehlt(standorte.length);
+  };
+  const entferne = () => {
+    if (standorte.length <= 1) return;
+    setStandorte(berechne(standorte.filter((_, i) => i !== index)));
+    setGewaehlt(Math.max(0, index - 1));
+  };
 
   return (
     <section className="station">
       <div className="eyebrow">Ihre Standorte</div>
       <h2 style={{ marginTop: 10 }}>Jedes Haus hat einen anderen Alltag</h2>
       <p className="lead">
-        Wählen Sie ein Haus. Die Vorschläge zeigen, wo AHOI dort ansetzen könnte. Sie beruhen auf den Angaben, die uns
-        vorliegen, und gehören im Gespräch mit Ihnen geprüft.
+        Das sind die Häuser, die wir kennen. Ändern Sie, was nicht stimmt: Werkstatt, Marken, Sonntagsöffnung,
+        gemeinsamer Standort. Der Vorschlag für das Haus rechnet sofort mit, und alles fließt ins Angebot und in Ihr
+        Intranet ein.
       </p>
-      <div className="cols" style={{ marginTop: 24 }}>
+
+      <div className="haeuser-leiste">
+        <b>
+          {standorte.length} {standorte.length === 1 ? "Haus" : "Häuser"}
+        </b>
+        <button type="button" className="btn" onClick={neuesHaus}>
+          Haus hinzufügen
+        </button>
+        <button
+          type="button"
+          className="btn"
+          disabled={!veraendert}
+          onClick={() => {
+            setStandorte(ausgang);
+            setGewaehlt(0);
+          }}
+        >
+          Zurücksetzen
+        </button>
+        <span className="hint" aria-live="polite">
+          {stand === "speichert"
+            ? "Wird gespeichert …"
+            : stand === "gespeichert"
+              ? "Gespeichert"
+              : stand === "fehler"
+                ? "Speichern fehlgeschlagen"
+                : ""}
+        </span>
+      </div>
+
+      <div className="cols" style={{ marginTop: 16 }}>
         <div className="grid">
-          {ansicht.standorte.map((standort, index) => (
+          {standorte.map((standort, nummer) => (
             <button
-              key={`${standort.name}-${index}`}
+              key={`${standort.name}-${nummer}`}
               type="button"
               className="card"
-              aria-pressed={index === gewaehlt}
-              onClick={() => setGewaehlt(index)}
+              aria-pressed={nummer === index}
+              onClick={() => setGewaehlt(nummer)}
             >
-              <b>{standort.name}</b>
+              <b>{standort.name || "Ohne Namen"}</b>
               <small>{standort.marken.join(" · ") || "–"}</small>
             </button>
           ))}
         </div>
+
         {haus ? (
           <aside className="panel detail" aria-live="polite">
-            <div className="row">
-              {haus.leistungen.map((leistung) => (
-                <span key={leistung} className="pill p-mute">
-                  {leistung}
-                </span>
-              ))}
-              {haus.campus ? <span className="pill p-acc">Verbund {haus.campus}</span> : null}
+            <label className="feld">
+              <span>Name des Hauses</span>
+              <input
+                type="text"
+                value={haus.name}
+                maxLength={120}
+                onChange={(e) => aendere(index, { name: e.target.value })}
+              />
+            </label>
+
+            <div className="feld">
+              <span>Was passiert hier?</span>
+              <div className="schalter" role="group" aria-label="Leistungen und Öffnungszeiten">
+                {LEISTUNGEN.map((leistung) => (
+                  <button
+                    key={leistung.name}
+                    type="button"
+                    className="chip"
+                    aria-pressed={leistung.prueft(haus.leistungen)}
+                    onClick={() => schalteLeistung(leistung.name, leistung.prueft)}
+                  >
+                    {leistung.bezeichnung}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className="chip"
+                  aria-pressed={istSonntagsgeoeffnet(haus.oeffnungszeiten)}
+                  onClick={() =>
+                    aendere(index, {
+                      oeffnungszeiten: mitSonntag(haus.oeffnungszeiten, !istSonntagsgeoeffnet(haus.oeffnungszeiten)),
+                    })
+                  }
+                >
+                  Sonntags geöffnet
+                </button>
+              </div>
             </div>
-            <h3>{haus.name}</h3>
-            <dl>
-              {haus.adresse ? (
-                <>
-                  <dt>Adresse</dt>
-                  <dd>{haus.adresse}</dd>
-                </>
-              ) : null}
-              {haus.marken.length > 0 ? (
-                <>
-                  <dt>Marke</dt>
-                  <dd>{haus.marken.join(", ")}</dd>
-                </>
-              ) : null}
-              {haus.oeffnungszeiten ? (
-                <>
-                  <dt>Verkauf</dt>
-                  <dd>{haus.oeffnungszeiten}</dd>
-                </>
-              ) : null}
-            </dl>
+
+            <div className="feld">
+              <span>Marken</span>
+              <div className="row" style={{ marginBottom: 8 }}>
+                {haus.marken.length === 0 ? <span className="hint">Noch keine Marke</span> : null}
+                {haus.marken.map((marke) => (
+                  <button
+                    key={marke}
+                    type="button"
+                    className="pill p-mute marke-weg"
+                    aria-label={`${marke} entfernen`}
+                    onClick={() => aendere(index, { marken: haus.marken.filter((eintrag) => eintrag !== marke) })}
+                  >
+                    {marke} ×
+                  </button>
+                ))}
+              </div>
+              <div className="marke-neu">
+                <input
+                  type="text"
+                  value={neueMarke}
+                  maxLength={60}
+                  placeholder="Marke hinzufügen"
+                  aria-label="Marke hinzufügen"
+                  onChange={(e) => setNeueMarke(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      fuegeMarkeHinzu();
+                    }
+                  }}
+                />
+                <button type="button" className="btn" onClick={fuegeMarkeHinzu}>
+                  Hinzufügen
+                </button>
+              </div>
+            </div>
+
+            <label className="feld">
+              <span>Gemeinsamer Standort</span>
+              <input
+                type="text"
+                list="verbuende"
+                value={haus.campus ?? ""}
+                maxLength={80}
+                placeholder="z. B. Kokenhorststraße"
+                onChange={(e) => aendere(index, { campus: e.target.value.trim() ? e.target.value : null })}
+              />
+              <datalist id="verbuende">
+                {verbuende.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
+              <small className="hint">
+                Häuser am selben Standort nutzen Räume, Kalender und Verzeichnis gemeinsam.
+              </small>
+            </label>
+
+            {haus.adresse ? (
+              <p className="hint" style={{ margin: "4px 0 0" }}>
+                {haus.adresse}
+              </p>
+            ) : null}
+
             <div className="fit">
               <span className="eyebrow">Vorschlag für dieses Haus</span>
               <p style={{ margin: "8px 0", color: "var(--muted)" }}>{haus.vorschlagText}</p>
@@ -843,6 +1083,16 @@ function Haeuser({ ansicht }: { ansicht: PitchAnsicht }) {
                 ))}
               </div>
             </div>
+
+            <button
+              type="button"
+              className="btn"
+              style={{ marginTop: 16 }}
+              disabled={standorte.length <= 1}
+              onClick={entferne}
+            >
+              Haus entfernen
+            </button>
           </aside>
         ) : null}
       </div>
@@ -954,17 +1204,19 @@ function Angebot({
   ansicht,
   konf,
   setKonf,
+  nutzlast,
+  stand,
 }: {
   token: string;
   ansicht: PitchAnsicht;
   konf: LeadKonfiguration;
   setKonf: (aktualisiere: (alt: LeadKonfiguration) => LeadKonfiguration) => void;
+  nutzlast: PitchKonfiguration;
+  stand: Speicherstand;
 }) {
-  const [stand, setStand] = useState<Speicherstand>("bereit");
   const [angefragt, setAngefragt] = useState(ansicht.angefragt);
   const [fehler, setFehler] = useState<string | null>(null);
   const [laeuft, starte] = useTransition();
-  const erster = useRef(true);
 
   const angebot = useMemo(
     () =>
@@ -977,20 +1229,6 @@ function Angebot({
       }),
     [konf],
   );
-
-  // Die Auswahl bleibt erhalten, wenn jemand die Seite später noch einmal öffnet.
-  useEffect(() => {
-    if (erster.current) {
-      erster.current = false;
-      return;
-    }
-    setStand("speichert");
-    const timer = setTimeout(async () => {
-      const ergebnis = await pitchSpeichernAction(token, konf);
-      setStand(ergebnis.ok ? "gespeichert" : "fehler");
-    }, 700);
-    return () => clearTimeout(timer);
-  }, [konf, token]);
 
   const aendere = (teil: Partial<LeadKonfiguration>) => setKonf((alt) => ({ ...alt, ...teil }));
   const zahl = (wert: string, min: number, max: number) =>
@@ -1013,7 +1251,7 @@ function Angebot({
   const anfragen = () => {
     setFehler(null);
     starte(async () => {
-      const ergebnis = await pitchAnfrageAction(token, konf);
+      const ergebnis = await pitchAnfrageAction(token, nutzlast);
       if (ergebnis.ok) setAngefragt(true);
       else setFehler(ergebnis.message ?? "Die Anfrage konnte nicht gesendet werden.");
     });

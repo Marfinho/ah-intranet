@@ -16,7 +16,7 @@ import {
   MinLength,
   ValidateNested,
 } from "class-validator";
-import { HAEUSER_MAX, LEAD_STATUS, NUTZER_MAX, type LeadStatusKey } from "@ah-intranet/shared";
+import { HAEUSER_MAX, KUNDEN_HAEUSER_MAX, LEAD_STATUS, NUTZER_MAX, type LeadStatusKey } from "@ah-intranet/shared";
 import { CurrentUser, Public } from "../../core/decorators";
 import { PlatformAdmin } from "../../core/decorators";
 import type { RequestUser } from "../../core/request-user";
@@ -52,6 +52,30 @@ class StandortDto {
   @IsOptional() @IsString() @MaxLength(1000) vorschlag?: string | null;
 }
 
+/** Ein Haus, wie der Interessent es auf der Pitch-Seite verändert. */
+class PitchHausDto {
+  @IsString()
+  @MaxLength(120)
+  name!: string;
+
+  @IsOptional() @IsString() @MaxLength(240) adresse!: string | null;
+
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @MaxLength(60, { each: true })
+  marken!: string[];
+
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @MaxLength(60, { each: true })
+  leistungen!: string[];
+
+  @IsOptional() @IsString() @MaxLength(200) oeffnungszeiten!: string | null;
+  @IsOptional() @IsString() @MaxLength(80) campus!: string | null;
+}
+
 class KonfigurationDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(HAEUSER_MAX) haeuser?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(NUTZER_MAX) nutzer?: number;
@@ -63,6 +87,13 @@ class KonfigurationDto {
   @ArrayMaxSize(50)
   @IsString({ each: true })
   module?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(KUNDEN_HAEUSER_MAX)
+  @ValidateNested({ each: true })
+  @Type(() => PitchHausDto)
+  standorte?: PitchHausDto[];
 }
 
 class CreateLeadDto {

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { parseStandortText } from "@ah-intranet/shared";
+import { parseStandortText, type PitchStandortEingabe } from "@ah-intranet/shared";
 import { ApiError, SESSION_COOKIE, apiBaseUrl, apiSend, apiSendFile, tenantHostHeader } from "./api";
 
 /**
@@ -910,6 +910,8 @@ export interface PitchKonfiguration {
   keyUser: number | null;
   tier: string | null;
   module: string[];
+  /** Die Häuser, wie der Interessent sie verändert hat. */
+  standorte?: PitchStandortEingabe[];
 }
 
 /**

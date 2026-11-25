@@ -19,7 +19,10 @@ Erster vollständiger Stand. Lauffähig, aber in keinem Haus im Einsatz.
   ist nie teurer als dieselben Module einzeln. Siehe
   [`docs/vertrieb.md`](docs/vertrieb.md). Aus einem Interessenten legt die
   Plattformverwaltung das Haus mit einem Klick an: Standorte, Marken,
-  Abteilungen, Module und Lizenzkontingent kommen aus der Pitch-Auswahl.
+  Abteilungen, Module und Lizenzkontingent kommen aus der Pitch-Auswahl. Der
+  Interessent kann seine Häuser auf der Pitch-Seite selbst verändern; die
+  Änderungen fließen in Angebot und Übersicht ein und sind für die
+  Plattformverwaltung sichtbar.
 - **22 Fachmodule**, je Haus einzeln ein- und ausschaltbar, jedes mit einem
   Reifegrad. Erprobungen schaltet nur die Plattformverwaltung frei und sind in
   der Oberfläche als solche erkennbar. Abhängige Module

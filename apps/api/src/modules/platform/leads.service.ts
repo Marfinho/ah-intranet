@@ -1,11 +1,13 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { Lead, LeadStandort, Prisma } from "@prisma/client";
+import { Prisma, type Lead, type LeadStandort } from "@prisma/client";
 import {
   PREISLISTE_VERSION,
   berechneAngebot,
+  bereinigeKundenStandorte,
   betaModules,
   formatEuro,
   isTierKey,
+  vorschlagFuerStandort,
   waehlbareModule,
   type Angebot,
   type HausVorschau,
@@ -15,6 +17,8 @@ import {
   type LeadStatusKey,
   type LeadSummary,
   type PitchAnsicht,
+  type PitchStandort,
+  type PitchStandortEingabe,
   type TierKey,
 } from "@ah-intranet/shared";
 import { AuditService } from "../../core/audit.service";
@@ -24,14 +28,7 @@ import type { RequestUser } from "../../core/request-user";
 import { currentTenant } from "../../core/tenant-context";
 import { TenantService } from "../../core/tenant.service";
 import { modulEinstellungen, planeHaus, vorschlagKennung } from "./haus-aus-interessent";
-import {
-  LINK_TAGE_STANDARD,
-  hashToken,
-  linkGueltigBis,
-  linkIstGueltig,
-  neuesToken,
-  vorschlagFuerStandort,
-} from "./pitch-regeln";
+import { LINK_TAGE_STANDARD, hashToken, linkGueltigBis, linkIstGueltig, neuesToken } from "./pitch-regeln";
 
 type LeadMitStandorten = Lead & { standorte: LeadStandort[] };
 
@@ -53,6 +50,8 @@ export interface KonfigurationEingabe {
   keyUser?: number | null;
   tier?: string | null;
   module?: string[];
+  /** Nur von der Pitch-Seite: die Häuser, wie der Interessent sie verändert hat. */
+  standorte?: PitchStandortEingabe[];
 }
 
 const leer = (wert: string | null | undefined) => (wert?.trim() ? wert.trim() : null);
@@ -121,6 +120,51 @@ function standortItem(standort: LeadStandort): LeadStandortItem {
     campus: standort.campus,
     vorschlag: standort.vorschlag,
   };
+}
+
+/** Die Häuser des Betreibers in der Form, in der der Interessent sie verändern darf. */
+function alsEingabe(lead: LeadMitStandorten): PitchStandortEingabe[] {
+  return lead.standorte.map((standort) => ({
+    name: standort.name,
+    adresse:
+      [standort.strasse, [standort.plz, standort.ort].filter(Boolean).join(" ")].filter(Boolean).join(", ") || null,
+    marken: standort.marken,
+    leistungen: standort.leistungen,
+    oeffnungszeiten: standort.oeffnungszeiten,
+    campus: standort.campus,
+  }));
+}
+
+/** Die vom Interessenten veränderten Häuser. Aus der Datenbank gelesen heißt: noch einmal bereinigt. */
+function kundenStandorte(lead: Lead): PitchStandortEingabe[] | null {
+  if (!Array.isArray(lead.kundenStandorte)) return null;
+  const liste = bereinigeKundenStandorte(lead.kundenStandorte as unknown as PitchStandortEingabe[]);
+  return liste.length > 0 ? liste : null;
+}
+
+/** Häuser samt Vorschlag aus den Regeln. Ein Text von Hand gilt nur, wo der Betreiber einen geschrieben hat. */
+function zuPitchStandorten(liste: readonly (PitchStandortEingabe & { vorschlag?: string | null })[]): PitchStandort[] {
+  const angaben = liste.map((haus) => ({
+    name: haus.name,
+    marken: haus.marken,
+    leistungen: haus.leistungen,
+    oeffnungszeiten: haus.oeffnungszeiten,
+    campus: haus.campus,
+  }));
+  return liste.map((haus, index) => {
+    const regel = vorschlagFuerStandort(angaben[index], angaben);
+    return {
+      name: haus.name,
+      adresse: haus.adresse,
+      marken: haus.marken,
+      leistungen: haus.leistungen,
+      oeffnungszeiten: haus.oeffnungszeiten,
+      campus: haus.campus,
+      vorschlagText: haus.vorschlag ?? regel.text,
+      vorschlagModule: regel.module,
+      vorschlagVonHand: Boolean(haus.vorschlag),
+    };
+  });
 }
 
 function summary(lead: LeadMitStandorten): LeadSummary {
@@ -249,7 +293,7 @@ export class LeadsService {
         this.prisma.leadStandort.deleteMany({ where: { leadId: id } }),
         this.prisma.lead.update({
           where: { id },
-          data: { ...data, standorte: { create: standortDaten(input.standorte) } },
+          data: { ...data, kundenStandorte: Prisma.DbNull, standorte: { create: standortDaten(input.standorte) } },
         }),
       ]);
     } else {
@@ -403,9 +447,21 @@ export class LeadsService {
   private plane(lead: LeadMitStandorten): HausVorschau {
     const konf = konfiguration(lead);
     const angebot = rechne(konf);
-    const plan = planeHaus(lead.standorte);
+    // Hat der Interessent seine Häuser verändert, ist das Angebot auf ihnen gerechnet: sie gelten.
+    const veraendert = kundenStandorte(lead);
+    const plan = planeHaus(
+      veraendert
+        ? veraendert.map((haus) => ({
+            name: haus.name,
+            strasse: haus.adresse,
+            marken: haus.marken,
+            leistungen: haus.leistungen,
+          }))
+        : lead.standorte,
+    );
     const moduleZustand = modulEinstellungen(angebot.module);
     return {
+      quelle: veraendert ? "interessent" : "betreiber",
       bereitsAngelegt: lead.hausId !== null,
       hausId: lead.hausId,
       kennung: vorschlagKennung(lead.name),
@@ -421,36 +477,18 @@ export class LeadsService {
 
   async ansicht(token: string): Promise<PitchAnsicht> {
     const lead = await this.perToken(token);
-    const angaben = lead.standorte.map((standort) => ({
-      name: standort.name,
-      marken: standort.marken,
-      leistungen: standort.leistungen,
-      oeffnungszeiten: standort.oeffnungszeiten,
-      campus: standort.campus,
-    }));
+    const ausgang = zuPitchStandorten(
+      alsEingabe(lead).map((haus, index) => ({ ...haus, vorschlag: lead.standorte[index].vorschlag })),
+    );
+    const veraendert = kundenStandorte(lead);
 
     return {
       name: lead.name,
       gueltigBis: lead.tokenGueltigBis.toISOString(),
       angefragt: lead.angefragtAm !== null,
       konfiguration: konfiguration(lead),
-      standorte: lead.standorte.map((standort, index) => {
-        const regel = vorschlagFuerStandort(angaben[index], angaben);
-        const adresse = [standort.strasse, [standort.plz, standort.ort].filter(Boolean).join(" ")]
-          .filter(Boolean)
-          .join(", ");
-        return {
-          name: standort.name,
-          adresse: adresse || null,
-          marken: standort.marken,
-          leistungen: standort.leistungen,
-          oeffnungszeiten: standort.oeffnungszeiten,
-          campus: standort.campus,
-          // Ein von Hand geschriebener Text ersetzt den Regeltext, nicht die Modulauswahl.
-          vorschlagText: standort.vorschlag ?? regel.text,
-          vorschlagModule: regel.module,
-        };
-      }),
+      standorte: veraendert ? zuPitchStandorten(veraendert) : ausgang,
+      ausgang,
     };
   }
 
@@ -464,6 +502,7 @@ export class LeadsService {
     await this.prisma.lead.update({
       where: { id: lead.id },
       data: {
+        ...this.hauserDaten(lead, eingabe),
         anzahlHaeuser: neu.haeuser,
         anzahlNutzer: neu.nutzer,
         keyUser: neu.keyUser,
@@ -490,6 +529,7 @@ export class LeadsService {
     await this.prisma.lead.update({
       where: { id: lead.id },
       data: {
+        ...this.hauserDaten(lead, eingabe),
         anzahlHaeuser: neu.haeuser,
         anzahlNutzer: neu.nutzer,
         keyUser: neu.keyUser,
@@ -526,6 +566,25 @@ export class LeadsService {
   }
 
   /* ----------------------------------------------------------- intern */
+
+  /**
+   * Die Häuser des Interessenten fürs Speichern.
+   *
+   * Nichts schicken heißt: nichts ändern. Sind die Häuser so, wie der Betreiber sie
+   * erfasst hat, wird die Abweichung gelöscht, damit "verändert" auch verändert
+   * heißt. Eine leere Liste lehnt die Seite ab, ein Mandant ohne Haus wäre wertlos.
+   */
+  private hauserDaten(
+    lead: LeadMitStandorten,
+    eingabe: KonfigurationEingabe,
+  ): { kundenStandorte?: Prisma.InputJsonValue | typeof Prisma.DbNull } {
+    if (eingabe.standorte === undefined) return {};
+    const bereinigt = bereinigeKundenStandorte(eingabe.standorte);
+    if (bereinigt.length === 0) return {};
+    const ausgang = alsEingabe(lead);
+    const gleich = JSON.stringify(bereinigt) === JSON.stringify(bereinigeKundenStandorte(ausgang));
+    return { kundenStandorte: gleich ? Prisma.DbNull : (bereinigt as unknown as Prisma.InputJsonValue) };
+  }
 
   private async laden(id: string): Promise<LeadMitStandorten> {
     const lead = await this.prisma.lead.findFirst({
@@ -567,6 +626,19 @@ export class LeadsService {
     return {
       ...summary(lead),
       hausId: lead.hausId,
+      kundenStandorte: (kundenStandorte(lead) ?? []).length
+        ? kundenStandorte(lead)!.map((haus) => ({
+            name: haus.name,
+            strasse: haus.adresse,
+            plz: null,
+            ort: null,
+            marken: haus.marken,
+            leistungen: haus.leistungen,
+            oeffnungszeiten: haus.oeffnungszeiten,
+            campus: haus.campus,
+            vorschlag: null,
+          }))
+        : null,
       ansprechperson: lead.ansprechperson,
       notiz: lead.notiz,
       standortListe: lead.standorte.map(standortItem),
