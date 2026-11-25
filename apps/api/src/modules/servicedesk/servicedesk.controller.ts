@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import { ArrayNotEmpty, IsArray, IsIn, IsOptional, IsString, MinLength } from "class-validator";
-import type { IdeaStatus, Priority, TicketCategory, TicketStatus } from "@prisma/client";
+import type { IdeaStatus, Priority, TicketCategory, TicketStatus } from "../../generated/prisma/client";
 import { ServiceDeskService } from "./servicedesk.service";
 import { CurrentUser, Feature, Permission } from "../../core/decorators";
 import type { RequestUser } from "../../core/request-user";

@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleInit } from "@nestjs/common";
-import { PrismaClient } from "@prisma/client";
+import { neuerClient } from "./datenbank";
 import * as bcrypt from "bcryptjs";
 import { PERMISSION_DEFINITIONS, ROLE_DEFINITIONS } from "@ah-intranet/shared";
 import type { TenantContext } from "./tenant-context";
@@ -51,7 +51,7 @@ export function slugUnterBasis(host: string, basis: string | undefined): string 
  */
 @Injectable()
 export class TenantService implements OnModuleInit {
-  private readonly client = new PrismaClient();
+  private readonly client = neuerClient();
   private readonly logger = new Logger(TenantService.name);
 
   /**

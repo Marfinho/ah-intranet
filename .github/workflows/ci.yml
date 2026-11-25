@@ -96,11 +96,19 @@ jobs:
       - name: Migrationen gegen leere Datenbank anwenden
         run: pnpm --filter api exec prisma migrate deploy
 
+      # Prisma 7 liest die Schattendatenbank aus prisma.config.ts
+      # (SHADOW_DATABASE_URL), nicht mehr aus einem Flag.
       - name: Auf Schemaabweichung prüfen
-        run: pnpm --filter api exec prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --shadow-database-url "$SHADOW_DATABASE_URL" --exit-code
+        run: pnpm --filter api exec prisma migrate diff --from-migrations prisma/migrations --to-schema prisma/schema.prisma --exit-code
 
       - name: Seed einspielen
         run: pnpm --filter api exec tsx prisma/seed.ts
+
+      # Die Mandantentrennung ist die Sicherheitsgrenze der Anwendung. Die
+      # Unit-Tests prüfen die Filterlogik, nicht ihr Zusammenspiel mit dem
+      # Client - das hier schon, gegen eine echte Datenbank mit zwei Häusern.
+      - name: Mandantentrennung gegen die Datenbank prüfen
+        run: pnpm --filter api exec tsx prisma/pruefung-trennung.ts
 
       - name: Bauen
         run: pnpm build

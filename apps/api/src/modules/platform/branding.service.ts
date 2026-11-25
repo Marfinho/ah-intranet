@@ -57,7 +57,8 @@ export class BrandingService {
 
     await this.prisma.tenant.update({
       where: { id: requireTenantId() },
-      data: { logo: file.buffer, logoMime: typ },
+      // Prisma 7 erwartet Bytes als Uint8Array, nicht als Buffer.
+      data: { logo: new Uint8Array(file.buffer), logoMime: typ },
     });
 
     await this.audit.log({

@@ -1,5 +1,11 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma, type IdeaStatus, type Priority, type TicketCategory, type TicketStatus } from "@prisma/client";
+import {
+  Prisma,
+  type IdeaStatus,
+  type Priority,
+  type TicketCategory,
+  type TicketStatus,
+} from "../../generated/prisma/client";
 import type { Idea, Poll, TicketSummary } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
 import { requireTenantId } from "../../core/tenant-context";

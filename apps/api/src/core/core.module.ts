@@ -1,5 +1,5 @@
 import { Global, Module } from "@nestjs/common";
-import { PrismaService } from "./prisma.service";
+import { PrismaLebenszyklus, PrismaService } from "./prisma.service";
 import { AuditService } from "./audit.service";
 import { ModuleRegistryService } from "./module-registry.service";
 import { NotificationsService } from "./notifications.service";
@@ -11,7 +11,15 @@ import { TlsController } from "./tls.controller";
 @Global()
 @Module({
   controllers: [TlsController],
-  providers: [PrismaService, AuditService, ModuleRegistryService, NotificationsService, TenantService, MailService],
+  providers: [
+    PrismaService,
+    PrismaLebenszyklus,
+    AuditService,
+    ModuleRegistryService,
+    NotificationsService,
+    TenantService,
+    MailService,
+  ],
   exports: [PrismaService, AuditService, ModuleRegistryService, NotificationsService, TenantService, MailService],
 })
 export class CoreModule {}
