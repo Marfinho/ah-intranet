@@ -20,6 +20,7 @@ env:
   JWT_SECRET: ci-schluessel-ohne-bedeutung
   FRONTEND_URL: http://localhost:3000
   API_URL: http://localhost:3001/api
+  VERWALTUNG_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ah_intranet_ci?schema=verwaltung
   NEXT_PUBLIC_API_URL: http://localhost:3001/api
 
 jobs:
@@ -79,6 +80,13 @@ jobs:
       - name: Schema prüfen
         run: pnpm --filter api exec prisma validate
 
+      # Die Verwaltung hat ein eigenes Schema und einen eigenen Client.
+      - name: Prisma-Client der Verwaltung erzeugen
+        run: pnpm --filter verwaltung prisma:generate
+
+      - name: Schema der Verwaltung prüfen
+        run: pnpm --filter verwaltung exec prisma validate
+
       - name: Formatierung prüfen
         run: pnpm format:check
 
@@ -98,6 +106,9 @@ jobs:
 
       # Prisma 7 liest die Schattendatenbank aus prisma.config.ts
       # (SHADOW_DATABASE_URL), nicht mehr aus einem Flag.
+      - name: Migrationen der Verwaltung anwenden
+        run: pnpm --filter verwaltung exec prisma migrate deploy
+
       - name: Auf Schemaabweichung prüfen
         run: pnpm --filter api exec prisma migrate diff --from-migrations prisma/migrations --to-schema prisma/schema.prisma --exit-code
 
@@ -112,6 +123,16 @@ jobs:
 
       - name: Bauen
         run: pnpm build
+
+      # Die Verwaltung sieht über alle Häuser nur Zahlen - das sichert ihre
+      # Datenbankrolle ab, nicht der Programmcode. Hier: personenbezogene Spalten
+      # bleiben unlesbar, und jede Auswertung läuft mit genau dieser Rolle.
+      - name: Rolle der Verwaltung prüfen
+        run: |
+          psql "postgresql://postgres:postgres@localhost:5432/ah_intranet_ci" -v ON_ERROR_STOP=1 -v passwort="'ci-rolle'" -f scripts/verwaltung-rolle.sql
+          INTRANET_DATABASE_URL="postgresql://ahoi_verwaltung:ci-rolle@localhost:5432/ah_intranet_ci?schema=public" \
+          VERWALTUNG_JWT_SECRET=ci-schluessel-ohne-bedeutung \
+            pnpm --filter verwaltung pruefung:rolle
 
       # Der Aufbewahrungslauf greift auf jedes Modell zu. Eine Frist ohne
       # hinterlegten Löschweg fällt hier auf, nicht erst nachts auf dem Server.

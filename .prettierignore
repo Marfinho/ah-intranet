@@ -4,3 +4,4 @@ node_modules
 pnpm-lock.yaml
 apps/api/prisma/migrations
 apps/api/src/generated
+apps/verwaltung/src/generated

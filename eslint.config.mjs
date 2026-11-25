@@ -19,6 +19,7 @@ export default tseslint.config(
       "**/*.d.ts",
       "apps/api/prisma/migrations/**",
       "apps/api/src/generated/**",
+      "apps/verwaltung/src/generated/**",
     ],
   },
 
@@ -48,6 +49,7 @@ export default tseslint.config(
       "apps/api/prisma/seed.ts",
       "apps/api/prisma/einrichten.ts",
       "apps/api/src/scripts/**/*.ts",
+      "apps/verwaltung/src/scripts/**/*.ts",
       "e2e/**/*.js",
       "scripts/**/*.{js,mjs,ts}",
       "**/*.config.js",
@@ -66,6 +68,28 @@ export default tseslint.config(
     rules: {
       "no-console": "off",
       "@typescript-eslint/no-require-imports": "off",
+    },
+  },
+
+  // Oberfläche der Verwaltung: Skripte im Browser, ohne Bundler.
+  {
+    files: ["apps/verwaltung/public/**/*.js"],
+    languageOptions: {
+      sourceType: "module",
+      globals: {
+        document: "readonly",
+        window: "readonly",
+        location: "readonly",
+        fetch: "readonly",
+        Node: "readonly",
+        FormData: "readonly",
+        Intl: "readonly",
+        alert: "readonly",
+        prompt: "readonly",
+        confirm: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+      },
     },
   },
 

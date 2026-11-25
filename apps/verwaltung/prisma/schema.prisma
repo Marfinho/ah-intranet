@@ -1,0 +1,72 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Inhaber dürfen ändern, Lesende nur ansehen (z. B. Vertrieb oder Support).
+enum BetreiberRolle {
+  inhaber
+  lesend
+}
+
+/// Ein Konto der Verwaltung. Bewusst nicht in der Tabelle `User` der Kundenhäuser:
+/// wer den Betrieb verwaltet, meldet sich nicht über ein Haus an und liegt auch
+/// nicht in dessen Datenbankbereich.
+model Betreiber {
+  id                 String         @id @default(cuid())
+  username           String         @unique
+  displayName        String
+  passwordHash       String
+  rolle              BetreiberRolle @default(lesend)
+  aktiv              Boolean        @default(true)
+  /// Wird bei Sperre und Passwortwechsel erhöht; macht ältere Sitzungen ungültig.
+  tokenVersion       Int            @default(0)
+  failedLoginCount   Int            @default(0)
+  lockedUntil        DateTime?
+  /// Mit `SECRET_KEY` verschlüsselt. Wirksam erst mit `totpEnabledAt`.
+  totpSecret         String?
+  totpEnabledAt      DateTime?
+  totpLastStep       Int?
+  totpRecoveryHashes String[]       @default([])
+  lastLoginAt        DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  protokoll Protokoll[]
+}
+
+/// Was in der Verwaltung geschehen ist. Eigenes Protokoll, denn die Verwaltung
+/// schreibt nicht in das Audit-Log der Häuser.
+model Protokoll {
+  id            String     @id @default(cuid())
+  betreiberId   String?
+  betreiber     Betreiber? @relation(fields: [betreiberId], references: [id], onDelete: SetNull)
+  betreiberName String
+  aktion        String
+  objektTyp     String
+  objektId      String
+  detail        String
+  createdAt     DateTime   @default(now())
+
+  @@index([createdAt])
+  @@index([objektTyp, objektId])
+}
+
+/// Täglicher Stand der Kennzahlen, damit Verläufe möglich sind, die sich aus
+/// den Daten der Häuser nicht rekonstruieren lassen (z. B. belegte Lizenzen).
+/// `bereich` ist `plattform` oder die Kennung des Hauses.
+model Schnappschuss {
+  id        String   @id @default(cuid())
+  tag       DateTime @db.Date
+  bereich   String
+  werte     Json
+  createdAt DateTime @default(now())
+
+  @@unique([tag, bereich])
+  @@index([bereich, tag])
+}

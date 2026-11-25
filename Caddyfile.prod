@@ -13,6 +13,13 @@
 		file_server
 	}
 
+	# Verwaltung des Betreibers: eigener Dienst unter eigener Adresse, nie über
+	# die Kunden-Anwendung. Vor dem allgemeinen Block, sonst fiele sie dort hinein.
+	@betrieb host betrieb.{$BASE_DOMAIN}
+	handle @betrieb {
+		reverse_proxy verwaltung:3002
+	}
+
 	handle {
 		# Ohne header_up ersetzt Caddy den Host-Kopf durch `web:3000`; die API
 		# erkennt das Haus aber gerade am Host, den der Browser gerufen hat.
