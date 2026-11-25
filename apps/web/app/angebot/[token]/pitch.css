@@ -976,13 +976,18 @@
   gap: 12px;
   transition: opacity 0.4s;
 }
+
 .pitch .ahoi-seite {
   position: relative;
 }
-.pitch .ahoi-ueberspringen {
+.pitch .ahoi-steuerung {
   position: absolute;
   right: 0;
   top: 0;
+  display: flex;
+  gap: 6px;
+}
+.pitch .ahoi-steuerung button {
   background: none;
   border: 0;
   font: 700 14px var(--head);
@@ -991,6 +996,25 @@
   color: var(--quiet);
   padding: 8px;
 }
-.pitch .ahoi-ueberspringen:hover {
+.pitch .ahoi-steuerung button:hover {
   color: var(--fg);
+}
+.pitch .ahoi-punkte {
+  display: flex;
+  gap: 8px;
+  height: 8px;
+  transition: opacity 0.3s;
+}
+.pitch .ahoi-punkte i {
+  width: 26px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line);
+  transition: background 0.3s;
+}
+.pitch .ahoi-punkte i.vorbei {
+  background: var(--accent-soft);
+}
+.pitch .ahoi-punkte i.jetzt {
+  background: var(--accent);
 }

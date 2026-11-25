@@ -147,31 +147,33 @@ function Start({ ansicht }: { ansicht: PitchAnsicht }) {
 /* ------------------------------------------------------------------- Name */
 
 /**
- * Alltagssituationen aus dem Betrieb. Aus ihnen bilden sich die Wörter: Situationen
- * rund um Standorte und Marken werden zu "Autohaus", Abläufe zu "Organisation",
- * Auskünfte zu "Information". Die ersten je Gruppe zeigen kleine Bildschirme zuerst.
+ * Alltagssituationen aus dem Betrieb, eine nach der anderen. Jede löst sich in
+ * Punkte auf, die in "ihr" Wort wandern: Situationen rund um Häuser und Marken
+ * werden zu "Autohaus", Abläufe zu "Organisation", Auskünfte zu "Information".
+ * Die Wörter wachsen so mit jedem Beispiel. Die Beispiele sind allgemein gehalten
+ * und stehen für jeden Interessenten gleich da.
  */
 const SITUATIONEN: { text: string; zeile: 0 | 1 | 2 }[] = [
   { text: "Fr. Müller braucht Urlaub", zeile: 1 },
-  { text: "Hr. Kopernikus sucht die Nummer von Fr. Hülse im anderen Standort", zeile: 2 },
-  { text: "Eine neue Marke zieht ein: wer sieht was?", zeile: 0 },
+  { text: "Hr. Kopernikus sucht die Telefonnummer von Fr. Hülse im anderen Standort", zeile: 2 },
   { text: "Hr. Meyer braucht einen Raum für ein Meeting", zeile: 1 },
-  { text: "Die neue Regel zur Fahrzeugübergabe muss alle erreichen", zeile: 2 },
-  { text: "Drei Häuser in einer Straße teilen sich Räume", zeile: 0 },
-  { text: "Die Werkstatt braucht neue Arbeitskleidung", zeile: 1 },
-  { text: "Wo liegt das aktuelle Garantieformular?", zeile: 2 },
-  { text: "Jedes Haus hat eigene Abläufe und gehört doch zusammen", zeile: 0 },
-  { text: "Eine Hebebühne ist defekt", zeile: 1 },
-  { text: "Wer ist für die Zulassung zuständig?", zeile: 2 },
-  { text: "Hr. Schulz möchte den Sonntagsdienst tauschen", zeile: 1 },
+  { text: "Eine neue Marke zieht ein: Wer sieht was, wer macht was?", zeile: 0 },
+  { text: "Die neue Regel zur Fahrzeugübergabe muss alle Standorte erreichen", zeile: 2 },
+  { text: "Zwei Häuser am selben Standort teilen sich Räume und Termine", zeile: 0 },
 ];
 
-/** Ablauf in Sekunden: Situationen, Wörter, Name, Zeichen. */
-const NAME_KARTEN = { von: 0.2, abstand: 0.11, bleibt: 3.3 };
-const NAME_BAUEN = { von: 3.4, dauer: 2.3 };
-const NAME_KUERZEN = { von: 6.3, dauer: 1.6 };
-const NAME_ZEICHEN = 7.7;
-const NAME_DAUER = 8.6;
+/** Ablauf in Sekunden. Jede Situation steht fünf Sekunden, bevor die nächste kommt. */
+const NAME_START = 0.3;
+const NAME_FLUG = 0.9;
+const NAME_HALTEN = 5;
+const NAME_SLOT = NAME_FLUG + NAME_HALTEN;
+const NAME_AUFLOESEN = 1.5;
+const NAME_NACH_SITUATIONEN = NAME_START + SITUATIONEN.length * NAME_SLOT;
+const NAME_KUERZEN = { von: NAME_NACH_SITUATIONEN + NAME_AUFLOESEN + 1.4, dauer: 1.6 };
+const NAME_ZEICHEN = NAME_KUERZEN.von + NAME_KUERZEN.dauer - 0.1;
+const NAME_DAUER = NAME_ZEICHEN + 1.6;
+/** Höhe des Streifens oben, in dem die Situation steht. */
+const NAME_STREIFEN = 104;
 
 const weich = (t: number) => {
   const x = Math.min(1, Math.max(0, t));
@@ -186,6 +188,7 @@ interface Punkt {
   zeile: number;
 }
 interface Teilchen {
+  situation: number;
   sx: number;
   sy: number;
   ax: number;
@@ -194,16 +197,13 @@ interface Teilchen {
   by: number;
   merkmal: Merkmal;
   verzug: number;
-  phase: number;
 }
 interface Karte {
-  text: string;
-  zeile: number;
-  x: number;
-  y: number;
+  zeilen: string[];
   breite: number;
   hoehe: number;
-  zeilen: string[];
+  x: number;
+  y: number;
 }
 
 /** Wiederholbarer Zufall: das Bild soll bei jedem Durchlauf gleich entstehen. */
@@ -223,6 +223,7 @@ const SCHRIFT = '"Barlow Condensed", "Arial Narrow", Arial, sans-serif';
 function rastere(
   breite: number,
   hoehe: number,
+  bereich: { oben: number; hoehe: number },
   zeilen: string[],
   schriftgroesse: number,
   schritt: number,
@@ -233,7 +234,7 @@ function rastere(
   leinwand.height = hoehe;
   const ctx = leinwand.getContext("2d", { willReadFrequently: true })!;
   const hoeheZeile = schriftgroesse * 1.04;
-  const oben = (hoehe - hoeheZeile * zeilen.length) / 2;
+  const oben = bereich.oben + (bereich.hoehe - hoeheZeile * zeilen.length) / 2;
   ctx.font = `800 ${schriftgroesse}px ${SCHRIFT}`;
   ctx.textBaseline = "middle";
   ctx.fillStyle = "#000";
@@ -283,56 +284,17 @@ function umbrechen(ctx: CanvasRenderingContext2D, text: string, breite: number):
   return zeilen;
 }
 
-function legeKarten(
-  breite: number,
-  hoehe: number,
-  schriftgroesse: number,
-  ctx: CanvasRenderingContext2D,
-  wuerfel: () => number,
-): Karte[] {
-  const spalten = breite >= 760 ? 4 : breite >= 520 ? 3 : 2;
-  const proGruppe = spalten === 4 ? 4 : spalten === 3 ? 3 : 2;
-  const gewaehlt = ([0, 1, 2] as const).flatMap((zeile) =>
-    SITUATIONEN.filter((s) => s.zeile === zeile).slice(0, proGruppe),
-  );
-  // Die Gruppen abwechselnd verteilen, damit keine Spalte nur aus einer Gruppe besteht.
-  const reihe = Array.from({ length: gewaehlt.length }, (_, i) => gewaehlt[(i % 3) * proGruppe + Math.floor(i / 3)]);
-
-  ctx.font = `600 ${schriftgroesse}px ${SCHRIFT}`;
-  const zeilenAnzahl = Math.ceil(reihe.length / spalten);
-  const zelleBreite = breite / spalten;
-  const zelleHoehe = hoehe / zeilenAnzahl;
-  const kartenBreite = Math.min(zelleBreite - 14, 240);
-
-  return reihe.map((situation, i) => {
-    const zeilen = umbrechen(ctx, situation.text, kartenBreite - 20);
-    const kartenHoehe = zeilen.length * schriftgroesse * 1.25 + 18;
-    return {
-      text: situation.text,
-      zeile: situation.zeile,
-      zeilen,
-      breite: kartenBreite,
-      hoehe: kartenHoehe,
-      x: ((i % spalten) + 0.5) * zelleBreite + (wuerfel() - 0.5) * Math.max(0, zelleBreite - kartenBreite - 6),
-      y: (Math.floor(i / spalten) + 0.5) * zelleHoehe + (wuerfel() - 0.5) * Math.max(0, zelleHoehe - kartenHoehe - 10),
-    };
-  });
-}
-
-function baueTeilchen(
-  breite: number,
-  hoehe: number,
-  schriftgroesse: number,
-): { teilchen: Teilchen[]; karten: Karte[] } {
+function baueSzene(breite: number, hoehe: number, kartenSchrift: number) {
   const zufallswert = zufall(7);
   const wortZeilen = ["AUTOHAUS", "ORGANISATION", "INFORMATION"];
   const messen = document.createElement("canvas").getContext("2d")!;
   const probe = 100;
   messen.font = `800 ${probe}px ${SCHRIFT}`;
   const breitesteZeile = Math.max(...wortZeilen.map((zeile) => messen.measureText(zeile).width)) / probe;
-  const groesse1 = Math.max(18, Math.min((breite * 0.82) / breitesteZeile, hoehe / 3.4));
+  const wortBereich = { oben: NAME_STREIFEN, hoehe: hoehe - NAME_STREIFEN };
+  const groesse1 = Math.max(18, Math.min((breite * 0.82) / breitesteZeile, wortBereich.hoehe / 3.4));
 
-  const woerter = rastere(breite, hoehe, wortZeilen, groesse1, 3, (zeile, index) =>
+  const woerter = rastere(breite, hoehe, wortBereich, wortZeilen, groesse1, 3, (zeile, index) =>
     zeile === 0 && index === 0
       ? "A"
       : zeile === 0 && index === 4
@@ -345,8 +307,16 @@ function baueTeilchen(
   );
 
   const breiteAhoi = messen.measureText("AHOI").width / probe;
-  const groesse2 = Math.max(24, Math.min((breite * 0.7) / breiteAhoi, hoehe * 0.8));
-  const name = rastere(breite, hoehe, ["AHOI"], groesse2, 3, (_zeile, index) => (["A", "H", "O", "I"] as const)[index]);
+  const groesse2 = Math.max(24, Math.min((breite * 0.7) / breiteAhoi, hoehe * 0.72));
+  const name = rastere(
+    breite,
+    hoehe,
+    { oben: 0, hoehe },
+    ["AHOI"],
+    groesse2,
+    3,
+    (_zeile, index) => (["A", "H", "O", "I"] as const)[index],
+  );
 
   const gemischt = <T,>(liste: T[]) => {
     const kopie = [...liste];
@@ -356,28 +326,39 @@ function baueTeilchen(
     }
     return kopie;
   };
-
   const alleNamenspunkte = gemischt(name);
   const jeBuchstabe: Record<string, Punkt[]> = { A: [], H: [], O: [], I: [] };
   for (const punkt of alleNamenspunkte) if (punkt.merkmal) jeBuchstabe[punkt.merkmal].push(punkt);
   const zaehler: Record<string, number> = { A: 0, H: 0, O: 0, I: 0 };
   let allgemein = 0;
 
-  const karten = legeKarten(
-    breite,
-    hoehe,
-    schriftgroesse,
-    document.createElement("canvas").getContext("2d")!,
-    zufallswert,
-  );
+  // Karten: eine je Situation, mittig im Streifen oben.
+  messen.font = `600 ${kartenSchrift}px ${SCHRIFT}`;
+  const kartenBreite = Math.min(breite - 24, 620);
+  const karten: Karte[] = SITUATIONEN.map((situation) => {
+    const zeilen = umbrechen(messen, situation.text, kartenBreite - 40);
+    return {
+      zeilen,
+      breite: kartenBreite,
+      hoehe: Math.min(NAME_STREIFEN - 12, zeilen.length * kartenSchrift * 1.25 + 26),
+      x: breite / 2,
+      y: NAME_STREIFEN / 2,
+    };
+  });
+
+  // Die Punkte eines Wortes verteilen sich reihum auf die Situationen, die zu ihm gehören:
+  // jede Situation liefert einen gleichmäßigen Teil, das Wort füllt sich mit jedem Beispiel.
+  const jeZeile: number[][] = [[], [], []];
+  SITUATIONEN.forEach((situation, index) => jeZeile[situation.zeile].push(index));
+  const zaehlerZeile = [0, 0, 0];
 
   const anzahl = Math.max(woerter.length, Math.ceil(name.length * 1.2));
   const teilchen: Teilchen[] = [];
   for (let i = 0; i < anzahl; i += 1) {
     const ziel1 = woerter[i % woerter.length];
-    // Die Punkte eines Wortes stammen aus den Situationen, die zu ihm gehören.
-    const passende = karten.filter((karte) => karte.zeile === ziel1.zeile);
-    const quelle = passende[Math.floor(zufallswert() * passende.length)];
+    const verfuegbar = jeZeile[ziel1.zeile];
+    const situation = verfuegbar[zaehlerZeile[ziel1.zeile]++ % verfuegbar.length];
+    const karte = karten[situation];
     let ziel2: Punkt;
     if (ziel1.merkmal) {
       const liste = jeBuchstabe[ziel1.merkmal];
@@ -386,18 +367,18 @@ function baueTeilchen(
       ziel2 = alleNamenspunkte[allgemein++ % alleNamenspunkte.length];
     }
     teilchen.push({
-      sx: quelle.x + (zufallswert() - 0.5) * quelle.breite * 0.9,
-      sy: quelle.y + (zufallswert() - 0.5) * quelle.hoehe * 0.8,
+      situation,
+      sx: karte.x + (zufallswert() - 0.5) * karte.breite * 0.9,
+      sy: karte.y + (zufallswert() - 0.5) * karte.hoehe * 0.8,
       ax: ziel1.x + (zufallswert() - 0.5) * 1.2,
       ay: ziel1.y + (zufallswert() - 0.5) * 1.2,
       bx: ziel2.x + (zufallswert() - 0.5) * 1.2,
       by: ziel2.y + (zufallswert() - 0.5) * 1.2,
       merkmal: ziel1.merkmal,
       verzug: zufallswert() * 0.4,
-      phase: zufallswert() * Math.PI * 2,
     });
   }
-  return { teilchen, karten };
+  return { teilchen, karten, woerter };
 }
 
 function farbe(name: string, vorgabe: string): string {
@@ -427,14 +408,15 @@ function mische(von: string, nach: string, anteil: number): string {
 /**
  * Erste Seite: wie der Name entsteht.
  *
- * Einzelne Begriffe aus dem Betriebsalltag lösen sich in Punkte auf. Die Punkte
- * bilden zuerst die drei Wörter Autohaus, Organisation, Information; dann ziehen
- * sie sich auf die Anfangsbuchstaben zusammen, bis AHOI dasteht, und das Zeichen
- * baut sich auf. Der Name ist eine Abkürzung, kein Bild (docs/ci.md). Bei
- * reduzierter Bewegung steht gleich das Ergebnis da.
+ * Alltagssituationen erscheinen nacheinander und stehen je fünf Sekunden. Jede
+ * löst sich in Punkte auf, die in das passende Wort wandern, bis AUTOHAUS,
+ * ORGANISATION und INFORMATION dastehen. Dann ziehen sich die Punkte auf A, H, O
+ * und I zusammen, und das Zeichen baut sich auf. Der Name ist eine Abkürzung,
+ * kein Bild (docs/ci.md). Bei reduzierter Bewegung steht gleich das Ergebnis da.
  */
 function Namensseite({ onWeiter }: { onWeiter: () => void }) {
   const leinwandRef = useRef<HTMLCanvasElement>(null);
+  const versatz = useRef(0);
   const [zeit, setZeit] = useState(0);
   const [durchlauf, setDurchlauf] = useState(0);
   const [direkt, setDirekt] = useState(false);
@@ -455,10 +437,11 @@ function Namensseite({ onWeiter }: { onWeiter: () => void }) {
     if (!leinwand || breite < 200) return;
     let abgebrochen = false;
     let rahmen = 0;
+    versatz.current = 0;
 
     const starte = () => {
       if (abgebrochen) return;
-      const hoehe = Math.round(Math.min(460, Math.max(340, breite * 0.5)));
+      const hoehe = Math.round(Math.min(580, Math.max(440, breite * 0.62)));
       const dichte = Math.min(2, window.devicePixelRatio || 1);
       leinwand.width = Math.round(breite * dichte);
       leinwand.height = Math.round(hoehe * dichte);
@@ -466,74 +449,81 @@ function Namensseite({ onWeiter }: { onWeiter: () => void }) {
       const ctx = leinwand.getContext("2d")!;
       ctx.scale(dichte, dichte);
 
-      const schriftgroesse = breite >= 760 ? 14 : breite >= 520 ? 13 : 12;
-      const { teilchen, karten } = baueTeilchen(breite, hoehe, schriftgroesse);
+      const kartenSchrift = breite >= 600 ? 22 : 17;
+      const { teilchen, karten, woerter } = baueSzene(breite, hoehe, kartenSchrift);
       const grund = farbe("--fg", "#15181B");
       const flaeche = farbe("--surface", "#FFFFFF");
       const linie = farbe("--line", "#D5D7D6");
+      const leise = farbe("--quiet", "#737B80");
       const akzent = farbe("--accent-text", "#8F3F14");
       const akzentHell = farbe("--accent", "#B4531F");
+      const beginn = (k: number) => NAME_START + k * NAME_SLOT;
 
       const zeichne = (t: number) => {
         ctx.clearRect(0, 0, breite, hoehe);
         const stufe = (lokal: number, verzug: number) => weich((lokal - verzug * 0.5) / 0.8);
-        const bauen = (verzug: number) => stufe((t - NAME_BAUEN.von) / NAME_BAUEN.dauer, verzug);
-        const kuerzen = (verzug: number) => stufe((t - NAME_KUERZEN.von) / NAME_KUERZEN.dauer, verzug);
-
-        // Situationen: erscheinen nacheinander und lösen sich dann in Punkte auf.
-        const aufloesen = 1 - weich((t - (NAME_BAUEN.von - 0.1)) / 0.8);
-        if (aufloesen > 0.01) {
-          ctx.font = `600 ${schriftgroesse}px ${SCHRIFT}`;
-          ctx.textAlign = "left";
-          ctx.textBaseline = "middle";
-          karten.forEach((karte, index) => {
-            const da = weich((t - NAME_KARTEN.von - index * NAME_KARTEN.abstand) / 0.45) * aufloesen;
-            if (da < 0.01) return;
-            const schweben = Math.sin(t * 0.9 + index) * 2;
-            const links = karte.x - karte.breite / 2;
-            const oben = karte.y - karte.hoehe / 2 + schweben + (1 - da) * 8;
-            ctx.globalAlpha = da;
-            ctx.fillStyle = flaeche;
-            ctx.strokeStyle = linie;
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.roundRect(links, oben, karte.breite, karte.hoehe, 8);
-            ctx.fill();
-            ctx.stroke();
-            ctx.fillStyle = grund;
-            karte.zeilen.forEach((zeile, z) =>
-              ctx.fillText(zeile, links + 10, oben + 9 + schriftgroesse * 1.25 * (z + 0.5)),
-            );
-          });
-          ctx.globalAlpha = 1;
-        }
-
-        const punkteSichtbar = weich((t - (NAME_BAUEN.von - 0.2)) / 0.5);
         const zweiteStufe = weich((t - NAME_KUERZEN.von) / NAME_KUERZEN.dauer);
+
+        // Das Ziel als schwacher Schatten: man sieht, wohin die Punkte wandern.
+        ctx.globalAlpha = 0.1 * (1 - zweiteStufe);
+        ctx.fillStyle = leise;
+        for (const punkt of woerter) ctx.fillRect(punkt.x - 0.8, punkt.y - 0.8, 1.6, 1.6);
+        ctx.globalAlpha = 1;
+
+        // Situationen: fliegt ein, steht fünf Sekunden, löst sich in Punkte auf.
+        ctx.font = `600 ${kartenSchrift}px ${SCHRIFT}`;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        karten.forEach((karte, k) => {
+          const da = (t - beginn(k)) / NAME_FLUG;
+          if (da <= 0) return;
+          const auf = (t - (beginn(k) + NAME_SLOT)) / 0.6;
+          if (auf >= 1) return;
+          const ein = weich(da);
+          const woher = k % 2 === 0 ? -karte.breite : breite + karte.breite;
+          const mitteX = woher + (karte.x - woher) * ein;
+          const links = mitteX - karte.breite / 2;
+          const oben = karte.y - karte.hoehe / 2;
+          ctx.globalAlpha = Math.min(1, da * 1.4) * (1 - weich(auf));
+          ctx.fillStyle = flaeche;
+          ctx.strokeStyle = linie;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          if (typeof ctx.roundRect === "function") ctx.roundRect(links, oben, karte.breite, karte.hoehe, 10);
+          else ctx.rect(links, oben, karte.breite, karte.hoehe);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = grund;
+          karte.zeilen.forEach((zeile, z) =>
+            ctx.fillText(
+              zeile,
+              links + 20,
+              oben + karte.hoehe / 2 + (z - (karte.zeilen.length - 1) / 2) * kartenSchrift * 1.25,
+            ),
+          );
+        });
+        ctx.globalAlpha = 1;
+
         const nichtMerkmal = mische(grund, akzent, zweiteStufe);
-        if (punkteSichtbar > 0.01) {
-          ctx.globalAlpha = punkteSichtbar;
-          for (const durchgang of [false, true]) {
-            ctx.fillStyle = durchgang ? akzentHell : nichtMerkmal;
-            for (const p of teilchen) {
-              if ((p.merkmal !== null) !== durchgang) continue;
-              const e1 = bauen(p.verzug);
-              const e2 = kuerzen(p.verzug);
-              let x = p.sx + (p.ax - p.sx) * e1;
-              let y = p.sy + (p.ay - p.sy) * e1;
-              x += (p.bx - x) * e2;
-              y += (p.by - y) * e2;
-              if (e1 < 0.02) {
-                x += Math.sin(t * 1.3 + p.phase) * 2;
-                y += Math.cos(t * 1.1 + p.phase) * 2;
-              }
-              // Am Ende werden die Punkte größer, damit der Name als Fläche steht.
-              const gross = (e1 < 0.98 && e1 > 0.02 ? 2.6 : 2.2) + 1.1 * e2;
-              ctx.fillRect(x - gross / 2, y - gross / 2, gross, gross);
-            }
+        for (const durchgang of [false, true]) {
+          ctx.fillStyle = durchgang ? akzentHell : nichtMerkmal;
+          for (const p of teilchen) {
+            if ((p.merkmal !== null) !== durchgang) continue;
+            const seit = t - (beginn(p.situation) + NAME_SLOT);
+            if (seit < 0) continue;
+            ctx.globalAlpha = weich(seit / 0.25);
+            const e1 = stufe(seit / NAME_AUFLOESEN, p.verzug);
+            const e2 = stufe((t - NAME_KUERZEN.von) / NAME_KUERZEN.dauer, p.verzug);
+            let x = p.sx + (p.ax - p.sx) * e1;
+            let y = p.sy + (p.ay - p.sy) * e1;
+            x += (p.bx - x) * e2;
+            y += (p.by - y) * e2;
+            // Am Ende werden die Punkte größer, damit der Name als Fläche steht.
+            const gross = (e1 < 0.98 && e1 > 0.02 ? 2.6 : 2.2) + 1.1 * e2;
+            ctx.fillRect(x - gross / 2, y - gross / 2, gross, gross);
           }
-          ctx.globalAlpha = 1;
         }
+        ctx.globalAlpha = 1;
       };
 
       if (direkt || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -544,7 +534,7 @@ function Namensseite({ onWeiter }: { onWeiter: () => void }) {
 
       const start = performance.now();
       const schritt = (jetzt: number) => {
-        const t = Math.min(NAME_DAUER, (jetzt - start) / 1000);
+        const t = Math.min(NAME_DAUER, (jetzt - start) / 1000 + versatz.current);
         zeichne(t);
         setZeit(t);
         if (t < NAME_DAUER) rahmen = requestAnimationFrame(schritt);
@@ -562,15 +552,37 @@ function Namensseite({ onWeiter }: { onWeiter: () => void }) {
   }, [breite, durchlauf, direkt]);
 
   const fertig = zeit >= NAME_DAUER;
+  const inSituationen = zeit < NAME_NACH_SITUATIONEN;
+  const aktuelle = Math.min(SITUATIONEN.length - 1, Math.max(0, Math.floor((zeit - NAME_START) / NAME_SLOT)));
+
+  // Springt zum Beginn des nächsten Beispiels, indem die Uhr vorgestellt wird.
+  const naechstes = () => {
+    const ziel = NAME_START + (aktuelle + 1) * NAME_SLOT;
+    versatz.current += Math.max(0, ziel - zeit) + 0.01;
+  };
 
   return (
     <section className="station ahoi-seite">
       <h1 className="nur-lesen">AHOI: Autohaus Organisation und Information</h1>
       {!fertig ? (
-        <button type="button" className="ahoi-ueberspringen" onClick={() => setDirekt(true)}>
-          Überspringen
-        </button>
+        <div className="ahoi-steuerung">
+          {inSituationen ? (
+            <button type="button" onClick={naechstes}>
+              Nächstes Beispiel
+            </button>
+          ) : null}
+          <button type="button" onClick={() => setDirekt(true)}>
+            Überspringen
+          </button>
+        </div>
       ) : null}
+
+      <div className="ahoi-punkte" aria-hidden="true" style={{ opacity: inSituationen && zeit > NAME_START ? 1 : 0 }}>
+        {SITUATIONEN.map((_, k) => (
+          <i key={k} className={k < aktuelle ? "vorbei" : k === aktuelle ? "jetzt" : ""} />
+        ))}
+      </div>
+
       <canvas ref={leinwandRef} className="ahoi-leinwand" aria-hidden="true" />
 
       <svg
@@ -604,7 +616,7 @@ function Namensseite({ onWeiter }: { onWeiter: () => void }) {
         })}
       </svg>
 
-      <p className="ahoi-unter" style={{ opacity: weich((zeit - 7.9) / 0.6) }}>
+      <p className="ahoi-unter" style={{ opacity: weich((zeit - (NAME_ZEICHEN + 0.5)) / 0.6) }}>
         Autohaus · Organisation · Information
       </p>
 
