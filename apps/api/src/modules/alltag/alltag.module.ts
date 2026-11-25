@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { CustodyController, MealsController, ShiftSwapsController, ShiftsController } from "./alltag.controller";
 import { PlanungController } from "./planung.controller";
+import { EntwurfService } from "./entwurf.service";
 import { PlanungService } from "./planung.service";
 import { SchichtartenService } from "./schichtarten.service";
 import { ShiftsService } from "./shifts.service";
@@ -14,7 +15,7 @@ import { MealsService } from "./meals.service";
  */
 @Module({
   controllers: [ShiftsController, ShiftSwapsController, PlanungController, CustodyController, MealsController],
-  providers: [ShiftsService, PlanungService, SchichtartenService, CustodyService, MealsService],
-  exports: [ShiftsService, PlanungService, SchichtartenService, CustodyService, MealsService],
+  providers: [ShiftsService, PlanungService, EntwurfService, SchichtartenService, CustodyService, MealsService],
+  exports: [ShiftsService, PlanungService, EntwurfService, SchichtartenService, CustodyService, MealsService],
 })
 export class AlltagModule {}

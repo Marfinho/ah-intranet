@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { findeUeberschneidung, stichtagVorbei, tauschrechte, ueberschneidet } from "./regeln";
+import {
+  findeAlleUeberschneidungen,
+  findeUeberschneidung,
+  stichtagVorbei,
+  tauschrechte,
+  ueberschneidet,
+} from "./regeln";
 
 const zeitraum = (von: string, bis: string) => ({ startsAt: new Date(von), endsAt: new Date(bis) });
 
@@ -127,5 +133,29 @@ describe("findeUeberschneidung", () => {
         new Set(["frueh", "spaet"]),
       ),
     ).toBeNull();
+  });
+});
+
+describe("findeAlleUeberschneidungen", () => {
+  const zeit = (id: string, von: string, bis: string, assigneeId = "a") => ({
+    id,
+    label: id,
+    assigneeId,
+    startsAt: new Date(`2026-01-05T${von}:00Z`),
+    endsAt: new Date(`2026-01-05T${bis}:00Z`),
+  });
+
+  it("liefert jedes überschneidende Paar", () => {
+    const funde = findeAlleUeberschneidungen(
+      [zeit("x", "08:00", "12:00"), zeit("y", "11:00", "15:00"), zeit("z", "14:00", "16:00")],
+      new Set(["x", "y", "z"]),
+    );
+    expect(funde.map((f) => `${f.erste.id}-${f.zweite.id}`)).toEqual(["x-y", "y-z"]);
+  });
+
+  it("liefert nichts ohne Überschneidung", () => {
+    expect(
+      findeAlleUeberschneidungen([zeit("x", "08:00", "12:00"), zeit("y", "12:00", "15:00")], new Set(["x", "y"])),
+    ).toEqual([]);
   });
 });

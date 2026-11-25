@@ -98,3 +98,26 @@ export function findeUeberschneidung(
   }
   return null;
 }
+
+/** Wie `findeUeberschneidung`, liefert aber **alle** Paare - der Entwurf zeigt jede Überschneidung an. */
+export function findeAlleUeberschneidungen(
+  schichten: readonly SchichtZeit[],
+  geaenderte: ReadonlySet<string>,
+): { erste: SchichtZeit; zweite: SchichtZeit }[] {
+  const funde: { erste: SchichtZeit; zweite: SchichtZeit }[] = [];
+  for (let i = 0; i < schichten.length; i += 1) {
+    for (let j = i + 1; j < schichten.length; j += 1) {
+      const a = schichten[i];
+      const b = schichten[j];
+      if (
+        a.assigneeId &&
+        a.assigneeId === b.assigneeId &&
+        (geaenderte.has(a.id) || geaenderte.has(b.id)) &&
+        ueberschneidet(a, b)
+      ) {
+        funde.push({ erste: a, zweite: b });
+      }
+    }
+  }
+  return funde;
+}

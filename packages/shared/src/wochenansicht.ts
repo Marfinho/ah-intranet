@@ -7,7 +7,7 @@
  * ein Schicht-Block, der nach dem Ziehen anderswo landet, als er losgelassen
  * wurde, ist ein Fehler, den man sonst nur von Hand findet.
  */
-import { lokalZuUtc, lokaleMinuten, lokalesDatum, tagVerschieben } from "./zeit";
+import { lokalZuUtc, lokaleMinuten, lokalesDatum, parseZeit, tagVerschieben } from "./zeit";
 
 /** Raster, in dem Zeiten einrasten: Viertelstunden. */
 export const RASTER_MINUTEN = 15;
@@ -161,4 +161,15 @@ export function aendereEnde(schicht: Zeiten, deltaMinuten: number): Zeiten {
     ende = new Date(start.getTime() + MINDESTDAUER_MINUTEN * 60_000);
   }
   return { startsAt: schicht.startsAt, endsAt: ende.toISOString() };
+}
+
+/**
+ * Start und Ende einer Schichtart an einem Tag; Ende <= Beginn heißt: über Mitternacht.
+ * Dieselbe Rechnung wie in der Autoplanung - der Entwurf legt Schichten im Browser an.
+ */
+export function schichtartZeiten(art: { startZeit: string; endZeit: string }, datum: string): Zeiten {
+  const start = parseZeit(art.startZeit) ?? 0;
+  const endeRoh = parseZeit(art.endZeit) ?? 0;
+  const ende = endeRoh <= start ? endeRoh + 1440 : endeRoh;
+  return { startsAt: lokalZuUtc(datum, start).toISOString(), endsAt: lokalZuUtc(datum, ende).toISOString() };
 }

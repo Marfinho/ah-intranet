@@ -84,3 +84,84 @@ export interface ArbeitszeitBefund {
   datum: string;
   text: string;
 }
+
+/* --------------------------------------------------------------- Entwürfe */
+
+/**
+ * Eine Schicht im Entwurf. Der Entwurf kennt die Schichten **vollständig**: was
+ * dort fehlt, wird nicht angefasst (es bleibt im echten Plan), was dort steht,
+ * wird beim Veröffentlichen angelegt oder geändert.
+ */
+export interface PlanEntwurfItem {
+  /** Vom Browser vergeben; ändert sich nie, auch wenn Zeiten oder Person wechseln. */
+  key: string;
+  /** Die echte Schicht, aus der dieses Element entstand; leer bei neuen. */
+  liveId: string | null;
+  /** `updatedAt` der echten Schicht beim Anlegen des Entwurfs - erkennt Änderungen von anderer Seite. */
+  liveStand: string | null;
+  label: string;
+  startsAt: string;
+  endsAt: string;
+  pauseMinuten: number;
+  assigneeId: string | null;
+  schichtartId: string | null;
+  locationId: string | null;
+  departmentId: string | null;
+  note: string | null;
+  /** Nur bei Elementen mit `liveId`: die echte Schicht soll beim Veröffentlichen entfallen. */
+  geloescht?: boolean;
+}
+
+export type PlanEntwurfBasis = "leer" | "bestand";
+
+export interface PlanEntwurfKopf {
+  id: string;
+  name: string;
+  von: string;
+  bis: string;
+  basis: PlanEntwurfBasis;
+  version: number;
+  aktualisiertAm: string;
+  aktualisiertVon: string | null;
+  erstelltVon: string;
+  anzahl: number;
+}
+
+export interface PlanEntwurf extends PlanEntwurfKopf {
+  items: PlanEntwurfItem[];
+}
+
+export interface EntwurfKonflikt {
+  /** Schlüssel der beiden Elemente (Entwurf: `key`, feste echte Schicht: ihre ID). */
+  a: string;
+  b: string;
+  text: string;
+}
+
+export interface EntwurfPruefung {
+  /** Hinweise und Verstöße nach Arbeitszeitgesetz im Endzustand des Entwurfs. */
+  befunde: ArbeitszeitBefund[];
+  /** Dieselbe Person zweimal zur selben Zeit - das verhindert das Veröffentlichen. */
+  konflikte: EntwurfKonflikt[];
+}
+
+export interface EntwurfSpeicherung extends EntwurfPruefung {
+  version: number;
+  aktualisiertAm: string;
+}
+
+export interface EntwurfVorschlag {
+  /** Neu eingeteilte Schichten und offene Schichten für Lücken zur Mindestbesetzung. */
+  neu: PlanEntwurfItem[];
+  /** Offene Elemente der geplanten Schichtarten, die der Vorschlag ersetzt. */
+  entfernen: string[];
+  luecken: PlanLuecke[];
+  ohneWochenstunden: string[];
+}
+
+export interface Veroeffentlichung {
+  angelegt: number;
+  geaendert: number;
+  entfernt: number;
+  benachrichtigt: number;
+}

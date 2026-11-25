@@ -245,6 +245,7 @@ model Tenant {
   betriebstage                 Betriebstag[]
   schluesselbesetzungen        Schluesselbesetzung[]
   schichtarten                 Schichtart[]
+  planentwuerfe                Planentwurf[]
   mealOptions                  MealOption[]
   mealOrders                   MealOrder[]
 
@@ -470,44 +471,46 @@ model User {
   manager       User?          @relation("ManagerRelation", fields: [managerId], references: [id])
   reports       User[]         @relation("ManagerRelation")
 
-  roles                 UserRole[]
-  newsPosts             NewsPost[]             @relation("NewsAuthor")
-  newsComments          NewsComment[]
-  newsReads             NewsRead[]
-  orders                Order[]                @relation("OrderRequester")
-  orderComments         OrderComment[]
-  approvalDecisions     ApprovalDecision[]     @relation("ApprovalActor")
-  auditLogs             AuditLog[]             @relation("AuditActor")
-  notifications         Notification[]
-  documents             Document[]             @relation("DocumentOwner")
-  events                CalendarEvent[]        @relation("EventOrganizer")
-  ticketsRequested      Ticket[]               @relation("TicketRequester")
-  ticketsAssigned       Ticket[]               @relation("TicketAssignee")
-  ticketComments        TicketComment[]
-  onboarding            OnboardingAssignment[] @relation("OnboardingEmployee")
-  absences              Absence[]              @relation("AbsenceEmployee")
-  absenceDecisions      Absence[]              @relation("AbsenceDecider")
-  absencesRecorded      Absence[]              @relation("AbsenceRecorder")
-  schluesselbesetzungen Schluesselbesetzung[]
-  schichtartenImTeam    Schichtart[]           @relation("SchichtartTeam")
-  roomBookings          RoomBooking[]
-  wikiArticles          WikiArticle[]          @relation("WikiAuthor")
-  ideas                 Idea[]                 @relation("IdeaAuthor")
-  ideaVotes             IdeaVote[]
-  polls                 Poll[]                 @relation("PollAuthor")
-  pollVotes             PollVote[]
-  shiftsAssigned        Shift[]                @relation("ShiftAssignee")
-  shiftsCreated         Shift[]                @relation("ShiftCreator")
-  swapsRequested        ShiftSwap[]            @relation("SwapRequester")
-  swapsReceived         ShiftSwap[]            @relation("SwapTarget")
-  swapsDecided          ShiftSwap[]            @relation("SwapDecider")
-  custodyHeld           CustodyItem[]          @relation("CustodyHolder")
-  custodyCreated        CustodyItem[]          @relation("CustodyCreator")
-  custodyReceived       CustodyEvent[]         @relation("CustodyPerson")
-  custodyBooked         CustodyEvent[]         @relation("CustodyActor")
-  mealOffersMade        MealOffer[]            @relation("MealCreator")
-  mealOrders            MealOrder[]            @relation("MealOrderUser")
-  passwordResets        PasswordReset[]
+  roles                   UserRole[]
+  newsPosts               NewsPost[]             @relation("NewsAuthor")
+  newsComments            NewsComment[]
+  newsReads               NewsRead[]
+  orders                  Order[]                @relation("OrderRequester")
+  orderComments           OrderComment[]
+  approvalDecisions       ApprovalDecision[]     @relation("ApprovalActor")
+  auditLogs               AuditLog[]             @relation("AuditActor")
+  notifications           Notification[]
+  documents               Document[]             @relation("DocumentOwner")
+  events                  CalendarEvent[]        @relation("EventOrganizer")
+  ticketsRequested        Ticket[]               @relation("TicketRequester")
+  ticketsAssigned         Ticket[]               @relation("TicketAssignee")
+  ticketComments          TicketComment[]
+  onboarding              OnboardingAssignment[] @relation("OnboardingEmployee")
+  absences                Absence[]              @relation("AbsenceEmployee")
+  absenceDecisions        Absence[]              @relation("AbsenceDecider")
+  absencesRecorded        Absence[]              @relation("AbsenceRecorder")
+  schluesselbesetzungen   Schluesselbesetzung[]
+  schichtartenImTeam      Schichtart[]           @relation("SchichtartTeam")
+  planentwuerfe           Planentwurf[]          @relation("PlanentwurfAutor")
+  planentwuerfeBearbeitet Planentwurf[]          @relation("PlanentwurfBearbeiter")
+  roomBookings            RoomBooking[]
+  wikiArticles            WikiArticle[]          @relation("WikiAuthor")
+  ideas                   Idea[]                 @relation("IdeaAuthor")
+  ideaVotes               IdeaVote[]
+  polls                   Poll[]                 @relation("PollAuthor")
+  pollVotes               PollVote[]
+  shiftsAssigned          Shift[]                @relation("ShiftAssignee")
+  shiftsCreated           Shift[]                @relation("ShiftCreator")
+  swapsRequested          ShiftSwap[]            @relation("SwapRequester")
+  swapsReceived           ShiftSwap[]            @relation("SwapTarget")
+  swapsDecided            ShiftSwap[]            @relation("SwapDecider")
+  custodyHeld             CustodyItem[]          @relation("CustodyHolder")
+  custodyCreated          CustodyItem[]          @relation("CustodyCreator")
+  custodyReceived         CustodyEvent[]         @relation("CustodyPerson")
+  custodyBooked           CustodyEvent[]         @relation("CustodyActor")
+  mealOffersMade          MealOffer[]            @relation("MealCreator")
+  mealOrders              MealOrder[]            @relation("MealOrderUser")
+  passwordResets          PasswordReset[]
 
   @@unique([tenantId, username])
   @@unique([tenantId, email])
@@ -1173,6 +1176,36 @@ model Schichtart {
   shifts Shift[]
 
   @@index([tenantId])
+}
+
+// ------------------------------------------------------ Plan-Entwürfe
+
+/// Ein Dienstplan in Arbeit. Bis zum Veröffentlichen liegt er nur hier, nie im
+/// echten Plan, und löst keine Meldung aus: die Teamleitung baut aus einem leeren
+/// Blatt oder einer Kopie des Bestands einen Entwurf, arbeitet ihn zur finalen
+/// Fassung aus und speichert erst dann. Teilt sich unter allen mit shifts.manage.
+model Planentwurf {
+  id          String   @id @default(cuid())
+  tenantId    String   @default("")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  /// Zeitraum des Entwurfs, beide Tage eingeschlossen.
+  von         DateTime @db.Date
+  bis         DateTime @db.Date
+  /// `leer` oder `bestand` - womit der Entwurf begonnen wurde.
+  basis       String
+  /// Die Schichten des Entwurfs (PlanEntwurfItem[] aus @ah-intranet/shared).
+  daten       Json
+  /// Zählt bei jedem Speichern hoch: wer einen veralteten Stand speichern will, wird abgewiesen.
+  version     Int      @default(1)
+  createdById String
+  createdBy   User     @relation("PlanentwurfAutor", fields: [createdById], references: [id], onDelete: Cascade)
+  updatedById String?
+  updatedBy   User?    @relation("PlanentwurfBearbeiter", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId, von])
 }
 
 // ------------------------------------------------------ Schlüsselfunktionen

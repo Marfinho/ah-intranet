@@ -5,7 +5,7 @@ import { AuditService } from "../../core/audit.service";
 import { NotificationsService } from "../../core/notifications.service";
 import { displayName, toIso } from "../../core/mappers";
 import { can, type RequestUser } from "../../core/request-user";
-import { findeUeberschneidung, tauschrechte, ueberschneidet } from "./regeln";
+import { tauschrechte, ueberschneidet } from "./regeln";
 
 const shiftInclude = {
   location: { select: { name: true } },
@@ -162,103 +162,6 @@ export class ShiftsService {
     }
 
     return this.toItem(shift, user);
-  }
-
-  /**
-   * Speichert die Zeiten mehrerer Schichten auf einmal (Wochenplan: „Speichern").
-   *
-   * Ein Stapel, weil das Ziehen im Plan ein Entwurf ist und erst das Speichern
-   * etwas auslöst: eine Meldung je ziehendem Mausklick wäre eine Flut. Geprüft
-   * wird der **Endzustand** (`findeUeberschneidung`), alles oder nichts, und jede
-   * betroffene Person bekommt **eine** Meldung, nicht eine je Schicht.
-   */
-  async aendereZeiten(
-    user: RequestUser,
-    aenderungen: { id: string; startsAt: string; endsAt: string }[],
-  ): Promise<{ geaendert: number; benachrichtigt: number }> {
-    const ids = aenderungen.map((eintrag) => eintrag.id);
-    if (new Set(ids).size !== ids.length) {
-      throw new BadRequestException("Eine Schicht darf nur einmal in der Änderung stehen.");
-    }
-    const neu = new Map<string, { startsAt: Date; endsAt: Date }>();
-    for (const eintrag of aenderungen) {
-      const startsAt = new Date(eintrag.startsAt);
-      const endsAt = new Date(eintrag.endsAt);
-      if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime()) || endsAt <= startsAt) {
-        throw new BadRequestException("Das Ende einer Schicht muss nach dem Beginn liegen.");
-      }
-      neu.set(eintrag.id, { startsAt, endsAt });
-    }
-
-    const rows = await this.prisma.shift.findMany({ where: { id: { in: ids } } });
-    if (rows.length !== ids.length) {
-      throw new NotFoundException("Mindestens eine Schicht gibt es nicht mehr. Bitte die Seite neu laden.");
-    }
-
-    // Endzustand: die geänderten mit ihren neuen Zeiten, dazu alle übrigen Schichten derselben Personen im Zeitraum.
-    const personen = [...new Set(rows.map((row) => row.assigneeId).filter((id): id is string => Boolean(id)))];
-    const alle = [...neu.values()];
-    const von = new Date(
-      Math.min(...alle.map((zeit) => zeit.startsAt.getTime()), ...rows.map((row) => row.startsAt.getTime())),
-    );
-    const bis = new Date(
-      Math.max(...alle.map((zeit) => zeit.endsAt.getTime()), ...rows.map((row) => row.endsAt.getTime())),
-    );
-    const betroffene =
-      personen.length === 0
-        ? []
-        : await this.prisma.shift.findMany({
-            where: { assigneeId: { in: personen }, startsAt: { lt: bis }, endsAt: { gt: von } },
-            select: { id: true, label: true, assigneeId: true, startsAt: true, endsAt: true },
-          });
-    const endzustand = [
-      ...betroffene.filter((row) => !neu.has(row.id)),
-      ...rows.map((row) => ({ id: row.id, label: row.label, assigneeId: row.assigneeId, ...neu.get(row.id)! })),
-    ];
-    const konflikt = findeUeberschneidung(endzustand, new Set(ids));
-    if (konflikt) {
-      throw new BadRequestException(
-        `Nach dieser Änderung wäre eine Person zur selben Zeit doppelt eingeteilt: "${konflikt.erste.label}" (${this.zeitraum(konflikt.erste)}) ` +
-          `und "${konflikt.zweite.label}" (${this.zeitraum(konflikt.zweite)}). Es wurde nichts gespeichert.`,
-      );
-    }
-
-    await this.prisma.$transaction(
-      rows.map((row) => this.prisma.shift.update({ where: { id: row.id }, data: neu.get(row.id)! })),
-    );
-
-    for (const row of rows) {
-      await this.audit.log({
-        actor: user,
-        action: "shift.updated",
-        entityType: "shift",
-        entityId: row.id,
-        detail: `Zeiten der Schicht "${row.label}" geändert: ${this.zeitraum(neu.get(row.id)!)}`,
-      });
-    }
-
-    // Eine Meldung je Person, mit den ersten Änderungen aufgezählt.
-    const proPerson = new Map<string, string[]>();
-    for (const row of rows) {
-      if (!row.assigneeId || row.assigneeId === user.id) {
-        continue;
-      }
-      proPerson.set(row.assigneeId, [
-        ...(proPerson.get(row.assigneeId) ?? []),
-        `${row.label}: ${this.zeitraum(neu.get(row.id)!)}`,
-      ]);
-    }
-    for (const [userId, zeilen] of proPerson) {
-      const sichtbar = zeilen.slice(0, 5).join("\n");
-      const mehr = zeilen.length > 5 ? `\n… und ${zeilen.length - 5} weitere` : "";
-      await this.benachrichtige(
-        [userId],
-        zeilen.length === 1 ? "Schichtzeit geändert" : `${zeilen.length} Schichtzeiten geändert`,
-        `${sichtbar}${mehr}`,
-      );
-    }
-
-    return { geaendert: rows.length, benachrichtigt: proPerson.size };
   }
 
   async remove(user: RequestUser, id: string): Promise<void> {
