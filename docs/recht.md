@@ -107,6 +107,7 @@ Datenschutz_, dort auch mit Vorschau, wie viele Datensätze ein Lauf träfe.
 | Schichtplan und Diensttausch             | 2 Jahre  | wird gelöscht | Der Schichtplan ist eine Planung, kein Arbeitszeitnachweis.                                           |
 | Verwahrung von Fundsachen und Schlüsseln | 3 Jahre  | wird gelöscht | Schlüsselübergaben sind sicherheitsrelevant und müssen sich über längere Zeit zurückverfolgen lassen. |
 | Essensbestellungen                       | 90 Tage  | wird gelöscht | Nach der Abrechnung des Monats ohne Zweck.                                                            |
+| Interessenten und Angebote               | 2 Jahre  | wird gelöscht | Ohne Vertragsabschluss kein Grund, Kontaktdaten länger vorzuhalten als ein Angebot gilt.              |
 | Personalstammdaten                       | 10 Jahre | **bleibt**    | Solange das Arbeitsverhältnis besteht, ist die Verarbeitung für dessen Durchführung erforderlich.     |
 
 **`bleibt` heißt wirklich bleibt.** Ein Löschverlangen nach Art. 17 läuft

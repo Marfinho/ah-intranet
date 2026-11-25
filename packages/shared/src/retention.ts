@@ -122,6 +122,15 @@ export const RETENTION_RULES: readonly RetentionRule[] = [
       "Nach der Abrechnung des Monats ohne Zweck. Kurze Frist, weil sich aus Essgewohnheiten Rückschlüsse auf Gesundheit und Religion ziehen lassen - das ist mehr Personenbezug, als die Sache wert ist.",
   },
   {
+    key: "lead",
+    label: "Interessenten und Angebote",
+    description: "Unternehmensdaten, Ansprechperson und Angebotsstand eines Interessenten der Plattformverwaltung.",
+    mode: "delete",
+    days: 2 * JAHR,
+    reason:
+      "Ohne Vertragsabschluss gibt es keinen Grund, Kontaktdaten länger vorzuhalten als ein Angebot realistisch gilt. Gewonnene Interessenten bleiben: dort läuft die Geschäftsbeziehung. Die Frist ist mit der Rechtsberatung des Betreibers abzugleichen.",
+  },
+  {
     key: "employment",
     label: "Personalstammdaten",
     description: "Name, Kontakt, Standort, Abteilung, Rollen.",

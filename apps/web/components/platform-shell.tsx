@@ -8,6 +8,7 @@ import { requireSession } from "@/lib/session";
 
 const NAV = [
   { href: "/plattform", label: "Autohäuser" },
+  { href: "/plattform/interessenten", label: "Interessenten" },
   { href: "/plattform/status", label: "Systemstatus" },
 ];
 
