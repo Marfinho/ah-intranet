@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   WOCHENTAGE,
+  aendereBeginn,
+  aendereEnde,
   lokalesDatum,
   schichtartZeiten,
   type ArbeitszeitBefund,
@@ -15,6 +17,7 @@ import {
   type SchichtartItem,
   type ShiftItem,
   type Zeiten,
+  verschiebeSchicht,
 } from "@ah-intranet/shared";
 import {
   entwurfVorschlagAction,
@@ -382,7 +385,7 @@ export function Entwurfsplan({
         </p>
       ) : null}
 
-      <div className="sticky top-2 z-30 space-y-3 rounded-2xl border border-brand-300 bg-white px-4 py-3 shadow-lg">
+      <div className="space-y-3 rounded-2xl border border-brand-300 bg-white px-3 py-3 shadow-lg sm:px-4 lg:sticky lg:top-2 lg:z-30">
         <div className="flex flex-wrap items-center gap-3">
           <span className="badge bg-brand-100 text-brand-800">Entwurf</span>
           <input
@@ -395,7 +398,7 @@ export function Entwurfsplan({
               plane();
             }}
             aria-label="Name des Entwurfs"
-            className="min-w-0 flex-1 rounded-lg border border-transparent px-2 py-1 text-sm font-semibold text-slate-900 hover:border-slate-200"
+            className="min-w-0 flex-1 rounded-lg border border-slate-200 px-2 py-1 text-sm sm:border-transparent font-semibold text-slate-900 hover:border-slate-200"
           />
           <span
             className={`text-xs ${status === "fehler" ? "font-semibold text-rose-700" : "text-slate-500"}`}
@@ -423,7 +426,7 @@ export function Entwurfsplan({
           >
             Entwurf speichern
           </button>
-          <span className="flex-1" />
+          <span className="hidden flex-1 sm:block" />
           <button
             type="button"
             onClick={() => void verwerfen()}
@@ -435,7 +438,7 @@ export function Entwurfsplan({
             type="button"
             disabled={arbeitet || hatKonflikt || aenderungen === 0 || status === "fehler"}
             onClick={() => void veroeffentlichen()}
-            className="rounded-xl bg-brand-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-50"
+            className="w-full rounded-xl bg-brand-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-50 sm:w-auto"
           >
             Plan speichern und melden
           </button>
@@ -484,6 +487,35 @@ export function Entwurfsplan({
               {tagKurz(lokalesDatum(new Date(gewaehltesItem.startsAt)))} · {uhrzeit(gewaehltesItem.startsAt)}–
               {uhrzeit(gewaehltesItem.endsAt)} Uhr
             </p>
+          </div>
+          {/* Auf dem Telefon wird nicht gezogen - die Zeiten ändern sich hier in Schritten. */}
+          <div className="grid grid-cols-2 gap-2 md:hidden">
+            {(
+              [
+                ["Beginn früher", (z: Zeiten) => aendereBeginn(z, -15)],
+                ["Beginn später", (z: Zeiten) => aendereBeginn(z, 15)],
+                ["Ende früher", (z: Zeiten) => aendereEnde(z, -15)],
+                ["Ende später", (z: Zeiten) => aendereEnde(z, 15)],
+                ["Eine Viertelstunde früher", (z: Zeiten) => verschiebeSchicht(z, 0, -15)],
+                ["Eine Viertelstunde später", (z: Zeiten) => verschiebeSchicht(z, 0, 15)],
+                ["Einen Tag früher", (z: Zeiten) => verschiebeSchicht(z, -1, 0)],
+                ["Einen Tag später", (z: Zeiten) => verschiebeSchicht(z, 1, 0)],
+              ] as [string, (z: Zeiten) => Zeiten][]
+            ).map(([text, rechne]) => (
+              <button
+                key={text}
+                type="button"
+                className={knopf}
+                onClick={() =>
+                  aendereItem(gewaehltesItem.key, (item) => ({
+                    ...item,
+                    ...rechne({ startsAt: item.startsAt, endsAt: item.endsAt }),
+                  }))
+                }
+              >
+                {text}
+              </button>
+            ))}
           </div>
           <div className="flex flex-wrap items-end gap-4">
             <label className="text-sm font-medium text-slate-700">

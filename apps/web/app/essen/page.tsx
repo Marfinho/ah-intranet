@@ -71,7 +71,7 @@ export default async function EssenPage() {
 
               <MealOrderActions offer={offer} darfPflegen={darfPflegen} />
 
-              <div className="overflow-hidden rounded-2xl border border-slate-200">
+              <div className="overflow-x-auto rounded-2xl border border-slate-200">
                 <table className="min-w-full divide-y divide-slate-200 text-sm">
                   <thead className="bg-slate-50 text-left text-slate-600">
                     <tr>

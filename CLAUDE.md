@@ -245,6 +245,26 @@ samt Oberflächen, API-Modulen, Datenmodellen und Tabellen. AHOI betrachtet den
 Betriebsalltag, nicht das Autogeschäft; dort haben die Häuser bereits Software.
 Die Begründungen dazu stehen im Versionsverlauf, nicht mehr im Code.
 
+## Mobil
+
+**Jede Seite muss auf dem Telefon benutzbar sein** (Maßstab: 360 px Breite, kein
+seitliches Überlaufen der Seite). Die Regeln, damit das so bleibt:
+
+- **Navigation** unter `lg` in einer Schublade (`components/mobile-menu.tsx`), nicht
+  als Karte vor dem Inhalt. Die Plattformverwaltung bricht ihre Leiste um.
+- **Tabellen** stehen in einem Rahmen mit `overflow-x-auto`, nie `overflow-hidden`:
+  abgeschnittene Spalten sind auf dem Telefon nicht erreichbar.
+- **Eingabefelder** haben unter `lg` 16 px (sonst zoomt iOS hinein); bei grobem
+  Zeiger (`pointer: coarse`) sind Schaltflächen und Felder mindestens 44 px hoch.
+  Ausnahme: die Klasse `klein`.
+- **Wochenplan**: auf dem Telefon ein Tag mit Tageswahl statt sieben Spalten, und
+  **kein Ziehen** (es würde das Scrollen blockieren). Die Zeiten ändern sich im
+  Detailbereich in Schritten; am Rechner bleibt das Ziehen.
+- `viewport` und `manifest.ts` (Zum Home-Bildschirm). **Kein Service Worker:**
+  veraltete Freigaben oder Schichtpläne wären gefährlicher als ein Ladefehler.
+- **Nicht geprüft:** echte Geräte (nur Chromium mit Touch-Emulation gegen eine
+  Attrappe der API) und iOS-Safari-Eigenheiten. Bei neuen Seiten: auf 360 px ansehen.
+
 ## Arbeitsweise im Repository
 
 ```bash

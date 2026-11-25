@@ -90,6 +90,62 @@
   select:not([multiple]):not([size]) {
     background-color: ButtonFace;
   }
+
+  /* Kein Warten auf einen möglichen Doppeltipp, keine blaue Aufblitzfläche. */
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  label,
+  [role="button"] {
+    touch-action: manipulation;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Lange Wörter und Kennungen (E-Mail, Bestellnummern) sprengen sonst die Spalte. */
+  main {
+    overflow-wrap: anywhere;
+  }
+}
+
+/*
+ * Telefon: Eingabefelder unter 16 px lässt iOS beim Antippen heranzoomen und die
+ * Seite verschoben zurück. Daher dort 16 px; Daumenziele mindestens 44 px, wo der
+ * Zeiger grob ist (pointer: coarse) - am Rechner bleibt alles wie gestaltet.
+ */
+@media (max-width: 1023px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+@media (pointer: coarse) {
+  button:not(.klein),
+  [role="button"]:not(.klein),
+  select,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  main a.btn {
+    min-height: 44px;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 1.375rem;
+    height: 1.375rem;
+  }
+}
+
+/* Tabellen dürfen seitlich wischen, statt abgeschnitten zu werden. */
+.tabelle-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /*

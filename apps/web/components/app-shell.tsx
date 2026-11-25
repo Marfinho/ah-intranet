@@ -8,6 +8,7 @@ import { Logo } from "@/components/logo";
 import { logoutAction } from "@/lib/actions";
 import { SideNav, type NavGroup } from "./side-nav";
 import { SearchBox } from "./search-box";
+import { MobileMenu } from "./mobile-menu";
 
 /**
  * Rahmen für alle angemeldeten Seiten. Die Navigation entsteht aus der
@@ -64,63 +65,88 @@ export async function AppShell({
 
   const searchEnabled = visible.some((module) => module.key === "search");
 
+  const bell = (
+    <Link
+      href="/benachrichtigungen"
+      aria-label={`Benachrichtigungen, ${unread} ungelesen`}
+      className="relative flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-brand-100 hover:text-brand-700 lg:h-auto lg:w-auto lg:p-3"
+    >
+      <Bell className="h-5 w-5" />
+      {unread > 0 ? (
+        <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+          {unread > 9 ? "9+" : unread}
+        </span>
+      ) : null}
+    </Link>
+  );
+
+  const nutzer = (
+    <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2">
+      <UserCircle2 className="h-8 w-8 shrink-0 text-slate-400" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-slate-900">{session.displayName}</p>
+        <p className="truncate text-xs text-slate-500">{session.jobTitle}</p>
+      </div>
+      <form action={logoutAction}>
+        <button
+          type="submit"
+          aria-label="Abmelden"
+          className="rounded-lg p-3 text-slate-500 transition hover:bg-white hover:text-rose-600 lg:p-2"
+        >
+          <LogOut className="h-4 w-4" />
+        </button>
+      </form>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* Telefon: schmale, mitlaufende Leiste. Menü, Suche und Konto liegen in der Schublade. */}
+      <div
+        className="sticky top-0 z-40 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-2 lg:hidden"
+        style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
+      >
+        <MobileMenu>
+          {searchEnabled ? <SearchBox /> : null}
+          <SideNav groups={groups} />
+          {inErprobung ? <FeedbackButton /> : null}
+          {nutzer}
+        </MobileMenu>
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <Logo signetClass="h-6 w-6 shrink-0" className="text-slate-900" />
+          <span className="truncate text-sm font-semibold text-slate-600">{session.tenant.name}</span>
+        </div>
+        {bell}
+      </div>
+
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 lg:px-8 xl:flex-row xl:items-center xl:justify-between">
           <div className="min-w-0">
-            <div className="flex items-center gap-3">
+            <div className="hidden items-center gap-3 lg:flex">
               <Logo signetClass="h-6 w-6" className="text-slate-900" />
               <span className="truncate text-sm font-semibold text-slate-500">{session.tenant.name}</span>
             </div>
-            <h1 className="truncate text-xl font-bold text-slate-900">{title}</h1>
+            <h1 className="text-xl font-bold text-slate-900 lg:truncate">{title}</h1>
             <p className="text-sm text-slate-600">{subtitle}</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="hidden flex-wrap items-center gap-3 lg:flex">
             {searchEnabled ? <SearchBox /> : null}
 
             {/* Nur bei laufender Erprobung: sonst ist der Knopf Beiwerk. */}
             {inErprobung ? <FeedbackButton /> : null}
 
-            <Link
-              href="/benachrichtigungen"
-              aria-label={`Benachrichtigungen, ${unread} ungelesen`}
-              className="relative rounded-full border border-slate-200 bg-white p-3 text-slate-600 transition hover:border-brand-100 hover:text-brand-700"
-            >
-              <Bell className="h-5 w-5" />
-              {unread > 0 ? (
-                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
-                  {unread > 9 ? "9+" : unread}
-                </span>
-              ) : null}
-            </Link>
-
-            <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2">
-              <UserCircle2 className="h-8 w-8 text-slate-400" />
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-slate-900">{session.displayName}</p>
-                <p className="truncate text-xs text-slate-500">{session.jobTitle}</p>
-              </div>
-              <form action={logoutAction}>
-                <button
-                  type="submit"
-                  aria-label="Abmelden"
-                  className="rounded-lg p-2 text-slate-500 transition hover:bg-white hover:text-rose-600"
-                >
-                  <LogOut className="h-4 w-4" />
-                </button>
-              </form>
-            </div>
+            {bell}
+            {nutzer}
           </div>
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
-        <aside className="card h-fit p-3 lg:sticky lg:top-6">
+      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-4 sm:py-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
+        <aside className="card hidden h-fit p-3 lg:sticky lg:top-6 lg:block">
           <SideNav groups={groups} />
         </aside>
-        <main className="min-w-0 space-y-6">{children}</main>
+        <main className="min-w-0 space-y-4 sm:space-y-6">{children}</main>
       </div>
     </div>
   );

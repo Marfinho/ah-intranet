@@ -61,6 +61,22 @@ function tagZahl(datum: string): string {
   });
 }
 
+/**
+ * Telefon (unter 768 px): Sieben Spalten ergäben je 40 Pixel Breite - nichts wäre lesbar, und ein
+ * Block ließe sich nicht treffen. Dort zeigt das Raster einen Tag.
+ */
+function useSchmal(): boolean {
+  const [schmal, setSchmal] = useState(false);
+  useEffect(() => {
+    const abfrage = window.matchMedia("(max-width: 767px)");
+    const lies = () => setSchmal(abfrage.matches);
+    lies();
+    abfrage.addEventListener("change", lies);
+    return () => abfrage.removeEventListener("change", lies);
+  }, []);
+  return schmal;
+}
+
 function vorschauZeiten(basis: Zeiten, zug: Zug): Zeiten {
   if (zug.modus === "beginn") return aendereBeginn(basis, zug.deltaMinuten);
   if (zug.modus === "ende") return aendereEnde(basis, zug.deltaMinuten);
@@ -79,7 +95,7 @@ function vorschauZeiten(basis: Zeiten, zug: Zug): Zeiten {
  * los, klebte der Block am Zeiger.
  */
 export function Zeitraster({
-  tage,
+  tage: alleTage,
   heute,
   bloecke,
   freieTage,
@@ -96,6 +112,17 @@ export function Zeitraster({
   onWaehle: (key: string | null) => void;
   onAendere: (key: string, neu: Zeiten) => void;
 }) {
+  const schmal = useSchmal();
+  const [gewaehlterTag, setGewaehlterTag] = useState<string | null>(null);
+  // Standard: heute, wenn die Woche ihn enthält, sonst der erste Tag.
+  const tagImFokus = alleTage.includes(gewaehlterTag ?? "")
+    ? (gewaehlterTag as string)
+    : alleTage.includes(heute)
+      ? heute
+      : alleTage[0];
+  const tage = useMemo(() => (schmal ? [tagImFokus] : alleTage), [schmal, tagImFokus, alleTage]);
+  /** Auf dem Telefon wird nicht gezogen (siehe unten), nur angetippt. */
+  const ziehbar = (block: Block) => block.editierbar && !schmal;
   const [zug, setZugZustand] = useState<Zug | null>(null);
   const zugRef = useRef<Zug | null>(null);
   const spaltenRef = useRef<HTMLDivElement>(null);
@@ -128,7 +155,7 @@ export function Zeitraster({
   const hoehe = (bis - von) * PX;
 
   const beginneZug = (ereignis: React.PointerEvent<HTMLElement>, block: Block, modus: Modus, tagIndex: number) => {
-    if (!block.editierbar || ereignis.button !== 0) return;
+    if (!ziehbar(block) || ereignis.button !== 0) return;
     ereignis.stopPropagation();
     setZug({
       key: block.key,
@@ -213,9 +240,39 @@ export function Zeitraster({
 
   return (
     <div className="space-y-3">
+      {schmal ? (
+        <div role="tablist" aria-label="Tag wählen" className="grid grid-cols-7 gap-1">
+          {alleTage.map((datum) => {
+            const aktiv = datum === tagImFokus;
+            const belegt = bloecke.some(
+              (block) => schichtSegmente({ id: block.key, ...block }, [datum]).length > 0,
+            );
+            return (
+              <button
+                key={datum}
+                type="button"
+                role="tab"
+                aria-selected={aktiv}
+                onClick={() => setGewaehlterTag(datum)}
+                className={`klein flex min-h-[52px] flex-col items-center justify-center rounded-xl border px-0.5 py-1 text-[11px] leading-tight ${
+                  aktiv
+                    ? "border-brand-600 bg-brand-600 text-white"
+                    : datum === heute
+                      ? "border-brand-400 bg-brand-50 text-brand-800"
+                      : "border-slate-200 bg-white text-slate-600"
+                }`}
+              >
+                <span className="font-semibold">{wochentagKurz(datum).replace(".", "")}</span>
+                <span className="tabular-nums">{tagZahl(datum).slice(0, 2)}.</span>
+                <span className={`mt-0.5 h-1 w-1 rounded-full ${belegt ? (aktiv ? "bg-white" : "bg-brand-600") : "bg-transparent"}`} />
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
       <div className="overflow-x-auto pb-3">
-        <div className="min-w-[760px]">
-          <div className="grid" style={{ gridTemplateColumns: "3rem repeat(7, minmax(0, 1fr))" }}>
+        <div className={schmal ? "" : "min-w-[760px]"}>
+          <div className="grid" style={{ gridTemplateColumns: `3rem repeat(${tage.length}, minmax(0, 1fr))` }}>
             <div />
             {tage.map((datum) => (
               <div
@@ -233,7 +290,7 @@ export function Zeitraster({
             ))}
           </div>
 
-          <div className="grid" style={{ gridTemplateColumns: "3rem repeat(7, minmax(0, 1fr))" }}>
+          <div className="grid" style={{ gridTemplateColumns: `3rem repeat(${tage.length}, minmax(0, 1fr))` }}>
             <div className="relative" style={{ height: hoehe }}>
               {stunden.map((minute) => (
                 <span
@@ -246,7 +303,7 @@ export function Zeitraster({
               ))}
             </div>
 
-            <div ref={spaltenRef} className="relative col-span-7 grid grid-cols-7" style={{ height: hoehe }}>
+            <div ref={spaltenRef} className="relative grid" style={{ height: hoehe, gridColumn: "2 / -1", gridTemplateColumns: `repeat(${tage.length}, minmax(0, 1fr))` }}>
               {tage.map((datum, tagIndex) => {
                 const wochentag = new Date(`${datum}T00:00:00Z`).getUTCDay();
                 const frei = wochentag === 0 || wochentag === 6 || Boolean(freieTage[datum]);
@@ -287,11 +344,9 @@ export function Zeitraster({
                             aria-pressed={auswahl === block.key}
                             onKeyDown={(ereignis) => taste(ereignis, block)}
                             onPointerDown={(ereignis) => beginneZug(ereignis, block, "bewegen", tagIndex)}
-                            onClick={
-                              block.editierbar ? undefined : () => onWaehle(auswahl === block.key ? null : block.key)
-                            }
+                            onClick={ziehbar(block) ? undefined : () => onWaehle(auswahl === block.key ? null : block.key)}
                             className={`absolute overflow-hidden rounded-lg border px-1.5 py-1 text-[11px] leading-tight shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${farbe} ${
-                              block.editierbar ? "cursor-grab touch-none select-none" : ""
+                              ziehbar(block) ? "cursor-grab touch-none select-none" : ""
                             } ${wirdGezogen ? "z-20 cursor-grabbing opacity-90 shadow-lg" : ""} ${
                               auswahl === block.key ? "ring-2 ring-brand-500" : ""
                             } ${block.status === "neu" || block.status === "geaendert" ? "border-dashed" : ""}`}
@@ -303,7 +358,7 @@ export function Zeitraster({
                               width: `calc(${100 / eintrag.spalten}% - 3px)`,
                             }}
                           >
-                            {block.editierbar && eintrag.beginntHier ? (
+                            {ziehbar(block) && eintrag.beginntHier ? (
                               <span
                                 aria-hidden
                                 onPointerDown={(ereignis) => beginneZug(ereignis, block, "beginn", tagIndex)}
@@ -337,7 +392,7 @@ export function Zeitraster({
                             {block.konflikt && dauer * PX >= 58 ? (
                               <p className="font-semibold">doppelt belegt</p>
                             ) : null}
-                            {block.editierbar && eintrag.endetHier ? (
+                            {ziehbar(block) && eintrag.endetHier ? (
                               <span
                                 aria-hidden
                                 onPointerDown={(ereignis) => beginneZug(ereignis, block, "ende", tagIndex)}

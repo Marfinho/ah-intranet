@@ -14,7 +14,7 @@ export function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="card p-5 lg:p-6">
+    <section className="card p-4 sm:p-5 lg:p-6">
       <div className="mb-5 flex flex-col gap-3 border-b border-slate-100 pb-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="section-title">{title}</h2>
@@ -109,7 +109,7 @@ export function Tag({ children }: { children: ReactNode }) {
 }
 
 export function DataGrid({ children }: { children: ReactNode }) {
-  return <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{children}</div>;
+  return <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">{children}</div>;
 }
 
 export function MetricCard({
@@ -126,7 +126,7 @@ export function MetricCard({
   const content = (
     <>
       <p className="text-sm text-slate-500">{label}</p>
-      <p className="mt-2 text-3xl font-bold text-slate-900">{value}</p>
+      <p className="mt-2 text-2xl font-bold sm:text-3xl text-slate-900">{value}</p>
       <p className="mt-2 text-sm text-slate-600">{helper}</p>
     </>
   );
@@ -144,7 +144,7 @@ export function MetricCard({
 
 export function InfoList({ items }: { items: Array<{ label: string; value: ReactNode }> }) {
   return (
-    <dl className="grid gap-4 md:grid-cols-2">
+    <dl className="grid gap-3 sm:gap-4 md:grid-cols-2">
       {items.map((item) => (
         <div key={String(item.label)} className="rounded-2xl border border-slate-200 p-4">
           <dt className="text-sm text-slate-500">{item.label}</dt>

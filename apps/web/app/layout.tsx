@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
 // Hausschrift laut docs/ci.md, mit der Anwendung ausgeliefert statt von Google
@@ -14,6 +14,16 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: { default: "AHOI", template: "%s · AHOI" },
   description: "Autohaus Organisation & Information – Aushänge, Bestellungen, Freigaben und Anträge an einer Stelle",
+};
+
+// Ohne diese Angabe rechnet ein Telefon mit einer 980 Pixel breiten Seite und
+// verkleinert sie auf Briefmarkengröße. viewportFit "cover" erlaubt das Zeichnen
+// unter Kerbe und Home-Balken; die Leisten halten Abstand mit safe-area-inset.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#ffffff",
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
