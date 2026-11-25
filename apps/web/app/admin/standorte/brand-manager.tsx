@@ -24,7 +24,7 @@ function BrandLogo({ brand }: { brand: Brand }) {
       src={brand.logoUrl}
       alt={`Logo ${brand.name}`}
       title={brand.name}
-      className="h-5 w-5 shrink-0 rounded object-contain grayscale"
+      className="h-5 w-5 shrink-0 rounded-sm object-contain grayscale"
     />
   );
 }

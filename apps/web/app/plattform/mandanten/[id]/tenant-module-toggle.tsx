@@ -94,7 +94,7 @@ export function TenantModuleToggle({
       >
         <span
           className={cn(
-            "absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-all",
+            "absolute top-1 h-6 w-6 rounded-full bg-white shadow-sm transition-all",
             module.enabled ? "left-7" : "left-1",
           )}
         />
