@@ -24,6 +24,25 @@ export function slugFromHost(host: string | undefined): string | null {
 }
 
 /**
+ * Liest die Kennung nur dann, wenn der Name eine **direkte** Unterdomain der
+ * Basisadresse ist (`haus.basis.tld` bei Basis `basis.tld`).
+ *
+ * Strenger als `slugFromHost`, mit Absicht: das hier entscheidet, ob Caddy ein
+ * Zertifikat ausstellt. `slugFromHost` nimmt bei jedem Namen mit drei Teilen das
+ * erste Label, auch bei `haus.fremd.example` - wer eine fremde Domain auf diesen
+ * Server zeigt, bekäme sonst ein Zertifikat für sie.
+ */
+export function slugUnterBasis(host: string, basis: string | undefined): string | null {
+  const name = host.split(":")[0]?.trim().toLowerCase();
+  const wurzel = basis?.trim().toLowerCase();
+  if (!name || !wurzel || !name.endsWith(`.${wurzel}`)) {
+    return null;
+  }
+  const slug = name.slice(0, -(wurzel.length + 1));
+  return slug && !slug.includes(".") ? slug : null;
+}
+
+/**
  * Löst den Mandanten einer Anfrage auf.
  *
  * Nutzt bewusst einen eigenen, ungefilterten Client: die Mandantentabelle darf
@@ -112,12 +131,33 @@ export class TenantService implements OnModuleInit {
   }
 
   /**
-   * Gehört die Adresse zu einem aktiven Haus? Bewusst ohne den Rückfall auf den
-   * einzigen Mandanten aus `resolve`: wer das hier mit "ja" beantwortet, lässt
-   * ein Zertifikat ausstellen, und das darf nie für beliebige Namen geschehen.
+   * Gehört die Adresse zu einem aktiven Haus? Bewusst enger als `resolve`: wer
+   * das hier mit "ja" beantwortet, lässt ein Zertifikat ausstellen, und das darf
+   * nie für beliebige Namen geschehen. Es zählen nur eine ausdrücklich
+   * hinterlegte eigene Domain und die direkte Unterdomain der Basisadresse -
+   * weder der Rückfall auf den einzigen Mandanten noch ein beliebiges drittes
+   * Label einer fremden Domain.
    */
   async kenntHost(host: string): Promise<boolean> {
-    return (await this.byHost(host)) !== null;
+    const name = host.split(":")[0]?.trim().toLowerCase();
+    if (!name) {
+      return false;
+    }
+    if (await this.byDomain(name)) {
+      return true;
+    }
+    const slug = slugUnterBasis(name, process.env.BASE_DOMAIN);
+    return slug ? (await this.bySlug(slug)) !== null : false;
+  }
+
+  private byDomain(hostname: string): Promise<TenantContext | null> {
+    return this.cached(`domain:${hostname}`, async () => {
+      const tenant = await this.client.tenant.findFirst({
+        where: { domain: hostname, isActive: true },
+        select: { id: true, slug: true },
+      });
+      return tenant ? { tenantId: tenant.id, slug: tenant.slug } : null;
+    });
   }
 
   /** Erwartet `<slug>.basis.tld` oder eine als `domain` hinterlegte eigene Adresse. */
@@ -127,13 +167,7 @@ export class TenantService implements OnModuleInit {
       return null;
     }
 
-    const byDomain = await this.cached(`domain:${hostname}`, async () => {
-      const tenant = await this.client.tenant.findFirst({
-        where: { domain: hostname, isActive: true },
-        select: { id: true, slug: true },
-      });
-      return tenant ? { tenantId: tenant.id, slug: tenant.slug } : null;
-    });
+    const byDomain = await this.byDomain(hostname);
     if (byDomain) {
       return byDomain;
     }
