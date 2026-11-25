@@ -51,7 +51,8 @@ export function slugUnterBasis(host: string, basis: string | undefined): string 
  */
 @Injectable()
 export class TenantService implements OnModuleInit {
-  private readonly client = neuerClient();
+  // Nur kleine, zwischengespeicherte Abfragen: ein Drittel des Pools genügt.
+  private readonly client = neuerClient(1 / 3);
   private readonly logger = new Logger(TenantService.name);
 
   /**
