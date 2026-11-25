@@ -100,13 +100,16 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
   ausdrückliche Freigabe; `pnpm --filter verwaltung pruefung:rolle` hält das in
   der CI fest. Rohes SQL ist hier gewollt - der Mandantenfilter der API ist für
   Summen über alle Häuser ungeeignet.
-- **Übergang:** Interessenten anlegen und Haus anlegen liegen noch in der
-  Plattformverwaltung der Kunden-Anwendung (siehe nächster Abschnitt) und sind
-  noch nicht verschoben - Gründe und Weg in `docs/verwaltung.md`.
+- **Interessenten und Hausanlage gehören der Verwaltung.** Ein Haus entsteht
+  dort über die Datenbankfunktion `verwaltung_haus_anlegen` (nur neue Mandanten,
+  kein `INSERT` auf Konten oder Rollen für die Rolle). In der Kunden-Anwendung
+  bleibt nur die öffentliche Pitch-Seite.
+- **Übergang:** die alten Seiten unter `/plattform` (Häuserliste, Module,
+  Kennzahlen, Status) laufen noch und sind durch die Verwaltung ersetzt.
 
 ## Vertrieb
 
-- **Interessenten wohnen im Plattform-Mandanten**, nicht bei einem Kunden und nicht
+- **Interessenten wohnen im Plattform-Mandanten** (angelegt und verwaltet von `apps/verwaltung`), nicht bei einem Kunden und nicht
   in einer Tabelle ohne Mandant. Die öffentliche Pitch-Seite (`/angebot/<token>`)
   löst ihren Mandanten wie jede Anfrage über den Host auf und braucht deshalb
   weder `runUnscoped` noch eine Ausnahme in der Trennung.

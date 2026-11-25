@@ -84,6 +84,7 @@ export default tseslint.config(
         Node: "readonly",
         FormData: "readonly",
         Intl: "readonly",
+        navigator: "readonly",
         alert: "readonly",
         prompt: "readonly",
         confirm: "readonly",

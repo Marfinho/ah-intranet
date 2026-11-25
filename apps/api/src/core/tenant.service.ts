@@ -1,10 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleInit } from "@nestjs/common";
 import { neuerClient } from "./datenbank";
-import type { PrismaClient } from "../generated/prisma/client";
-import * as bcrypt from "bcryptjs";
-import { PERMISSION_DEFINITIONS, ROLE_DEFINITIONS } from "@ah-intranet/shared";
+import { PERMISSION_DEFINITIONS } from "@ah-intranet/shared";
 import type { TenantContext } from "./tenant-context";
-import { pruefeKennung } from "./kennung";
 
 /**
  * Liest die Kennung aus einer Subdomain: `<slug>.basis.tld` in Produktion,
@@ -22,19 +19,6 @@ export function slugFromHost(host: string | undefined): string | null {
   const parts = hostname.split(".");
   const istLokaleSubdomain = parts.length === 2 && parts[1] === "localhost";
   return parts.length >= 3 || istLokaleSubdomain ? parts[0] : null;
-}
-
-/** Der Client einer laufenden Transaktion. */
-type Transaktion = Parameters<Parameters<PrismaClient["$transaction"]>[0]>[0];
-
-/** Was ein neues Haus über die Startausstattung hinaus mitbekommt. */
-export interface HausVorlage {
-  plan: {
-    standorte: { name: string; code: string; adresse: string | null; marken: string[]; abteilungen: string[] }[];
-    marken: { name: string; code: string }[];
-    abteilungen: { name: string; code: string }[];
-  };
-  module: { key: string; enabled: boolean }[];
 }
 
 /**
@@ -335,175 +319,6 @@ export class TenantService implements OnModuleInit {
   async context(id: string): Promise<TenantContext | null> {
     const tenant = await this.client.tenant.findUnique({ where: { id }, select: { id: true, slug: true } });
     return tenant ? { tenantId: tenant.id, slug: tenant.slug } : null;
-  }
-
-  /**
-   * Legt ein Autohaus an und richtet es benutzbar ein.
-   *
-   * Ein leerer Mandant wäre wertlos: ohne Rollen greift keine Rechteprüfung,
-   * ohne erstes Konto käme niemand hinein. Deshalb entsteht beides in derselben
-   * Transaktion - entweder das Haus ist vollständig da oder gar nicht.
-   */
-  async create(input: {
-    slug: string;
-    name: string;
-    domain?: string;
-    notes?: string;
-    adminUsername: string;
-    adminPassword: string;
-    adminFirstName?: string;
-    adminLastName?: string;
-    adminEmail?: string;
-    licensedSeats?: number | null;
-    locationLimit?: number | null;
-    vorlage?: HausVorlage;
-  }) {
-    const slug = input.slug.trim().toLowerCase();
-    const kennungsfehler = pruefeKennung(slug);
-    if (kennungsfehler) {
-      throw new BadRequestException(kennungsfehler);
-    }
-    if (await this.client.tenant.findUnique({ where: { slug }, select: { id: true } })) {
-      throw new BadRequestException(`Die Kennung "${slug}" ist bereits vergeben.`);
-    }
-
-    const adminUsername = input.adminUsername.trim().toLowerCase();
-    if (!adminUsername) {
-      throw new BadRequestException("Für das erste Administrationskonto wird ein Benutzername gebraucht.");
-    }
-    if (input.adminPassword.length < 10) {
-      throw new BadRequestException("Das Passwort des ersten Kontos muss mindestens 10 Zeichen lang sein.");
-    }
-
-    // Außerhalb der Transaktion, weil bcrypt bewusst langsam ist und eine
-    // offene Transaktion so lange eine Verbindung blockieren würde.
-    const passwordHash = await bcrypt.hash(input.adminPassword, 12);
-
-    return this.client.$transaction(async (tx) => {
-      const tenant = await tx.tenant.create({
-        data: {
-          slug,
-          name: input.name.trim(),
-          domain: input.domain?.trim() || null,
-          notes: input.notes?.trim() || null,
-          licensedSeats: input.licensedSeats ?? null,
-          locationLimit: input.locationLimit ?? null,
-        },
-      });
-      const tenantId = tenant.id;
-
-      await tx.permission.createMany({
-        data: PERMISSION_DEFINITIONS.map((permission) => ({
-          tenantId,
-          key: permission.key,
-          name: permission.name,
-          description: permission.description,
-        })),
-      });
-      const permissionByKey = new Map(
-        (await tx.permission.findMany({ where: { tenantId }, select: { id: true, key: true } })).map((entry) => [
-          entry.key,
-          entry.id,
-        ]),
-      );
-
-      for (const role of ROLE_DEFINITIONS) {
-        await tx.role.create({
-          data: {
-            tenantId,
-            key: role.key,
-            name: role.name,
-            description: role.description,
-            rank: role.rank,
-            permissions: {
-              create: role.permissions.map((key) => ({ tenantId, permissionId: permissionByKey.get(key)! })),
-            },
-          },
-        });
-      }
-
-      const { location, department } = input.vorlage
-        ? await this.richteAusVorlageEin(tx, tenantId, input.vorlage)
-        : await this.richteStartpunktEin(tx, tenantId, input.name.trim());
-
-      const adminRole = await tx.role.findFirstOrThrow({ where: { tenantId, key: "admin" } });
-      await tx.user.create({
-        data: {
-          tenantId,
-          username: adminUsername,
-          email: input.adminEmail?.trim() || null,
-          passwordHash,
-          firstName: input.adminFirstName?.trim() || "Administration",
-          lastName: input.adminLastName?.trim() || input.name.trim(),
-          jobTitle: "Administration",
-          locationId: location.id,
-          departmentId: department.id,
-          scopes: ["global", `location:${location.code}`, `department:${department.code}`],
-          // Das Startpasswort kennt die Plattformverwaltung - es muss weg,
-          // bevor mit dem Konto gearbeitet wird.
-          mustChangePassword: true,
-          roles: { create: [{ tenantId, roleId: adminRole.id }] },
-        },
-      });
-
-      this.invalidate();
-      return tenant;
-    });
-  }
-
-  /**
-   * Ein Standort und eine Abteilung als Startpunkt - benennen und ergänzen kann
-   * sie das Haus danach selbst.
-   */
-  private async richteStartpunktEin(tx: Transaktion, tenantId: string, name: string) {
-    const location = await tx.location.create({ data: { tenantId, name, code: "HB" } });
-    const department = await tx.department.create({ data: { tenantId, name: "Verwaltung", code: "VWL" } });
-    await tx.locationDepartment.create({ data: { tenantId, locationId: location.id, departmentId: department.id } });
-    return { location, department };
-  }
-
-  /**
-   * Standorte, Marken, Abteilungen und Module aus einer Vorlage, etwa einem
-   * Interessenten. Läuft in der Transaktion des Hauses: entweder ist alles da
-   * oder nichts. Der erste Standort trägt das erste Administrationskonto, die
-   * Abteilung `VWL` dessen Verwaltung.
-   */
-  private async richteAusVorlageEin(tx: Transaktion, tenantId: string, vorlage: HausVorlage) {
-    if (vorlage.plan.standorte.length === 0) {
-      throw new BadRequestException("Ohne mindestens ein Haus lässt sich kein Mandant einrichten.");
-    }
-
-    const marken = new Map<string, string>();
-    for (const marke of vorlage.plan.marken) {
-      marken.set(marke.code, (await tx.brand.create({ data: { tenantId, name: marke.name, code: marke.code } })).id);
-    }
-    const abteilungen = new Map<string, { id: string; code: string }>();
-    for (const abteilung of vorlage.plan.abteilungen) {
-      const angelegt = await tx.department.create({ data: { tenantId, name: abteilung.name, code: abteilung.code } });
-      abteilungen.set(abteilung.code, angelegt);
-    }
-
-    let ersterStandort: { id: string; code: string } | null = null;
-    for (const standort of vorlage.plan.standorte) {
-      const angelegt = await tx.location.create({
-        data: { tenantId, name: standort.name, code: standort.code, address: standort.adresse },
-      });
-      ersterStandort ??= angelegt;
-      for (const code of standort.marken) {
-        await tx.locationBrand.create({ data: { tenantId, locationId: angelegt.id, brandId: marken.get(code)! } });
-      }
-      for (const code of standort.abteilungen) {
-        await tx.locationDepartment.create({
-          data: { tenantId, locationId: angelegt.id, departmentId: abteilungen.get(code)!.id },
-        });
-      }
-    }
-
-    await tx.moduleSetting.createMany({
-      data: vorlage.module.map((modul) => ({ tenantId, key: modul.key, enabled: modul.enabled })),
-    });
-
-    return { location: ersterStandort!, department: abteilungen.get("VWL")! };
   }
 
   async setActive(id: string, isActive: boolean) {

@@ -89,8 +89,9 @@ Zwei Stellen mussten dafür angepasst werden:
 
 ## Plattformverwaltung und Marketingseite
 
-Häuser anlegen und sperren ist keine Funktion der Kunden-Mandanten, sondern
-liegt in einem eigenen, schlanken Mandanten: `verwaltung` (im Seed
+Häuser und Interessenten anlegt der Betreiber in der eigenen Anwendung
+`apps/verwaltung` (`docs/verwaltung.md`). In der Kunden-Anwendung bleibt ein eigener,
+schlanker Mandant, der die öffentliche Pitch-Seite trägt: `verwaltung` (im Seed
 `prisma/seed.ts` als `PLATFORM_TENANT` angelegt, Login `plattform` /
 `Intranet2026!`). Adresse entsprechend `verwaltung.localhost:3000` bzw.
 `verwaltung.ahoi.home:8090`. Wer sich dort anmeldet, sieht unter

@@ -8,3 +8,6 @@ export * from "./pitch-inhalte";
 export * from "./pitch-szenen";
 export * from "./pitch-vorschlag";
 export * from "./pitch-faelle";
+export * from "./kennung";
+export * from "./haus-aus-interessent";
+export * from "./lead-konfiguration";

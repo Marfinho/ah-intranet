@@ -130,6 +130,8 @@ services:
       SECRET_KEY: ${VERWALTUNG_SECRET_KEY:?VERWALTUNG_SECRET_KEY fehlt in .env}
       INTRANET_API_URL: http://api:3001/api
       BASE_DOMAIN: ${BASE_DOMAIN:?}
+      # Adresse der Pitch-Seite (Betreiber-Mandant, z. B. https://verwaltung.<domain>): daraus entstehen die Links für Interessenten.
+      PITCH_BASIS_URL: ${PITCH_BASIS_URL:-}
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:3002/api/health || exit 1"]
       interval: 15s

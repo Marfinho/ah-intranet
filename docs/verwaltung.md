@@ -80,17 +80,47 @@ docker compose -f docker-compose.prod.yml exec -T verwaltung pnpm --filter verwa
 Lokal: `apps/verwaltung/.env.example` kopieren, `pnpm --filter verwaltung prisma:generate`,
 `pnpm --filter verwaltung prisma:migrate deploy`, `pnpm --filter verwaltung dev`.
 
+## Interessenten und Hausanlage
+
+Beides liegt vollständig hier; in der Kunden-Anwendung gibt es dafür keine
+Oberfläche und keine Schnittstelle mehr. Dort bleibt nur die öffentliche
+Pitch-Seite (`/angebot/<token>`).
+
+- **Interessent anlegen**: Häuser als Textzeilen, Link wird einmalig angezeigt
+  (gespeichert ist nur der SHA-256-Hash; die Pitch-Seite der Kunden-Anwendung
+  prüft denselben Hash). Neuer Link, Widerruf, Löschen, Bearbeiten.
+  `PITCH_BASIS_URL` setzt die Adresse der Pitch-Seite (Betreiber-Mandant, z. B.
+  `https://verwaltung.<domain>`), sonst zeigt die Oberfläche nur den Pfad.
+- **Haus aus Interessent anlegen**: Vorschau, dann Kennung und erstes Konto.
+  Standorte, Marken, Abteilungen, Module und Lizenzkontingent kommen aus dem
+  Interessenten; Erprobungen bleiben aus. Ein Interessent wird höchstens einmal
+  zum Haus. **Neues Haus ohne Interessent** unter Häuser → Neues Haus.
+- Die Rechenregeln (Haus-Plan, Kennung, Konfiguration, Preisliste) liegen im
+  gemeinsamen Paket `packages/shared` und gelten für Pitch-Seite und
+  Verwaltung gleich.
+
+**Die Datenbank legt das Haus an, nicht die Verwaltung.** Die Rolle bekommt kein
+`INSERT` auf Konten, Rollen oder Standorte, sondern nur `EXECUTE` auf
+`verwaltung_haus_anlegen(jsonb)` (`scripts/verwaltung-rolle.sql`). Die Funktion
+erzeugt ausschließlich einen **neuen** Mandanten samt Rechten, Rollen, Standorten
+und erstem Administrationskonto in einer Transaktion. Ein bestehendes Haus lässt
+sich damit nicht verändern - auch eine gestohlene Verwaltungsrolle kommt so nicht
+an die Konten eines laufenden Hauses. Das Passwort geht als bcrypt-Hash hinein.
+Ändert sich das Schema der Häuser (neue Pflichtspalte), bricht die Funktion; die
+CI fängt das (`PRUEFUNG_HAUS_ANLEGEN=1`), und das Rollenskript muss neu eingespielt
+werden.
+
 ## Grenzen (ehrlich benannt)
 
-- **Anlegen** von Interessenten, Pitch-Link erzeugen und **Haus aus Interessent
-  anlegen** liegen noch in der Plattformverwaltung der Kunden-Anwendung
-  (`apps/api/src/modules/platform`, `apps/web/app/plattform`). Sie schreiben
-  Daten, die die Pitch-Seite und die Hausanlage gemeinsam nutzen; sie zu
-  verschieben heißt, deren Logik (Token, Vorlage, Transaktion) sauber
-  herauszulösen statt zu kopieren. Bis dahin bleibt der alte Zugang bestehen.
+- Der Betreiber-Mandant (`verwaltung`, mit Konten der alten Plattformverwaltung)
+  bleibt in der Kunden-Anwendung bestehen: dort wohnen die Interessenten, über
+  seine Adresse wird die Pitch-Seite aufgelöst. Seine Konten braucht niemand mehr
+  zum Arbeiten; die alten Seiten unter `/plattform` (Häuserliste, Module,
+  Kennzahlen, Systemstatus) laufen noch parallel und können als Nächstes entfallen.
 - Änderungen an Häusern (Sperre, Module) wirken in der Kunden-Anwendung nach den
   Zwischenspeichern dort: Mandant bis 30 s, Module bis 15 s.
 - Betreiberkonten werden per Skript verwaltet, nicht in der Oberfläche.
 - Der zweite Faktor wird per Geheimnis eingetragen; ein QR-Code ist nicht gebaut.
-- `totp.ts` und `geheimnis.ts` sind Kopien aus `apps/api/src/core`, damit die
-  Verwaltung ohne Abhängigkeit vom Kundendienst baut. Änderungen an beiden Stellen.
+- `totp.ts`, `geheimnis.ts` und `pitch-link.ts` sind Kopien aus `apps/api`, damit
+  die Verwaltung ohne Abhängigkeit vom Kundendienst baut. Änderungen an beiden
+  Stellen; die Tests sind dieselben.

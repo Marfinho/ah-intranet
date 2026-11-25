@@ -15,7 +15,7 @@ export class ProtokollService {
   ): Promise<void> {
     await this.db.protokoll.create({
       data: {
-        betreiberId: wer?.id ?? null,
+        betreiberId: wer?.id || null,
         betreiberName: wer?.username ?? "system",
         aktion,
         objektTyp,

@@ -131,7 +131,7 @@ jobs:
         run: |
           psql "postgresql://postgres:postgres@localhost:5432/ah_intranet_ci" -v ON_ERROR_STOP=1 -v passwort="'ci-rolle'" -f scripts/verwaltung-rolle.sql
           INTRANET_DATABASE_URL="postgresql://ahoi_verwaltung:ci-rolle@localhost:5432/ah_intranet_ci?schema=public" \
-          VERWALTUNG_JWT_SECRET=ci-schluessel-ohne-bedeutung \
+          VERWALTUNG_JWT_SECRET=ci-schluessel-ohne-bedeutung PRUEFUNG_HAUS_ANLEGEN=1 \
             pnpm --filter verwaltung pruefung:rolle
 
       # Der Aufbewahrungslauf greift auf jedes Modell zu. Eine Frist ohne

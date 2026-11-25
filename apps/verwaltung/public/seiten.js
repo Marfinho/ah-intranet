@@ -97,6 +97,215 @@ async function aendere(beschreibung, aufruf, neuZeichnen, nachfrage) {
   }
 }
 
+/** Formular aus einer Feldliste. `beiAbsenden` bekommt die Werte; ein Fehler erscheint im Formular. */
+function formular(felder, knopf, beiAbsenden) {
+  const fehler = el("div", { class: "fehler", hidden: true, role: "alert" });
+  const form = el(
+    "form",
+    {
+      class: "raster-2",
+      style: "gap:1rem",
+      onsubmit: async (e) => {
+        e.preventDefault();
+        fehler.hidden = true;
+        const taste = form.querySelector("button[type=submit]");
+        taste.disabled = true;
+        try {
+          await beiAbsenden(Object.fromEntries(new FormData(form)));
+        } catch (f) {
+          fehler.textContent = f.message;
+          fehler.hidden = false;
+          taste.disabled = false;
+        }
+      },
+    },
+    felder.map((f) =>
+      el(
+        "label",
+        { style: f.breit ? "grid-column:1/-1" : "" },
+        f.text,
+        f.art === "text"
+          ? el(
+              "textarea",
+              {
+                name: f.name,
+                rows: f.zeilen ?? 6,
+                required: f.pflicht,
+                placeholder: f.platzhalter,
+                style: "font-family:ui-monospace,monospace;font-size:.8rem",
+              },
+              f.wert ?? "",
+            )
+          : f.art === "auswahl"
+            ? el(
+                "select",
+                { name: f.name },
+                f.optionen.map(([w, t]) => el("option", { value: w, selected: w === f.wert }, t)),
+              )
+            : el("input", {
+                name: f.name,
+                type: f.art ?? "text",
+                required: f.pflicht,
+                value: f.wert ?? "",
+                placeholder: f.platzhalter,
+                min: f.art === "number" ? 1 : null,
+                autocomplete: f.art === "password" ? "new-password" : "off",
+              }),
+        f.hilfe && el("span", { class: "leise", style: "font-weight:400" }, f.hilfe),
+      ),
+    ),
+    el(
+      "div",
+      { style: "grid-column:1/-1", class: "leiste" },
+      el("button", { class: "primaer", type: "submit" }, knopf),
+      fehler,
+    ),
+  );
+  return form;
+}
+
+const ohneLeer = (daten) => Object.fromEntries(Object.entries(daten).filter(([, w]) => w !== ""));
+const zahlOderWeg = (daten, ...namen) => {
+  for (const n of namen) if (n in daten) daten[n] = Number(daten[n]);
+  return daten;
+};
+
+const HAEUSER_HILFE =
+  "Eine Zeile je Haus. Der Name genügt. Mehr: Name | Straße | PLZ Ort | Marken | Leistungen | Öffnungszeiten | Verbund | eigener Text. Marken und Leistungen mit Komma trennen; Häuser mit gleichem Verbund nutzen Raumbuchung und Kalender gemeinsam.";
+const ADMIN_FELDER = [
+  { name: "slug", text: "Kennung (Subdomain) *", pflicht: true, hilfe: "Kleinbuchstaben, Ziffern, Bindestriche" },
+  { name: "domain", text: "Eigene Domain", hilfe: "Optional" },
+  { name: "adminUsername", text: "Benutzername des ersten Kontos *", pflicht: true, wert: "admin" },
+  {
+    name: "adminPassword",
+    text: "Startpasswort * (mind. 10 Zeichen)",
+    art: "password",
+    pflicht: true,
+    hilfe: "Das Konto muss es beim ersten Anmelden ändern",
+  },
+  { name: "adminFirstName", text: "Vorname" },
+  { name: "adminLastName", text: "Nachname" },
+  { name: "adminEmail", text: "E-Mail", art: "email" },
+];
+
+/** Einmalig angezeigter Pitch-Link: gespeichert ist nur ein Hash, danach lässt er sich nicht mehr zeigen. */
+function linkKarte(ergebnis, weiter) {
+  return karte(
+    "Link der Pitch-Seite - nur jetzt sichtbar",
+    el(
+      "p",
+      { class: "gedaempft" },
+      "Gespeichert ist nur ein Hash. Geht der Link verloren, erzeugen Sie einen neuen; der alte gilt dann nicht mehr.",
+    ),
+    el("p", {}, el("code", { class: "code" }, ergebnis.adresse)),
+    !ergebnis.adresse.startsWith("http") &&
+      el(
+        "p",
+        { class: "leise" },
+        "Hinweis: PITCH_BASIS_URL ist nicht gesetzt - vor den Pfad gehört die Adresse des Betreiber-Mandanten (z. B. https://verwaltung.<domain>).",
+      ),
+    el(
+      "div",
+      { class: "leiste" },
+      el(
+        "button",
+        {
+          onclick: () =>
+            navigator.clipboard?.writeText(ergebnis.adresse.startsWith("http") ? ergebnis.adresse : ergebnis.adresse),
+        },
+        "Kopieren",
+      ),
+      weiter,
+    ),
+  );
+}
+
+async function neuerInteressent() {
+  if (!darfSchreiben())
+    return [kopf("Neuer Interessent"), el("div", { class: "fehler" }, "Diese Rolle darf nur lesen.")];
+  const huelle = el("div");
+  huelle.append(
+    karte(
+      null,
+      formular(
+        [
+          {
+            name: "name",
+            text: "Unternehmen oder Gruppe *",
+            pflicht: true,
+            platzhalter: "Autohaus Gruppe Beispiel",
+            breit: true,
+          },
+          {
+            name: "standorteText",
+            art: "text",
+            text: "Häuser *",
+            pflicht: true,
+            zeilen: 8,
+            breit: true,
+            hilfe: HAEUSER_HILFE,
+            platzhalter:
+              "Autopark Burgwedel | Kokenhorststraße 6 | 30938 Burgwedel | SEAT, CUPRA | Verkauf, Service | Mo–Fr 9–18",
+          },
+          { name: "ansprechperson", text: "Ansprechperson", hilfe: "Sieht der Interessent nicht" },
+          { name: "notiz", text: "Interne Notiz" },
+          { name: "nutzer", text: "Startwert Nutzer", art: "number", hilfe: "Leer: 25 je Haus" },
+          { name: "linkTage", text: "Link gültig (Tage)", art: "number", hilfe: "Leer: 60, höchstens 365" },
+        ],
+        "Interessent anlegen und Link erzeugen",
+        async (d) => {
+          const ergebnis = await api("/interessenten", {
+            methode: "POST",
+            daten: zahlOderWeg(ohneLeer(d), "nutzer", "linkTage"),
+          });
+          huelle.replaceChildren(
+            linkKarte(
+              ergebnis,
+              el("a", { class: "knopf", href: `#/interessenten/${ergebnis.id}` }, "Weiter zum Interessenten"),
+            ),
+          );
+        },
+      ),
+    ),
+  );
+  return [
+    el("p", {}, el("a", { href: "#/interessenten" }, "← Alle Interessenten")),
+    kopf("Neuer Interessent", "Die Pitch-Seite entsteht daraus sofort."),
+    huelle,
+  ];
+}
+
+async function neuesHaus() {
+  if (!darfSchreiben()) return [kopf("Neues Haus"), el("div", { class: "fehler" }, "Diese Rolle darf nur lesen.")];
+  return [
+    el("p", {}, el("a", { href: "#/haeuser" }, "← Alle Häuser")),
+    kopf(
+      "Neues Haus",
+      "Ein Standort und eine Abteilung als Startpunkt - Rollen, Rechte und das erste Administrationskonto entstehen in einem Schritt. Aus einem Interessenten entsteht ein Haus mit dessen Angaben; das geht auf dessen Seite.",
+    ),
+    karte(
+      null,
+      formular(
+        [
+          { name: "name", text: "Name des Hauses *", pflicht: true, breit: true },
+          ...ADMIN_FELDER,
+          { name: "licensedSeats", text: "Lizenzkontingent", art: "number", hilfe: "Leer: unbegrenzt" },
+          { name: "locationLimit", text: "Standortlimit", art: "number", hilfe: "Leer: unbegrenzt" },
+          { name: "notes", text: "Notiz", breit: true },
+        ],
+        "Haus anlegen",
+        async (d) => {
+          const haus = await api("/haeuser", {
+            methode: "POST",
+            daten: zahlOderWeg(ohneLeer(d), "licensedSeats", "locationLimit"),
+          });
+          location.hash = `#/haeuser/${haus.tenantId}`;
+        },
+      ),
+    ),
+  ];
+}
+
 export const seiten = {
   /* ============================================================= Übersicht */
   async ""() {
@@ -178,12 +387,12 @@ export const seiten = {
 
   /* ================================================================= Häuser */
   async haeuser(id, ctx) {
-    return id ? hausDetail(id, ctx) : hausListe();
+    return id === "neu" ? neuesHaus() : id ? hausDetail(id, ctx) : hausListe();
   },
 
   /* ========================================================== Interessenten */
   async interessenten(id, ctx) {
-    return id ? leadDetail(id, ctx) : leadListe();
+    return id === "neu" ? neuerInteressent() : id ? leadDetail(id, ctx) : leadListe();
   },
 
   /* ============================================================== Statistik */
@@ -619,7 +828,11 @@ async function hausListe() {
   filter.addEventListener("change", zeichne);
   zeichne();
   return [
-    kopf("Häuser", `${haeuser.length} Kundenhäuser`),
+    kopf(
+      "Häuser",
+      `${haeuser.length} Kundenhäuser`,
+      darfSchreiben() && el("a", { class: "knopf primaer", href: "#/haeuser/neu" }, "Neues Haus"),
+    ),
     karte(null, el("div", { class: "leiste", style: "margin-bottom:.8rem" }, suche, filter), huelle),
   ];
 }
@@ -908,7 +1121,8 @@ async function leadListe() {
   return [
     kopf(
       "Interessenten",
-      `${liste.length} Einträge · Anlegen und Hausanlage laufen vorerst weiter in der Plattformverwaltung der Kunden-Anwendung`,
+      `${liste.length} Einträge`,
+      darfSchreiben() && el("a", { class: "knopf primaer", href: "#/interessenten/neu" }, "Neuer Interessent"),
     ),
     el(
       "div",
@@ -949,6 +1163,7 @@ async function leadDetail(id, { neuZeichnen }) {
   const l = await api(`/interessenten/${id}`);
   const schreiben = darfSchreiben();
   const notiz = el("textarea", { rows: 5, style: "width:100%", disabled: !schreiben }, l.notiz ?? "");
+  const linkPlatz = el("div");
   const status = el(
     "select",
     {
@@ -971,6 +1186,7 @@ async function leadDetail(id, { neuZeichnen }) {
       zustand(STATUS[l.status], STATUS_TON[l.status]),
       status,
     ),
+    linkPlatz,
     l.hinweise.length > 0 && karte("Hinweise", hinweisListe(l.hinweise)),
     el(
       "div",
@@ -1000,23 +1216,53 @@ async function leadDetail(id, { neuZeichnen }) {
           ["Haus angelegt", l.hausId ? el("a", { href: `#/haeuser/${l.hausId}` }, "Zum Haus") : "nein"],
         ]),
         schreiben &&
-          !l.linkWiderrufen &&
           el(
             "div",
             { class: "leiste", style: "margin-top:.8rem" },
             el(
               "button",
               {
+                onclick: async () => {
+                  try {
+                    const e = await api(`/interessenten/${id}/link`, { methode: "POST", daten: {} });
+                    linkPlatz.replaceChildren(linkKarte(e));
+                  } catch (f) {
+                    alert(f.message);
+                  }
+                },
+              },
+              "Neuen Link erzeugen",
+            ),
+            !l.linkWiderrufen &&
+              el(
+                "button",
+                {
+                  class: "gefahr",
+                  onclick: () =>
+                    aendere(
+                      "Widerrufen",
+                      () => api(`/interessenten/${id}/link-widerrufen`, { methode: "POST" }),
+                      neuZeichnen,
+                      "Link widerrufen? Die Pitch-Seite ist danach nicht mehr erreichbar; ein neuer Link lässt sich jederzeit erzeugen.",
+                    ),
+                },
+                "Link widerrufen",
+              ),
+            el(
+              "button",
+              {
                 class: "gefahr",
                 onclick: () =>
                   aendere(
-                    "Widerrufen",
-                    () => api(`/interessenten/${id}/link-widerrufen`, { methode: "POST" }),
-                    neuZeichnen,
-                    "Link widerrufen? Die Pitch-Seite ist danach nicht mehr erreichbar; ein neuer Link wird in der Kunden-Anwendung erzeugt.",
+                    "Löschen",
+                    () => api(`/interessenten/${id}`, { methode: "DELETE" }),
+                    () => {
+                      location.hash = "#/interessenten";
+                    },
+                    `${l.name} endgültig löschen?`,
                   ),
               },
-              "Link widerrufen",
+              "Löschen",
             ),
           ),
       ),
@@ -1042,6 +1288,54 @@ async function leadDetail(id, { neuZeichnen }) {
           ),
       ),
     ),
+    schreiben &&
+      !l.hausId &&
+      karte(
+        "Bearbeiten",
+        formular(
+          [
+            { name: "name", text: "Unternehmen oder Gruppe", wert: l.name, pflicht: true },
+            { name: "ansprechperson", text: "Ansprechperson", wert: l.ansprechperson ?? "" },
+            {
+              name: "standorteText",
+              art: "text",
+              text: "Häuser",
+              wert: l.standorteText,
+              zeilen: 8,
+              breit: true,
+              pflicht: true,
+              hilfe: `${HAEUSER_HILFE} Wer die Häuser hier neu festlegt, verwirft die Änderungen des Interessenten.`,
+            },
+            { name: "nutzer", text: "Nutzer", art: "number", wert: l.anzahlNutzer },
+            {
+              name: "tier",
+              text: "Paket",
+              art: "auswahl",
+              wert: l.tier ?? "",
+              optionen: [
+                ["", "Einzelwahl (Module bleiben)"],
+                ["basis", "Basis"],
+                ["prozesse", "Prozesse"],
+                ["komplett", "Komplett"],
+              ],
+            },
+          ],
+          "Speichern",
+          async (d) => {
+            await api(`/interessenten/${id}`, {
+              methode: "PUT",
+              daten: {
+                name: d.name,
+                ansprechperson: d.ansprechperson,
+                standorteText: d.standorteText,
+                konfiguration: { nutzer: Number(d.nutzer), tier: d.tier || null },
+              },
+            });
+            await neuZeichnen();
+          },
+        ),
+      ),
+    schreiben && l.hausId === null && hausKarte(id),
     karte(
       "Häuser des Interessenten",
       tabelle(
@@ -1057,4 +1351,45 @@ async function leadDetail(id, { neuZeichnen }) {
       ),
     ),
   ];
+}
+
+/** Vorschau und Formular, um aus dem Interessenten ein Haus anzulegen. */
+function hausKarte(id) {
+  const huelle = el(
+    "section",
+    { class: "karte" },
+    el("h2", {}, "Haus anlegen"),
+    el("p", { class: "leer" }, "Vorschau wird berechnet …"),
+  );
+  api(`/interessenten/${id}/haus`).then(
+    (v) => {
+      huelle.replaceChildren(
+        el("h2", {}, "Haus anlegen"),
+        el(
+          "p",
+          { class: "gedaempft" },
+          `Die Vorschau zeigt, was entsteht (${v.quelle === "interessent" ? "mit den Häusern, die der Interessent verändert hat" : "mit Ihren Angaben"}). Erprobungen bleiben aus, auch im Paket Komplett.`,
+        ),
+        schluessel([
+          ["Standorte", v.plan.standorte.map((s) => `${s.name} (${s.code})`).join(", ")],
+          ["Marken", v.plan.marken.map((m) => m.name).join(", ") || "–"],
+          ["Abteilungen", v.plan.abteilungen.map((a) => `${a.name} (${a.code})`).join(", ")],
+          ["Lizenzkontingent", v.lizenzen],
+          ["Module an", `${v.modulAn.length}`],
+          ["Erprobungen, die Sie freischalten", v.modulErprobung.length ? v.modulErprobung.join(", ") : "keine"],
+        ]),
+        el("h3", { style: "margin-top:1rem" }, "Kennung und erstes Konto"),
+        formular(
+          ADMIN_FELDER.map((f) => (f.name === "slug" ? { ...f, wert: v.kennung ?? "" } : f)),
+          "Haus anlegen",
+          async (d) => {
+            const haus = await api(`/interessenten/${id}/haus`, { methode: "POST", daten: ohneLeer(d) });
+            location.hash = `#/haeuser/${haus.tenantId}`;
+          },
+        ),
+      );
+    },
+    (f) => huelle.replaceChildren(el("h2", {}, "Haus anlegen"), el("div", { class: "fehler" }, f.message)),
+  );
+  return huelle;
 }
