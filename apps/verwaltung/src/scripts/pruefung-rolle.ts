@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { randomBytes } from "node:crypto";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "../app.module";
 import { IntranetService } from "../core/intranet.service";
@@ -75,12 +76,14 @@ async function main() {
   // (die Rolle darf nichts löschen). Die CI läuft gegen eine Wegwerf-Datenbank.
   if (process.env.PRUEFUNG_HAUS_ANLEGEN === "1") {
     const slug = `pruefung-${Date.now().toString(36)}`;
+    // Zufallswert statt Literal: kein Passwort im Quelltext, auch kein Testpasswort.
+    const wegwerfPasswort = randomBytes(18).toString("hex");
     try {
       const haus = await app
         .get(HausAnlegenService)
         .anlegen(
           { id: "", username: "pruefung", displayName: "Prüfung", rolle: "inhaber" },
-          { slug, name: "Prüfhaus", adminUsername: "admin", adminPassword: "Pruefung-12345" },
+          { slug, name: "Prüfhaus", adminUsername: "admin", adminPassword: wegwerfPasswort },
         );
       const anzahl = await intranet.eine<{ n: number }>(
         `SELECT (SELECT count(*) FROM "Location" WHERE "tenantId" = $1)::int AS n`,
@@ -95,7 +98,7 @@ async function main() {
         .get(HausAnlegenService)
         .anlegen(
           { id: "", username: "pruefung", displayName: "Prüfung", rolle: "inhaber" },
-          { slug, name: "Doppelt", adminUsername: "admin", adminPassword: "Pruefung-12345" },
+          { slug, name: "Doppelt", adminUsername: "admin", adminPassword: wegwerfPasswort },
         )
         .then(
           () => {
