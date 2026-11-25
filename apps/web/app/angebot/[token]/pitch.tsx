@@ -22,7 +22,7 @@ import {
 import { pitchAnfrageAction, pitchSpeichernAction } from "@/lib/actions";
 import { ModulSlideshow } from "./modul-slideshow";
 
-const STATIONEN = ["Start", "Ihre Häuser", "Funktionen", "Ihr Angebot", "Ihr Intranet"] as const;
+const STATIONEN = ["AHOI", "Start", "Ihre Häuser", "Funktionen", "Ihr Angebot", "Ihr Intranet"] as const;
 
 const label = (key: string) => getModule(key)?.label ?? key;
 const istBeta = (key: string) => getModule(key)?.stage === "beta";
@@ -71,11 +71,12 @@ export function Pitch({ token, ansicht }: { token: string; ansicht: PitchAnsicht
       </header>
 
       <main className="wrap">
-        {station === 0 ? <Start ansicht={ansicht} /> : null}
-        {station === 1 ? <Haeuser ansicht={ansicht} /> : null}
-        {station === 2 ? <Funktionen ansicht={ansicht} /> : null}
-        {station === 3 ? <Angebot token={token} ansicht={ansicht} konf={konf} setKonf={setKonf} /> : null}
-        {station === 4 ? <Intranet ansicht={ansicht} konf={konf} onAngebot={() => gehe(3)} /> : null}
+        {station === 0 ? <Namensseite onWeiter={() => gehe(1)} /> : null}
+        {station === 1 ? <Start ansicht={ansicht} /> : null}
+        {station === 2 ? <Haeuser ansicht={ansicht} /> : null}
+        {station === 3 ? <Funktionen ansicht={ansicht} /> : null}
+        {station === 4 ? <Angebot token={token} ansicht={ansicht} konf={konf} setKonf={setKonf} /> : null}
+        {station === 5 ? <Intranet ansicht={ansicht} konf={konf} onAngebot={() => gehe(4)} /> : null}
 
         <div className="pager">
           <button type="button" className="btn" disabled={station === 0} onClick={() => gehe(station - 1)}>
@@ -116,8 +117,6 @@ function Start({ ansicht }: { ansicht: PitchAnsicht }) {
         an einer Stelle. Das Autogeschäft bleibt im DMS, wo es hingehört. Diese Seite ist auf Ihre Standorte
         zugeschnitten. Stellen Sie ein, was Sie brauchen, und sehen Sie sofort, was es kostet.
       </p>
-      <Namensherkunft />
-
       <div className="facts">
         <div className="fact">
           <b>{ansicht.standorte.length}</b>
@@ -147,123 +146,69 @@ function Start({ ansicht }: { ansicht: PitchAnsicht }) {
 
 /* ------------------------------------------------------------------- Name */
 
-type Buchstabe = "A" | "H" | "O" | "I";
-
-const BUCHSTABEN: Record<Buchstabe, { wort: string; titel: string; text: string }> = {
-  A: {
-    wort: "Auto",
-    titel: "Auto",
-    text: "Das Autogeschäft selbst bleibt in Ihrem DMS. AHOI kümmert sich um alles, was drumherum im Betrieb passiert.",
-  },
-  H: {
-    wort: "Haus",
-    titel: "Haus",
-    text: "Gebaut für Autohäuser mit mehreren Standorten, Marken und Abteilungen. Jede Person sieht, was für ihr Haus gilt.",
-  },
-  O: {
-    wort: "Organisation",
-    titel: "Organisation",
-    text: "Bestellungen, Freigaben, Anträge, Serviceanfragen, Einarbeitung: der Betriebsalltag an einer Stelle.",
-  },
-  I: {
-    wort: "Information",
-    titel: "Information",
-    text: "Aushänge, Wissen, Dokumente, Verzeichnis: jede Person erfährt, was für sie gilt.",
-  },
-};
-
-/** Das Wort, aus dem der Name entsteht. Die Buchstaben des Namens tragen ihren Schlüssel. */
-const NAMENSZEICHEN: { zeichen: string; buchstabe?: Buchstabe }[] = [
-  ..."AUTOHAUS".split("").map((zeichen, index) => ({
-    zeichen,
-    buchstabe: index === 0 ? ("A" as const) : index === 4 ? ("H" as const) : undefined,
-  })),
-  { zeichen: "\u00A0" },
-  ..."ORGANISATION"
-    .split("")
-    .map((zeichen, index) => ({ zeichen, buchstabe: index === 0 ? ("O" as const) : undefined })),
-  { zeichen: "\u00A0" },
-  { zeichen: "&" },
-  { zeichen: "\u00A0" },
-  ..."INFORMATION"
-    .split("")
-    .map((zeichen, index) => ({ zeichen, buchstabe: index === 0 ? ("I" as const) : undefined })),
+/** Das Wort, aus dem der Name entsteht. Die vier Buchstaben des Namens sind markiert. */
+const NAMENSZEICHEN: { zeichen: string; name: boolean }[] = [
+  ..."AUTOHAUS".split("").map((zeichen, index) => ({ zeichen, name: index === 0 || index === 4 })),
+  { zeichen: "\u00A0", name: false },
+  ..."ORGANISATION".split("").map((zeichen, index) => ({ zeichen, name: index === 0 })),
+  { zeichen: "\u00A0", name: false },
+  { zeichen: "&", name: false },
+  { zeichen: "\u00A0", name: false },
+  ..."INFORMATION".split("").map((zeichen, index) => ({ zeichen, name: index === 0 })),
 ];
 
+/** Ablauf in Sekunden: das Wort steht, zieht sich zusammen, das Zeichen baut sich auf. */
+const NAME_HALTEN = 0.9;
+const NAME_ZUSAMMEN = 2.6;
+const NAME_ZEICHEN = 3.5;
+const NAME_DAUER = 5;
+
+const weich = (t: number) => {
+  const x = Math.min(1, Math.max(0, t));
+  return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+};
+
 /**
- * Woher der Name kommt: Autohaus Organisation & Information.
+ * Erste Seite: woher der Name kommt.
  *
- * Ein Regler zieht das Wort auf seine vier Buchstaben zusammen, bis AHOI übrig
- * bleibt. Der Name ist eine Abkürzung und kein Bild; das Zeichen daneben baut
- * sich aus seinen vier Feldern auf, drei gefüllt und eines offen.
+ * In fünf Sekunden zieht sich "Autohaus Organisation & Information" auf seine
+ * vier Buchstaben zusammen, dann baut sich das Zeichen aus seinen vier Feldern
+ * auf, drei gefüllt und eines offen. Der Name ist eine Abkürzung, kein Bild
+ * (docs/ci.md). Bei reduzierter Bewegung steht gleich das Ergebnis da.
  */
-function Namensherkunft() {
-  const [fortschritt, setFortschritt] = useState(0);
-  const [angeheftet, setAngeheftet] = useState<Buchstabe | null>(null);
-  const [schwebe, setSchwebe] = useState<Buchstabe | null>(null);
-  const lauf = useRef<number | null>(null);
-  const aktiv = schwebe ?? angeheftet;
+function Namensseite({ onWeiter }: { onWeiter: () => void }) {
+  const [zeit, setZeit] = useState(0);
+  const [durchlauf, setDurchlauf] = useState(0);
 
-  const stoppe = () => {
-    if (lauf.current !== null) {
-      cancelAnimationFrame(lauf.current);
-      lauf.current = null;
-    }
-  };
-  useEffect(() => stoppe, []);
-
-  const spiele = () => {
-    stoppe();
-    const ziel = fortschritt >= 0.99 ? 0 : 1;
-    const von = fortschritt;
+  useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setFortschritt(ziel);
+      setZeit(NAME_DAUER);
       return;
     }
-    const dauer = 2200;
+    setZeit(0);
     const start = performance.now();
+    let rahmen = 0;
     const schritt = (jetzt: number) => {
-      const t = Math.min(1, (jetzt - start) / dauer);
-      const weich = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-      setFortschritt(von + (ziel - von) * weich);
-      lauf.current = t < 1 ? requestAnimationFrame(schritt) : null;
+      const t = Math.min(NAME_DAUER, (jetzt - start) / 1000);
+      setZeit(t);
+      if (t < NAME_DAUER) rahmen = requestAnimationFrame(schritt);
     };
-    lauf.current = requestAnimationFrame(schritt);
-  };
+    rahmen = requestAnimationFrame(schritt);
+    return () => cancelAnimationFrame(rahmen);
+  }, [durchlauf]);
 
-  const fertig = fortschritt >= 0.99;
-  const heftAn = (buchstabe: Buchstabe) => setAngeheftet((alt) => (alt === buchstabe ? null : buchstabe));
+  const fortschritt = weich((zeit - NAME_HALTEN) / NAME_ZUSAMMEN);
+  const fertig = zeit >= NAME_DAUER;
 
   return (
-    <div className="name">
-      <div className="name-kopf">
-        <span className="eyebrow">Woher der Name kommt</span>
-        <button type="button" className="btn" onClick={spiele}>
-          {fertig ? "Zurück zum Wort" : "Zusammenziehen"}
-        </button>
-      </div>
-
-      <div className="name-bild">
-        <div
-          className="name-wort"
-          role="group"
-          aria-label="Autohaus Organisation und Information, zusammengezogen zu AHOI"
-        >
+    <section className="station ahoi-seite">
+      <div className="ahoi-buehne">
+        <h1 className="ahoi-wort" aria-label="AHOI: Autohaus Organisation und Information">
           {NAMENSZEICHEN.map((eintrag, index) =>
-            eintrag.buchstabe ? (
-              <button
-                key={index}
-                type="button"
-                className={`n-key ${aktiv === eintrag.buchstabe ? "fokus" : ""}`}
-                aria-label={`${eintrag.buchstabe}: ${BUCHSTABEN[eintrag.buchstabe].wort}`}
-                onMouseEnter={() => setSchwebe(eintrag.buchstabe!)}
-                onMouseLeave={() => setSchwebe(null)}
-                onFocus={() => setSchwebe(eintrag.buchstabe!)}
-                onBlur={() => setSchwebe(null)}
-                onClick={() => heftAn(eintrag.buchstabe!)}
-              >
+            eintrag.name ? (
+              <span key={index} className="n-key" aria-hidden="true">
                 {eintrag.zeichen}
-              </button>
+              </span>
             ) : (
               <span
                 key={index}
@@ -275,10 +220,10 @@ function Namensherkunft() {
               </span>
             ),
           )}
-        </div>
+        </h1>
 
         <svg
-          className="name-zeichen"
+          className="ahoi-zeichen"
           viewBox="0 0 76 76"
           role="img"
           aria-label="Das AHOI-Zeichen: vier Felder, drei gefüllt, eines offen"
@@ -289,63 +234,39 @@ function Namensherkunft() {
             { x: 0, y: 40, offen: false },
             { x: 40, y: 40, offen: false },
           ].map((feld, index) => {
-            const sichtbar = Math.max(0, Math.min(1, (fortschritt - (0.45 + index * 0.1)) / 0.12));
-            return feld.offen ? (
-              <rect
+            const sichtbar = weich((zeit - NAME_ZEICHEN - index * 0.28) / 0.35);
+            const mass = 0.7 + 0.3 * sichtbar;
+            const mitte = { x: feld.x + 18, y: feld.y + 18 };
+            return (
+              <g
                 key={index}
-                className="z-offen"
-                x={feld.x + 2}
-                y={feld.y + 2}
-                width="32"
-                height="32"
                 opacity={sichtbar}
-              />
-            ) : (
-              <rect key={index} className="z-voll" x={feld.x} y={feld.y} width="36" height="36" opacity={sichtbar} />
+                transform={`translate(${mitte.x} ${mitte.y}) scale(${mass}) translate(${-mitte.x} ${-mitte.y})`}
+              >
+                {feld.offen ? (
+                  <rect className="z-offen" x={feld.x + 2} y={feld.y + 2} width="32" height="32" />
+                ) : (
+                  <rect className="z-voll" x={feld.x} y={feld.y} width="36" height="36" />
+                )}
+              </g>
             );
           })}
         </svg>
       </div>
 
-      <label className="name-regler">
-        <span>Vom Wort zum Namen</span>
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={Math.round(fortschritt * 100)}
-          onChange={(e) => {
-            stoppe();
-            setFortschritt(Number(e.target.value) / 100);
-          }}
-        />
-      </label>
-
-      <div className="name-karten" role="group" aria-label="Die vier Buchstaben">
-        {(Object.keys(BUCHSTABEN) as Buchstabe[]).map((buchstabe) => (
-          <button
-            key={buchstabe}
-            type="button"
-            className="name-karte"
-            aria-pressed={aktiv === buchstabe}
-            onMouseEnter={() => setSchwebe(buchstabe)}
-            onMouseLeave={() => setSchwebe(null)}
-            onFocus={() => setSchwebe(buchstabe)}
-            onBlur={() => setSchwebe(null)}
-            onClick={() => heftAn(buchstabe)}
-          >
-            <span className="name-buchstabe">{buchstabe}</span>
-            <b>{BUCHSTABEN[buchstabe].titel}</b>
-            <span>{BUCHSTABEN[buchstabe].text}</span>
-          </button>
-        ))}
-      </div>
-
-      <p className="hint" style={{ marginTop: 12 }}>
-        AHOI ist eine Abkürzung, kein Bild. Das Zeichen zeigt vier Felder, drei gefüllt und eines offen: die Module, die
-        ein Haus einschaltet, und das eine, das es nicht braucht.
+      <p className="ahoi-unter" style={{ opacity: weich((zeit - 4.2) / 0.6) }}>
+        Autohaus · Organisation · Information
       </p>
-    </div>
+
+      <div className="ahoi-knoepfe" style={{ opacity: fertig ? 1 : 0, pointerEvents: fertig ? "auto" : "none" }}>
+        <button type="button" className="btn" onClick={() => setDurchlauf((n) => n + 1)}>
+          Nochmal
+        </button>
+        <button type="button" className="btn primary" onClick={onWeiter}>
+          Los geht&apos;s
+        </button>
+      </div>
+    </section>
   );
 }
 

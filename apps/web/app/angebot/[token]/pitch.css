@@ -928,31 +928,27 @@
   }
 }
 
-/* Woher der Name kommt */
-.pitch .name {
-  margin-top: 32px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 20px;
-}
-.pitch .name-kopf {
+/* Erste Seite: der Name */
+.pitch .ahoi-seite {
+  min-height: 68vh;
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  justify-content: center;
+  gap: 28px;
+  text-align: center;
 }
-.pitch .name-bild {
+.pitch .ahoi-buehne {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  margin-top: 18px;
-  min-height: 96px;
+  justify-content: center;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 100%;
 }
-.pitch .name-wort {
-  font: 800 clamp(30px, 5.2vw, 64px)/1 var(--head);
+.pitch .ahoi-wort {
+  font: 800 clamp(20px, 5vw, 84px)/1 var(--head);
+  max-width: 100%;
   text-transform: uppercase;
   letter-spacing: 0.02em;
   display: flex;
@@ -960,6 +956,7 @@
   white-space: pre;
   overflow: hidden;
   min-width: 0;
+  margin: 0;
 }
 .pitch .n-weg {
   display: inline-block;
@@ -967,26 +964,11 @@
   color: var(--quiet);
 }
 .pitch .n-key {
-  background: none;
-  border: 0;
-  padding: 0;
-  font: inherit;
-  letter-spacing: inherit;
   color: var(--accent-text);
-  cursor: pointer;
-  border-bottom: 4px solid transparent;
-  transition:
-    border-color 0.15s,
-    color 0.15s;
 }
-.pitch .n-key.fokus,
-.pitch .n-key:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-.pitch .name-zeichen {
+.pitch .ahoi-zeichen {
   flex: none;
-  width: clamp(56px, 9vw, 96px);
+  width: clamp(64px, 10vw, 112px);
   height: auto;
 }
 .pitch .z-voll {
@@ -997,59 +979,15 @@
   stroke: var(--accent);
   stroke-width: 4;
 }
-.pitch .name-regler {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-top: 14px;
-  font: 700 13px var(--head);
-  letter-spacing: 0.1em;
+.pitch .ahoi-unter {
+  margin: 0;
+  font: 700 16px var(--head);
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--quiet);
 }
-.pitch .name-regler input {
-  flex: 1;
-  accent-color: var(--accent);
-}
-.pitch .name-karten {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 10px;
-  margin-top: 18px;
-}
-.pitch .name-karte {
-  text-align: left;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 12px 14px;
+.pitch .ahoi-knoepfe {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
-}
-.pitch .name-karte b {
-  font: 700 18px var(--head);
-  text-transform: uppercase;
-}
-.pitch .name-karte span:last-child {
-  font-size: 15px;
-  color: var(--muted);
-}
-.pitch .name-buchstabe {
-  font: 800 44px/1 var(--head);
-  color: var(--accent-text);
-}
-.pitch .name-karte[aria-pressed="true"] {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-soft);
-  background: var(--surface);
-}
-@media (max-width: 600px) {
-  .pitch .name-bild {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+  gap: 12px;
+  transition: opacity 0.4s;
 }
