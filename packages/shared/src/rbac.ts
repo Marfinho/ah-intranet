@@ -72,6 +72,12 @@ export const PERMISSION_DEFINITIONS: readonly PermissionDefinition[] = [
     bereich: "Verwaltung",
   },
   {
+    key: "schluessel.eskalation",
+    name: "Eskalationen der Schlüsselfunktionen erhalten",
+    description: "Wird informiert, wenn für eine Schlüsselfunktion niemand erreichbar ist, und sieht die offenen Fälle",
+    bereich: "Verwaltung",
+  },
+  {
     key: "branding.manage",
     name: "Erscheinungsbild verwalten",
     description: "Eigenes Logo hinterlegen - ersetzt das AHOI-Zeichen in diesem Haus",
@@ -248,6 +254,14 @@ export const ROLE_DEFINITIONS: readonly RoleDefinition[] = [
       "custody.manage",
       "meals.manage",
     ],
+  },
+  {
+    key: "geschaeftsfuehrung",
+    name: "Geschäftsführung",
+    description:
+      "Letzte Stufe der Schlüsselfunktionen: bekommt die Eskalation, wenn Key User und Vertreter nicht erreichbar sind. Gibt Abwesenheiten frei und sieht alle.",
+    rank: 25,
+    permissions: ["admin.access", "users.read", "absences.approve", "absences.viewAll", "schluessel.eskalation"],
   },
   {
     key: "admin",

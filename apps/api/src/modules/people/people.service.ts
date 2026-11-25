@@ -22,7 +22,8 @@ import { AuditService } from "../../core/audit.service";
 import { PRESENCE_LABELS, PRESENCE_VALUES, displayName, resolveUserScopes, sortiereRollen } from "../../core/mappers";
 import type { RequestUser } from "../../core/request-user";
 import { requireTenantId } from "../../core/tenant-context";
-import { baueBaum, wuerdeKreisBilden, type OrgKnoten } from "./organigramm";
+import { baueBaum, vorgesetztenKette, wuerdeKreisBilden, type OrgKnoten } from "./organigramm";
+import { ganztaegigAbwesend } from "./schluesselregeln";
 
 const directorySelect = {
   id: true,
@@ -788,18 +789,50 @@ export class PeopleService {
   }
 
   /**
-   * Vorgesetzte Person, an die Abwesenheitsanträge gehen.
+   * Wer einen Abwesenheitsantrag entscheidet.
    *
-   * Ohne Vorgesetzte fällt der Antrag an alle, die das Haus zur Freigabe
-   * berechtigt hat. Bewusst über das Recht und nicht über einen Rollenschlüssel:
-   * ein Haus kann die Freigabe einer eigenen Rolle geben, die "admin" nicht heißt.
+   * Die nächste Führungskraft in der Kette, die freigeben darf und heute da
+   * ist: ist die Vorgesetzte selbst abwesend, geht der Antrag an deren
+   * Vorgesetzte - bis hinauf zur Geschäftsführung. Ohne Kette fällt er an alle
+   * Anwesenden mit Freigaberecht, notfalls an alle. Bewusst über das Recht und
+   * nicht über einen Rollenschlüssel: ein Haus kann die Freigabe einer eigenen
+   * Rolle geben, die "admin" nicht heißt.
    */
   async approversFor(userId: string): Promise<string[]> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { managerId: true } });
-    if (user?.managerId) {
-      return [user.managerId];
+    const [personen, abwesend, freigeber] = await Promise.all([
+      this.prisma.user.findMany({ select: { id: true, managerId: true } }),
+      this.abwesendeAm(new Date()),
+      this.usersWithPermission("absences.approve"),
+    ]);
+
+    const berechtigt = new Set(freigeber);
+    const erste = vorgesetztenKette(personen, userId).find((id) => berechtigt.has(id) && !abwesend.has(id));
+    if (erste) {
+      return [erste];
     }
-    return this.usersWithPermission("absences.approve");
+
+    const anwesende = freigeber.filter((id) => id !== userId && !abwesend.has(id));
+    return anwesende.length > 0 ? anwesende : freigeber;
+  }
+
+  /** Konten, die an dem Tag ganztägig abwesend (genehmigt) sind. Halbe Ränder zählen als anwesend. */
+  async abwesendeAm(datum: Date): Promise<Set<string>> {
+    const tag = new Date(Date.UTC(datum.getUTCFullYear(), datum.getUTCMonth(), datum.getUTCDate()));
+    const folgetag = new Date(tag.getTime() + 86_400_000);
+    const rows = await this.prisma.absence.findMany({
+      where: { status: "approved", startDate: { lt: folgetag }, endDate: { gte: tag } },
+      select: { userId: true, startDate: true, endDate: true, startHalb: true, endHalb: true },
+    });
+    return new Set(
+      rows
+        .filter((row) =>
+          ganztaegigAbwesend(
+            { von: row.startDate, bis: row.endDate, startHalb: row.startHalb, endHalb: row.endHalb },
+            tag,
+          ),
+        )
+        .map((row) => row.userId),
+    );
   }
 
   /** Aktive Konten, deren Rollen das genannte Recht tragen. */

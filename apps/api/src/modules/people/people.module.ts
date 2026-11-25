@@ -13,6 +13,8 @@ import { PeopleService } from "./people.service";
 import { AbsencesService } from "./absences.service";
 import { OnboardingService } from "./onboarding.service";
 import { OrgService } from "./org.service";
+import { SchluesselController } from "./schluessel.controller";
+import { SchluesselService } from "./schluessel.service";
 import { BetriebskalenderController } from "./betriebskalender.controller";
 import { BetriebskalenderService } from "./betriebskalender.service";
 
@@ -28,8 +30,16 @@ import { BetriebskalenderService } from "./betriebskalender.service";
     LocationsController,
     BrandsController,
     BetriebskalenderController,
+    SchluesselController,
   ],
-  providers: [PeopleService, AbsencesService, OnboardingService, OrgService, BetriebskalenderService],
-  exports: [PeopleService, AbsencesService, OnboardingService, OrgService, BetriebskalenderService],
+  providers: [
+    PeopleService,
+    AbsencesService,
+    OnboardingService,
+    OrgService,
+    BetriebskalenderService,
+    SchluesselService,
+  ],
+  exports: [PeopleService, AbsencesService, OnboardingService, OrgService, BetriebskalenderService, SchluesselService],
 })
 export class PeopleModule {}

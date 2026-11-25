@@ -60,9 +60,14 @@ export class TenantService implements OnModuleInit {
    *
    * Rechte stehen in der Registry, aber jedes Haus führt eigene Zeilen - sonst
    * ließen sie sich nicht an Rollen hängen. Ein neues Recht in der Registry
-   * muss deshalb ankommen, ohne dass jemand eine Migration schreibt. Rollen
-   * bleiben unangetastet: welche Rolle das neue Recht bekommt, entscheidet das
-   * Haus.
+   * muss deshalb ankommen, ohne dass jemand eine Migration schreibt. Bestehende
+   * Rollen bleiben unangetastet: welche Rolle das neue Recht bekommt, entscheidet
+   * das Haus.
+   *
+   * Eine neue Rolle der Grundausstattung (z. B. Geschäftsführung) wird nur
+   * angelegt, wenn der Schlüssel noch frei ist. Hat ein Haus bereits eine eigene
+   * Rolle unter diesem Schlüssel, bleibt sie, wie sie ist - das Haus vergibt
+   * dann selbst die Rechte, die es braucht.
    */
   async onModuleInit(): Promise<void> {
     const tenants = await this.client.tenant.findMany({ select: { id: true, slug: true } });
@@ -73,18 +78,46 @@ export class TenantService implements OnModuleInit {
         ),
       );
       const fehlend = PERMISSION_DEFINITIONS.filter((recht) => !vorhanden.has(recht.key));
-      if (fehlend.length === 0) {
-        continue;
+      if (fehlend.length > 0) {
+        await this.client.permission.createMany({
+          data: fehlend.map((recht) => ({
+            tenantId: tenant.id,
+            key: recht.key,
+            name: recht.name,
+            description: recht.description,
+          })),
+        });
+        this.logger.log(`${tenant.slug}: ${fehlend.length} neue Berechtigung(en) aus der Registry ergänzt`);
       }
-      await this.client.permission.createMany({
-        data: fehlend.map((recht) => ({
-          tenantId: tenant.id,
-          key: recht.key,
-          name: recht.name,
-          description: recht.description,
-        })),
-      });
-      this.logger.log(`${tenant.slug}: ${fehlend.length} neue Berechtigung(en) aus der Registry ergänzt`);
+
+      const rollen = new Set(
+        (await this.client.role.findMany({ where: { tenantId: tenant.id }, select: { key: true } })).map(
+          (row) => row.key,
+        ),
+      );
+      const fehlendeRollen = ROLE_DEFINITIONS.filter((rolle) => !rollen.has(rolle.key));
+      if (fehlendeRollen.length > 0) {
+        const rechte = new Map(
+          (
+            await this.client.permission.findMany({ where: { tenantId: tenant.id }, select: { id: true, key: true } })
+          ).map((row) => [row.key, row.id]),
+        );
+        for (const rolle of fehlendeRollen) {
+          await this.client.role.create({
+            data: {
+              tenantId: tenant.id,
+              key: rolle.key,
+              name: rolle.name,
+              description: rolle.description,
+              rank: rolle.rank,
+              permissions: {
+                create: rolle.permissions.map((key) => ({ tenantId: tenant.id, permissionId: rechte.get(key)! })),
+              },
+            },
+          });
+        }
+        this.logger.log(`${tenant.slug}: ${fehlendeRollen.length} Rolle(n) der Grundausstattung ergänzt`);
+      }
     }
   }
 

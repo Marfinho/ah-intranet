@@ -15,6 +15,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "aufbewahrung": "node dist/scripts/aufbewahrung.js",
+    "vertretung": "node dist/scripts/vertretung.js",
     "aufbewahrung:vorschau": "node dist/scripts/aufbewahrung.js --vorschau",
     "anonymisieren": "node dist/scripts/anonymisieren.js"
   },

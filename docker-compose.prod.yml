@@ -76,6 +76,23 @@ services:
   # eigener Container statt Hintergrundaufgabe in der API: bei mehreren
   # API-Instanzen liefe die sonst mehrfach. Ohne diesen Lauf blieben Daten
   # über ihre Frist hinaus liegen - gegen den Grundsatz der Speicherbegrenzung.
+  # Vertretungen über laufende Abwesenheiten informieren (Einstellung „Am ersten
+  # Tag"). Eigener Container aus demselben Grund wie die Aufbewahrung.
+  vertretung:
+    image: ahoi-api:prod
+    <<: *haertung
+    restart: unless-stopped
+    working_dir: /app/apps/api
+    command: sh -c "while true; do node dist/scripts/vertretung.js; sleep 86400; done"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://ahoi:${DB_PASSWORD:?}@postgres:5432/ah_intranet?schema=public
+      JWT_SECRET: ${JWT_SECRET:?}
+      SECRET_KEY: ${SECRET_KEY:?}
+    depends_on:
+      api:
+        condition: service_healthy
+
   aufbewahrung:
     # Dasselbe Image wie die API - ein zweiter Bau kostete auf kleinen Servern
     # viele Minuten und brächte nichts.

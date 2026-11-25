@@ -7,6 +7,7 @@ import { NotificationsService } from "../../core/notifications.service";
 import { displayName, toIso } from "../../core/mappers";
 import { can, type RequestUser } from "../../core/request-user";
 import { PeopleService } from "./people.service";
+import { SchluesselService } from "./schluessel.service";
 import { alleUnterstellten } from "./organigramm";
 import { anfangsstatus, arbeitstage, darfErfassen, freieTage, kalenderSicht } from "./abwesenheitsregeln";
 
@@ -42,6 +43,7 @@ export class AbsencesService {
     private readonly audit: AuditService,
     private readonly notifications: NotificationsService,
     private readonly people: PeopleService,
+    private readonly schluessel: SchluesselService,
   ) {}
 
   /** Alle Konten mit ihrem Vorgesetzten - Grundlage für die Frage, wer wen betreuen darf. */
@@ -240,6 +242,11 @@ export class AbsencesService {
       });
     }
 
+    // Sofort gültige Einträge informieren die Vertretungen gleich; ein Antrag erst nach der Freigabe.
+    if (status === "approved") {
+      await this.schluessel.meldeAbwesenheit(absence);
+    }
+
     return this.toAbsence(absence);
   }
 
@@ -283,6 +290,10 @@ export class AbsencesService {
       link: "/abwesenheiten",
       auchPerMail: true,
     });
+
+    if (approve) {
+      await this.schluessel.meldeAbwesenheit(updated);
+    }
 
     return this.toAbsence(updated);
   }

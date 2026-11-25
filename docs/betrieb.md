@@ -45,7 +45,13 @@ Per Cron, versetzt zum Aufbewahrungslauf:
 ```cron
 0 2 * * *  cd /opt/ah-intranet && ./scripts/sicherung.sh /var/backups/ah-intranet >> /var/log/ah-intranet/sicherung.log 2>&1
 0 3 * * *  cd /opt/ah-intranet/apps/api && node dist/scripts/aufbewahrung.js >> /var/log/ah-intranet/aufbewahrung.log 2>&1
+30 6 * * *  cd /opt/ah-intranet/apps/api && node dist/scripts/vertretung.js >> /var/log/ah-intranet/vertretung.log 2>&1
 ```
+
+Der letzte Lauf (`vertretung.js`) informiert Vertretungen über Abwesenheiten, die
+heute beginnen. Er wird nur gebraucht, wenn ein Haus die Meldung auf „Am ersten
+Tag" gestellt hat; bei „Sofort" holt er höchstens Verpasstes nach. Ein Merker an
+der Abwesenheit verhindert doppelte Mails.
 
 Die Sicherung läuft **vor** dem Löschlauf. Andersherum wäre der erste Stand nach
 einem Fehler im Löschlauf schon der bereinigte.
