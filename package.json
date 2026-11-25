@@ -31,5 +31,8 @@
       "postcss": "^8.5.33",
       "source-map-js": "^1.2.2"
     }
+  },
+  "engines": {
+    "node": ">=22.12"
   }
 }

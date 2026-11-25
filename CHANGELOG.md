@@ -22,6 +22,11 @@ Erster vollständiger Stand. Lauffähig, aber in keinem Haus im Einsatz.
   Frontend. Die Hausschrift wird mit der Anwendung ausgeliefert statt von Google.
 - **HTTPS im Betrieb:** `Caddyfile.tls` holt je Haus ein Zertifikat; die API
   entscheidet, für welche Namen.
+- **TypeScript 6.** Nest 12 wird nur noch als ES-Modul ausgeliefert; die API
+  bleibt CommonJS und lädt es per `require()`. Das setzt **Node ≥ 22.12** voraus
+  (`engines`), Images und CI laufen auf 26. Die Modulauflösung steht auf
+  `nodenext`, der Logo-Upload nutzt den eigenen Typ `LogoFile` statt des globalen
+  `Express.Multer.File`.
 - **NestJS 12** (Express 5) statt 10: `@nestjs/core` trug die letzte offene
   Meldung im Betriebsbaum, jetzt meldet `pnpm audit --prod` nichts mehr. Die
   Middleware hängt an `{*splat}`, Express 5 verlangt benannte Platzhalter.
