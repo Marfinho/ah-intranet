@@ -60,7 +60,7 @@ export function FilterBar({
           onBlur={() => apply({ search })}
           placeholder={searchPlaceholder}
           aria-label={searchPlaceholder}
-          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-brand-600 focus:ring-2"
+          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-hidden ring-brand-600 focus:ring-2"
         />
       ) : null}
 
@@ -70,7 +70,7 @@ export function FilterBar({
           aria-label={select.label}
           defaultValue={params.get(select.name) ?? "all"}
           onChange={(event) => apply({ [select.name]: event.target.value })}
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-brand-600 focus:ring-2 md:min-w-52"
+          className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-hidden ring-brand-600 focus:ring-2 md:min-w-52"
         >
           <option value="all">{select.label}</option>
           {select.options.map((option) => (

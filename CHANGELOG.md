@@ -27,6 +27,10 @@ Erster vollständiger Stand. Lauffähig, aber in keinem Haus im Einsatz.
   (`engines`), Images und CI laufen auf 26. Die Modulauflösung steht auf
   `nodenext`, der Logo-Upload nutzt den eigenen Typ `LogoFile` statt des globalen
   `Express.Multer.File`.
+- **Tailwind 4** statt 3, optisch unverändert: 24 Seiten vor und nach der
+  Migration als Screenshot verglichen, bis auf Daten und Ladezeitpunkt des Logos
+  pixelgleich. Dafür stellt `globals.css` Standardwerte wieder her, die Tailwind 4
+  geändert hat (Palette, Rahmenfarbe, `space-y`, Auswahllisten, Datumsfelder).
 - **NestJS 12** (Express 5) statt 10: `@nestjs/core` trug die letzte offene
   Meldung im Betriebsbaum, jetzt meldet `pnpm audit --prod` nichts mehr. Die
   Middleware hängt an `{*splat}`, Express 5 verlangt benannte Platzhalter.

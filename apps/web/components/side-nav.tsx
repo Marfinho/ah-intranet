@@ -81,7 +81,7 @@ export function SideNav({ groups }: { groups: NavGroup[] }) {
                   className={cn(
                     "flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition",
                     active
-                      ? "bg-brand-600 text-white shadow-sm"
+                      ? "bg-brand-600 text-white shadow-xs"
                       : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
                   )}
                 >
@@ -91,7 +91,7 @@ export function SideNav({ groups }: { groups: NavGroup[] }) {
                   {item.beta ? (
                     <span
                       className={cn(
-                        "ml-auto shrink-0 rounded px-1.5 py-0.5 font-display text-[9px] font-semibold uppercase tracking-[0.1em]",
+                        "ml-auto shrink-0 rounded-sm px-1.5 py-0.5 font-display text-[9px] font-semibold uppercase tracking-[0.1em]",
                         active ? "bg-white/20 text-white" : "bg-brand-50 text-brand-700",
                       )}
                     >

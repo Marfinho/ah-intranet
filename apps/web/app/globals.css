@@ -1,6 +1,143 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Die Marke (Farben, Schriften, Schatten) bleibt in tailwind.config.ts - eine
+   Quelle, wie in docs/ci.md beschrieben. */
+@config "../tailwind.config.ts";
+
+/*
+ * Tailwind 4 liefert seine Standardpalette in anderen Werten (OKLCH): Rosé wird
+ * sichtbar pinker, die Statusfarben aus docs/ci.md würden wandern. Hier stehen
+ * die exakten Werte der bisherigen Palette für alle Stufen, die die Oberfläche
+ * nutzt. Eine neue Stufe, die hier fehlt, kommt in der neuen Palette heraus -
+ * dann gehört sie mit ihrem alten Wert hier ergänzt.
+ */
+@theme {
+  --color-gray-200: #e5e7eb;
+  --color-gray-400: #9ca3af;
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-200: #fde68a;
+  --color-amber-700: #b45309;
+  --color-amber-800: #92400e;
+  --color-amber-900: #78350f;
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-200: #a7f3d0;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-emerald-800: #065f46;
+  --color-emerald-900: #064e3b;
+  --color-indigo-100: #e0e7ff;
+  --color-indigo-800: #3730a3;
+  --color-red-700: #b91c1c;
+  --color-rose-50: #fff1f2;
+  --color-rose-100: #ffe4e6;
+  --color-rose-200: #fecdd3;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #e11d48;
+  --color-rose-700: #be123c;
+  --color-rose-800: #9f1239;
+  --color-sky-100: #e0f2fe;
+  --color-sky-800: #075985;
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-violet-100: #ede9fe;
+  --color-violet-800: #5b21b6;
+}
+
+/*
+ * Tailwind 4 hat einige Vorgaben geändert. Hier stehen die alten Werte wieder,
+ * damit sich das Erscheinungsbild nicht verschiebt (docs/ci.md).
+ */
+@layer base {
+  /* Rahmen waren grau (gray-200), jetzt wäre es die Textfarbe. */
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+
+  /* Platzhalter waren gray-400, jetzt halbtransparente Textfarbe. */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+
+  /* Schaltflächen zeigten die Hand, jetzt den Standardzeiger. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  /* Datums- und Zeitfelder: Tailwind 4 nimmt das Innenpolster des Werts weg
+     (der Browser hat dort 1px oben und unten) - die Felder wären 2px niedriger. */
+  ::-webkit-datetime-edit {
+    padding-block: 1px;
+  }
+
+  /* Auswahllisten ohne eigene Hintergrundfarbe zeigten den Standard des
+     Browsers, jetzt wären sie durchsichtig. */
+  select:not([multiple]):not([size]) {
+    background-color: ButtonFace;
+  }
+}
+
+/*
+ * space-y verhielt sich anders: der Abstand lag OBERHALB jedes Geschwisters nach
+ * dem ersten, und unsichtbare Felder ohne hidden-Attribut zählten mit. Next setzt
+ * in jedes Formular mit Server-Aktion mehrere davon - das erste sichtbare Element
+ * saß dadurch immer um den Abstand tiefer. Tailwind 4 setzt den Abstand UNTER
+ * jedes Element außer dem letzten. Diese Regeln stellen den alten Abstand wieder
+ * her (die neuen Regeln von Tailwind stehen in :where() und verlieren).
+ */
+@layer utilities {
+  /* Der neue Unterrand von Tailwind entfällt ganz; Spezifität 0, damit eigene
+     mb-*-Klassen der Kinder weiter gewinnen. */
+  :where(.space-y-1, .space-y-2, .space-y-3, .space-y-4, .space-y-5, .space-y-6, .space-y-8) > :where(:not([hidden])) {
+    margin-bottom: 0;
+  }
+
+  .space-y-1 > :where(:not([hidden])) ~ :where(:not([hidden])),
+  .space-y-2 > :where(:not([hidden])) ~ :where(:not([hidden])),
+  .space-y-3 > :where(:not([hidden])) ~ :where(:not([hidden])),
+  .space-y-4 > :where(:not([hidden])) ~ :where(:not([hidden])),
+  .space-y-5 > :where(:not([hidden])) ~ :where(:not([hidden])),
+  .space-y-6 > :where(:not([hidden])) ~ :where(:not([hidden])),
+  .space-y-8 > :where(:not([hidden])) ~ :where(:not([hidden])) {
+    margin-bottom: 0;
+  }
+  .space-y-1 > :where(:not([hidden])) ~ :where(:not([hidden])) {
+    margin-top: calc(var(--spacing) * 1);
+  }
+  .space-y-2 > :where(:not([hidden])) ~ :where(:not([hidden])) {
+    margin-top: calc(var(--spacing) * 2);
+  }
+  .space-y-3 > :where(:not([hidden])) ~ :where(:not([hidden])) {
+    margin-top: calc(var(--spacing) * 3);
+  }
+  .space-y-4 > :where(:not([hidden])) ~ :where(:not([hidden])) {
+    margin-top: calc(var(--spacing) * 4);
+  }
+  .space-y-5 > :where(:not([hidden])) ~ :where(:not([hidden])) {
+    margin-top: calc(var(--spacing) * 5);
+  }
+  .space-y-6 > :where(:not([hidden])) ~ :where(:not([hidden])) {
+    margin-top: calc(var(--spacing) * 6);
+  }
+  .space-y-8 > :where(:not([hidden])) ~ :where(:not([hidden])) {
+    margin-top: calc(var(--spacing) * 8);
+  }
+}
 
 /**
  * Farbtoken des Erscheinungsbildes AHOI. Beschrieben in docs/ci.md.
