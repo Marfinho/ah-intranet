@@ -935,41 +935,26 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 28px;
+  gap: 16px;
   text-align: center;
 }
-.pitch .ahoi-buehne {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 28px;
-  max-width: 100%;
-}
-.pitch .ahoi-wort {
-  font: 800 clamp(20px, 5vw, 84px)/1 var(--head);
-  max-width: 100%;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  display: flex;
-  flex-wrap: nowrap;
-  white-space: pre;
+.pitch .nur-lesen {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
   overflow: hidden;
-  min-width: 0;
-  margin: 0;
 }
-.pitch .n-weg {
-  display: inline-block;
-  overflow: hidden;
-  color: var(--quiet);
-}
-.pitch .n-key {
-  color: var(--accent-text);
+.pitch .ahoi-leinwand {
+  width: 100%;
+  max-width: 1000px;
+  display: block;
 }
 .pitch .ahoi-zeichen {
   flex: none;
-  width: clamp(64px, 10vw, 112px);
+  width: clamp(56px, 8vw, 88px);
   height: auto;
+  margin-top: -8px;
 }
 .pitch .z-voll {
   fill: var(--fg);
@@ -990,4 +975,22 @@
   display: flex;
   gap: 12px;
   transition: opacity 0.4s;
+}
+.pitch .ahoi-seite {
+  position: relative;
+}
+.pitch .ahoi-ueberspringen {
+  position: absolute;
+  right: 0;
+  top: 0;
+  background: none;
+  border: 0;
+  font: 700 14px var(--head);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--quiet);
+  padding: 8px;
+}
+.pitch .ahoi-ueberspringen:hover {
+  color: var(--fg);
 }
