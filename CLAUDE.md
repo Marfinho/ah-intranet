@@ -216,10 +216,15 @@ zieht Blöcke auf einen anderen Tag oder eine andere Uhrzeit und am oberen oder
 unteren Rand für Beginn und Ende, auch per Tastatur; Zeiten rasten auf
 Viertelstunden ein. Die Rechnung (`packages/shared/src/wochenansicht.ts`,
 `zeit.ts`) liegt in `shared`, damit Browser und Server dieselbe Ortszeit rechnen -
-eine Frühschicht bleibt über die Sommerzeitumstellung eine um 8 Uhr. Gespeichert
-wird über `PATCH /schichtplan/:id`; die Doppelbelegung entscheidet der **Server**,
-der Block springt bei Ablehnung zurück. Eine Zeitänderung benachrichtigt die
-eingeteilte Person.
+eine Frühschicht bleibt über die Sommerzeitumstellung eine um 8 Uhr. Alles Gezogene
+ist ein **Entwurf** (gestrichelt, Leiste mit „Speichern"/„Verwerfen"): bis zum
+Speichern geht nichts an den Server und niemand wird benachrichtigt. Gespeichert
+wird als Stapel über `POST /schichtplan/zeiten`; der Server prüft den
+**Endzustand** des ganzen Entwurfs (`findeUeberschneidung`, alles oder nichts)
+und schickt jeder betroffenen Person **eine** Meldung, nicht eine je Schicht.
+Bei Ablehnung bleibt der Entwurf stehen. Bewegung und Loslassen hängen am
+Fenster, nicht am Block: React baut den Block beim Spaltenwechsel neu auf und
+eine Erfassung am Element ginge verloren (der Block klebte am Zeiger).
 
 **Entfernt:** Schnittstellen zu Fremdsystemen, Fahrzeugbestand und Fuhrpark –
 samt Oberflächen, API-Modulen, Datenmodellen und Tabellen. AHOI betrachtet den

@@ -1,6 +1,7 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from "@nestjs/common";
 import { Type } from "class-transformer";
 import {
+  ArrayMaxSize,
   ArrayNotEmpty,
   IsArray,
   IsBoolean,
@@ -42,6 +43,21 @@ class ShiftPatchDto {
   @IsOptional() @IsString() assigneeId?: string;
   @IsOptional() @IsString() note?: string;
   @IsOptional() @IsInt() @Min(0) @Max(240) pauseMinuten?: number;
+}
+
+class ZeitDto {
+  @IsString() id!: string;
+  @IsString() startsAt!: string;
+  @IsString() endsAt!: string;
+}
+
+class ZeitenDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayMaxSize(200)
+  @ValidateNested({ each: true })
+  @Type(() => ZeitDto)
+  aenderungen!: ZeitDto[];
 }
 
 class SwapRequestDto {
@@ -121,6 +137,14 @@ export class ShiftsController {
   @Permission("shifts.manage")
   create(@CurrentUser() user: RequestUser, @Body() dto: ShiftDto) {
     return this.shifts.create(user, dto);
+  }
+
+  /** Speichert den Entwurf des Wochenplans: mehrere Zeiten auf einmal, eine Meldung je Person. */
+  @Post("zeiten")
+  @HttpCode(200)
+  @Permission("shifts.manage")
+  zeiten(@CurrentUser() user: RequestUser, @Body() dto: ZeitenDto) {
+    return this.shifts.aendereZeiten(user, dto.aenderungen);
   }
 
   @Patch(":id")

@@ -1018,7 +1018,30 @@ export async function einteilenAction(shiftId: string, assigneeId: string): Prom
  * und der Block springt im Browser zurück.
  */
 export async function verschiebeSchichtAction(id: string, startsAt: string, endsAt: string): Promise<ActionState> {
-  return run(() => apiSend("PATCH", `/schichtplan/${id}`, { startsAt, endsAt }), ["/schichtplan", "/schichtplan/woche", "/"]);
+  return run(
+    () => apiSend("PATCH", `/schichtplan/${id}`, { startsAt, endsAt }),
+    ["/schichtplan", "/schichtplan/woche", "/"],
+  );
+}
+
+/**
+ * Speichert den Entwurf des Wochenplans in einem Zug. Erst hier erfahren die
+ * betroffenen Personen von der Änderung - eine Meldung je Person.
+ */
+export async function speichereZeitenAction(
+  aenderungen: { id: string; startsAt: string; endsAt: string }[],
+): Promise<ActionState & { benachrichtigt?: number }> {
+  try {
+    const ergebnis = await apiSend<{ geaendert: number; benachrichtigt: number }>("POST", "/schichtplan/zeiten", {
+      aenderungen,
+    });
+    for (const pfad of ["/schichtplan", "/schichtplan/woche", "/"]) {
+      revalidatePath(pfad);
+    }
+    return { ok: true, benachrichtigt: ergebnis.benachrichtigt };
+  } catch (error) {
+    return { ok: false, message: error instanceof ApiError ? error.message : "Speichern fehlgeschlagen." };
+  }
 }
 
 export async function deleteShiftAction(id: string): Promise<ActionState> {

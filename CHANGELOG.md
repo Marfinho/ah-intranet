@@ -32,7 +32,8 @@ Erster vollständiger Stand. Lauffähig, aber in keinem Haus im Einsatz.
   Verstößen gegen das Arbeitszeitgesetz (markiert nur, sperrt nichts).
 - **Wochenansicht des Schichtplans** mit Zeitachse, nebeneinanderliegenden
   Überlappungen und Ziehen per Maus, Touch und Tastatur (Verschieben, Beginn und
-  Ende ändern).
+  Ende ändern). Änderungen sind ein Entwurf; erst „Speichern" speichert und
+  benachrichtigt, eine Meldung je Person.
 
 ### Sicherheit
 

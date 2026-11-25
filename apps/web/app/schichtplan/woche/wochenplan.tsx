@@ -12,7 +12,7 @@ import {
   type ShiftItem,
   type Zeiten,
 } from "@ah-intranet/shared";
-import { verschiebeSchichtAction } from "@/lib/actions";
+import { speichereZeitenAction } from "@/lib/actions";
 import { Einteilen } from "../einteilen";
 
 /** Schraffur für doppelt belegte Personen - hebt sich von „meine Schicht" in der Markenfarbe ab. */
@@ -67,8 +67,14 @@ function vorschauZeiten(basis: Zeiten, zug: Zug): Zeiten {
  * pflegen darf, zieht Blöcke auf einen anderen Tag oder eine andere Uhrzeit und
  * zieht am oberen oder unteren Rand, um Beginn oder Ende zu ändern; mit der
  * Tastatur gehen dieselben Änderungen über die Pfeiltasten. Die Zeiten rasten
- * auf Viertelstunden ein. Den Konflikt - dieselbe Person doppelt - entscheidet
- * der Server; der Block springt dann zurück und die Meldung steht darüber.
+ * auf Viertelstunden ein.
+ *
+ * Alles Gezogene ist ein **Entwurf**: es bleibt im Browser, bis jemand
+ * „Speichern" klickt. Erst dann wird gespeichert und werden die betroffenen
+ * Personen benachrichtigt - eine Meldung je Person. Wer beim Umplanen für jeden
+ * Zug eine Mail auslöste, bekäme die Belegschaft als Flut zu spüren. Den Konflikt
+ * - dieselbe Person doppelt - entscheidet beim Speichern der Server, der den
+ * Endzustand des ganzen Entwurfs prüft; bis dahin zeigt der Plan ihn schraffiert.
  */
 export function Wochenplan({
   tage,
@@ -89,10 +95,20 @@ export function Wochenplan({
   people: { id: string; name: string }[];
 }) {
   const [schichten, setSchichten] = useState(eingang);
-  const [zug, setZug] = useState<Zug | null>(null);
+  /** Ungespeicherte Änderungen: Schicht-ID → neue Zeiten. */
+  const [entwurf, setEntwurf] = useState<Record<string, Zeiten>>({});
+  const [meldung, setMeldung] = useState<string | null>(null);
+  const [speichert, startSpeichern] = useTransition();
+  const [zug, setZugZustand] = useState<Zug | null>(null);
+  // Der laufende Zug zusätzlich als Ref: Bewegung und Loslassen werden am Fenster abgehört und
+  // müssen immer den neuesten Stand sehen, nicht den der Render-Runde, in der sie angemeldet wurden.
+  const zugRef = useRef<Zug | null>(null);
+  const setZug = (neu: Zug | null) => {
+    zugRef.current = neu;
+    setZugZustand(neu);
+  };
   const [auswahl, setAuswahl] = useState<string | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
   const spaltenRef = useRef<HTMLDivElement>(null);
 
   // Nach einer Aktualisierung vom Server gilt wieder der Stand der Datenbank.
@@ -107,15 +123,20 @@ export function Wochenplan({
     return karte;
   }, [hinweise]);
 
-  // Die Schichten, wie sie gerade aussehen: die gezogene schon in ihrer Vorschauzeit.
+  /** Zeiten einer Schicht, wie sie jetzt gelten: der Entwurf vor dem gespeicherten Stand. */
+  const aktuelleZeiten = (schicht: ShiftItem): Zeiten =>
+    entwurf[schicht.id] ?? { startsAt: schicht.startsAt, endsAt: schicht.endsAt };
+
+  // Die Schichten, wie sie gerade aussehen: Entwurf eingerechnet, die gezogene in ihrer Vorschauzeit.
   const angezeigt = useMemo(
     () =>
-      schichten.map((schicht) =>
-        zug && zug.id === schicht.id && zug.bewegt
-          ? { ...schicht, ...vorschauZeiten({ startsAt: schicht.startsAt, endsAt: schicht.endsAt }, zug) }
-          : schicht,
-      ),
-    [schichten, zug],
+      schichten.map((schicht) => {
+        const basis = entwurf[schicht.id] ?? { startsAt: schicht.startsAt, endsAt: schicht.endsAt };
+        return zug && zug.id === schicht.id && zug.bewegt
+          ? { ...schicht, ...vorschauZeiten(basis, zug) }
+          : { ...schicht, ...basis };
+      }),
+    [schichten, entwurf, zug],
   );
 
   const platziert = useMemo(
@@ -144,28 +165,81 @@ export function Wochenplan({
     );
   };
 
-  const speichern = (id: string, neu: Zeiten) => {
-    const alt = schichten.find((schicht) => schicht.id === id);
-    if (!alt || (alt.startsAt === neu.startsAt && alt.endsAt === neu.endsAt)) return;
+  /** Merkt eine Änderung vor. Landet eine Schicht wieder bei ihren gespeicherten Zeiten, ist sie keine Änderung mehr. */
+  const vormerken = (id: string, neu: Zeiten) => {
+    const gespeichert = schichten.find((schicht) => schicht.id === id);
+    if (!gespeichert) return;
+    setMeldung(null);
     setFehler(null);
-    setSchichten((liste) => liste.map((schicht) => (schicht.id === id ? { ...schicht, ...neu } : schicht)));
-    startTransition(async () => {
-      const ergebnis = await verschiebeSchichtAction(id, neu.startsAt, neu.endsAt);
-      if (!ergebnis.ok) {
-        setSchichten((liste) =>
-          liste.map((schicht) =>
-            schicht.id === id ? { ...schicht, startsAt: alt.startsAt, endsAt: alt.endsAt } : schicht,
-          ),
-        );
-        setFehler(ergebnis.message ?? "Die Änderung konnte nicht gespeichert werden.");
+    setEntwurf((alt) => {
+      const naechster = { ...alt };
+      if (gespeichert.startsAt === neu.startsAt && gespeichert.endsAt === neu.endsAt) {
+        delete naechster[id];
+      } else {
+        naechster[id] = neu;
       }
+      return naechster;
     });
   };
+
+  const aenderungen = Object.keys(entwurf).length;
+  const konfliktIds = Object.keys(entwurf).filter((id) => konflikt(id));
+
+  const verwerfen = () => {
+    setEntwurf({});
+    setFehler(null);
+    setMeldung(null);
+  };
+
+  const speichernKlick = () => {
+    const liste = Object.entries(entwurf).map(([id, zeiten]) => ({ id, ...zeiten }));
+    if (liste.length === 0) return;
+    setFehler(null);
+    startSpeichern(async () => {
+      const ergebnis = await speichereZeitenAction(liste);
+      if (!ergebnis.ok) {
+        // Der Entwurf bleibt stehen: wer eine Überschneidung hat, korrigiert sie, statt von vorn anzufangen.
+        setFehler(ergebnis.message ?? "Die Änderungen konnten nicht gespeichert werden.");
+        return;
+      }
+      setSchichten((alt) =>
+        alt.map((schicht) => (entwurf[schicht.id] ? { ...schicht, ...entwurf[schicht.id] } : schicht)),
+      );
+      setEntwurf({});
+      setMeldung(
+        `${liste.length} Änderung(en) gespeichert${
+          ergebnis.benachrichtigt
+            ? ` - ${ergebnis.benachrichtigt} Person(en) benachrichtigt`
+            : " - niemand zu benachrichtigen"
+        }.`,
+      );
+    });
+  };
+
+  // Ungespeichertes nicht stillschweigend verlieren: beim Schließen/Neuladen und beim Klick auf einen Link.
+  useEffect(() => {
+    if (aenderungen === 0) return;
+    const vorVerlassen = (ereignis: BeforeUnloadEvent) => {
+      ereignis.preventDefault();
+    };
+    const vorLink = (ereignis: MouseEvent) => {
+      const link = (ereignis.target as HTMLElement | null)?.closest("a[href]");
+      if (link && !window.confirm("Es gibt ungespeicherte Änderungen. Wirklich verlassen und verwerfen?")) {
+        ereignis.preventDefault();
+        ereignis.stopPropagation();
+      }
+    };
+    window.addEventListener("beforeunload", vorVerlassen);
+    document.addEventListener("click", vorLink, true);
+    return () => {
+      window.removeEventListener("beforeunload", vorVerlassen);
+      document.removeEventListener("click", vorLink, true);
+    };
+  }, [aenderungen]);
 
   const beginneZug = (ereignis: React.PointerEvent<HTMLElement>, id: string, modus: Modus, tagIndex: number) => {
     if (!darfPflegen || ereignis.button !== 0) return;
     ereignis.stopPropagation();
-    ereignis.currentTarget.setPointerCapture(ereignis.pointerId);
     setZug({
       id,
       modus,
@@ -178,48 +252,62 @@ export function Wochenplan({
     });
   };
 
-  const bewegeZug = (ereignis: React.PointerEvent<HTMLElement>) => {
-    // Das Ereignis der Ziehkante steigt sonst in den Block auf und liefe dort ein zweites Mal.
-    ereignis.stopPropagation();
-    if (!zug) return;
+  const bewegeZug = (clientX: number, clientY: number) => {
+    const aktuell = zugRef.current;
+    if (!aktuell) return;
     const breite = (spaltenRef.current?.getBoundingClientRect().width ?? 1) / tage.length;
-    const dx = ereignis.clientX - zug.startX;
-    const dy = ereignis.clientY - zug.startY;
-    const bewegt = zug.bewegt || Math.abs(dx) > 4 || Math.abs(dy) > 4;
+    const dx = clientX - aktuell.startX;
+    const dy = clientY - aktuell.startY;
+    const bewegt = aktuell.bewegt || Math.abs(dx) > 4 || Math.abs(dy) > 4;
     const deltaTage =
-      zug.modus === "bewegen"
-        ? Math.max(-zug.tagIndex, Math.min(tage.length - 1 - zug.tagIndex, Math.round(dx / breite)))
+      aktuell.modus === "bewegen"
+        ? Math.max(-aktuell.tagIndex, Math.min(tage.length - 1 - aktuell.tagIndex, Math.round(dx / breite)))
         : 0;
-    setZug({ ...zug, bewegt, deltaMinuten: runden(dy / PX), deltaTage });
+    setZug({ ...aktuell, bewegt, deltaMinuten: runden(dy / PX), deltaTage });
   };
 
-  const beendeZug = (ereignis: React.PointerEvent<HTMLElement>) => {
-    // Sonst läuft das Loslassen an der Kante auch noch im Block und speichert doppelt -
-    // der Server schickte der eingeteilten Person dann zwei Benachrichtigungen.
-    ereignis.stopPropagation();
-    if (!zug) return;
-    const schicht = schichten.find((eintrag) => eintrag.id === zug.id);
-    const aktuell = zug;
+  const beendeZug = () => {
+    const aktuell = zugRef.current;
+    if (!aktuell) return;
+    const schicht = schichten.find((eintrag) => eintrag.id === aktuell.id);
     setZug(null);
     if (!schicht) return;
     if (!aktuell.bewegt) {
       setAuswahl((alt) => (alt === schicht.id ? null : schicht.id));
       return;
     }
-    speichern(schicht.id, vorschauZeiten({ startsAt: schicht.startsAt, endsAt: schicht.endsAt }, aktuell));
+    vormerken(schicht.id, vorschauZeiten(aktuelleZeiten(schicht), aktuell));
   };
+
+  // Am Fenster statt am Block: beim Ziehen in eine andere Spalte baut React das Element neu auf, und eine
+  // Zeigererfassung am Block ginge verloren - ließe man dann in einer Lücke los, klebte der Block am Zeiger.
+  const handlerRef = useRef({ bewegeZug, beendeZug });
+  handlerRef.current = { bewegeZug, beendeZug };
+  useEffect(() => {
+    const bewegen = (ereignis: PointerEvent) => handlerRef.current.bewegeZug(ereignis.clientX, ereignis.clientY);
+    const loslassen = () => handlerRef.current.beendeZug();
+    const abbrechen = () => setZug(null);
+    window.addEventListener("pointermove", bewegen);
+    window.addEventListener("pointerup", loslassen);
+    window.addEventListener("pointercancel", abbrechen);
+    return () => {
+      window.removeEventListener("pointermove", bewegen);
+      window.removeEventListener("pointerup", loslassen);
+      window.removeEventListener("pointercancel", abbrechen);
+    };
+  }, []);
 
   /** Pfeiltasten: ←/→ Tag, ↑/↓ eine Viertelstunde; mit Umschalt das Ende, mit Alt den Beginn. */
   const taste = (ereignis: React.KeyboardEvent<HTMLElement>, schicht: ShiftItem) => {
     if (!darfPflegen) return;
-    const basis = { startsAt: schicht.startsAt, endsAt: schicht.endsAt };
+    const basis = aktuelleZeiten(schicht);
     const schritt = ereignis.key === "ArrowUp" ? -15 : ereignis.key === "ArrowDown" ? 15 : 0;
     if (ereignis.key === "ArrowLeft" || ereignis.key === "ArrowRight") {
       ereignis.preventDefault();
-      speichern(schicht.id, verschiebeSchicht(basis, ereignis.key === "ArrowLeft" ? -1 : 1, 0));
+      vormerken(schicht.id, verschiebeSchicht(basis, ereignis.key === "ArrowLeft" ? -1 : 1, 0));
     } else if (schritt !== 0) {
       ereignis.preventDefault();
-      speichern(
+      vormerken(
         schicht.id,
         ereignis.shiftKey
           ? aendereEnde(basis, schritt)
@@ -233,7 +321,7 @@ export function Wochenplan({
     }
   };
 
-  const gewaehlt = auswahl ? schichten.find((schicht) => schicht.id === auswahl) : undefined;
+  const gewaehlt = auswahl ? angezeigt.find((schicht) => schicht.id === auswahl) : undefined;
 
   return (
     <div className="space-y-4">
@@ -243,11 +331,51 @@ export function Wochenplan({
         </p>
       ) : null}
 
+      {meldung ? (
+        <p role="status" className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          {meldung}
+        </p>
+      ) : null}
+
+      {aenderungen > 0 ? (
+        <div className="sticky top-2 z-30 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-300 bg-white px-4 py-3 shadow-lg">
+          <div className="text-sm">
+            <p className="font-semibold text-slate-900">{aenderungen} ungespeicherte Änderung(en)</p>
+            <p className="text-xs text-slate-500">
+              Niemand wird benachrichtigt, bevor Sie speichern. Danach bekommt jede betroffene Person eine Meldung.
+            </p>
+            {konfliktIds.length > 0 ? (
+              <p className="mt-1 text-xs font-semibold text-rose-700">
+                {konfliktIds.length} Schicht(en) überschneiden sich mit einer anderen derselben Person (schraffiert).
+              </p>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={verwerfen}
+              disabled={speichert}
+              className="text-sm font-semibold text-slate-600 hover:underline disabled:opacity-40"
+            >
+              Verwerfen
+            </button>
+            <button
+              type="button"
+              onClick={speichernKlick}
+              disabled={speichert || konfliktIds.length > 0}
+              className="rounded-xl bg-brand-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-50"
+            >
+              {speichert ? "Speichert …" : "Speichern"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {darfPflegen ? (
         <p className="text-xs text-slate-500">
           Block ziehen verschiebt die Schicht, am oberen oder unteren Rand ziehen ändert Beginn oder Ende. Mit der
           Tastatur: Pfeile verschieben, Umschalt+↑/↓ ändert das Ende, Alt+↑/↓ den Beginn. Zeiten rasten auf
-          Viertelstunden ein.
+          Viertelstunden ein. Gespeichert und gemeldet wird erst mit „Speichern".
         </p>
       ) : null}
 
@@ -302,6 +430,7 @@ export function Wochenplan({
                       .map((eintrag) => {
                         const schicht = nachId.get(eintrag.schichtId)!;
                         const wirdGezogen = zug?.id === schicht.id && zug.bewegt;
+                        const istEntwurf = Boolean(entwurf[schicht.id]);
                         const rot = konflikt(schicht.id);
                         const marke = schicht.assigneeId
                           ? hinweisNach.get(`${schicht.assigneeId}|${datum}`)
@@ -325,14 +454,11 @@ export function Wochenplan({
                             aria-pressed={auswahl === schicht.id}
                             onKeyDown={(ereignis) => taste(ereignis, schicht)}
                             onPointerDown={(ereignis) => beginneZug(ereignis, schicht.id, "bewegen", tagIndex)}
-                            onPointerMove={bewegeZug}
-                            onPointerUp={beendeZug}
-                            onPointerCancel={() => setZug(null)}
                             className={`absolute overflow-hidden rounded-lg border px-1.5 py-1 text-[11px] leading-tight shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${farbe} ${
                               darfPflegen ? "cursor-grab touch-none select-none" : ""
                             } ${wirdGezogen ? "z-20 cursor-grabbing opacity-90 shadow-lg" : ""} ${
                               auswahl === schicht.id ? "ring-2 ring-brand-500" : ""
-                            }`}
+                            } ${istEntwurf ? "border-dashed" : ""}`}
                             style={{
                               ...(rot ? { backgroundImage: KONFLIKT_MUSTER } : {}),
                               top: (eintrag.vonMin - von) * PX,
@@ -345,8 +471,6 @@ export function Wochenplan({
                               <span
                                 aria-hidden
                                 onPointerDown={(ereignis) => beginneZug(ereignis, schicht.id, "beginn", tagIndex)}
-                                onPointerMove={bewegeZug}
-                                onPointerUp={beendeZug}
                                 className="absolute inset-x-0 top-0 h-2 cursor-ns-resize"
                               />
                             ) : null}
@@ -381,8 +505,6 @@ export function Wochenplan({
                               <span
                                 aria-hidden
                                 onPointerDown={(ereignis) => beginneZug(ereignis, schicht.id, "ende", tagIndex)}
-                                onPointerMove={bewegeZug}
-                                onPointerUp={beendeZug}
                                 className="absolute inset-x-0 bottom-0 h-2 cursor-ns-resize"
                               />
                             ) : null}
@@ -413,6 +535,9 @@ export function Wochenplan({
             style={{ backgroundImage: KONFLIKT_MUSTER }}
           />{" "}
           Person doppelt belegt
+        </li>
+        <li className="flex items-center gap-2">
+          <span className="inline-block h-3 w-3 rounded-sm border-2 border-dashed border-slate-500" /> ungespeichert
         </li>
         <li>⚠ Hinweis zum Arbeitszeitgesetz · Überlappende Schichten stehen nebeneinander</li>
       </ul>

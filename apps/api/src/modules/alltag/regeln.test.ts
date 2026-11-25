@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { stichtagVorbei, tauschrechte, ueberschneidet } from "./regeln";
+import { findeUeberschneidung, stichtagVorbei, tauschrechte, ueberschneidet } from "./regeln";
 
 const zeitraum = (von: string, bis: string) => ({ startsAt: new Date(von), endsAt: new Date(bis) });
 
@@ -82,5 +82,50 @@ describe("Bestellschluss", () => {
 
   it("zählt Gleichstand als vorbei - die Abholfahrt wartet nicht auf die Sekunde", () => {
     expect(stichtagVorbei(new Date("2026-03-02T10:00:00Z"), jetzt)).toBe(true);
+  });
+});
+
+describe("findeUeberschneidung", () => {
+  const zeit = (id: string, von: string, bis: string, assigneeId: string | null = "a") => ({
+    id,
+    label: id,
+    assigneeId,
+    startsAt: new Date(`2026-01-05T${von}:00Z`),
+    endsAt: new Date(`2026-01-05T${bis}:00Z`),
+  });
+
+  it("findet eine Überschneidung derselben Person, wenn eine Schicht geändert wurde", () => {
+    const fund = findeUeberschneidung([zeit("x", "08:00", "12:00"), zeit("y", "11:00", "15:00")], new Set(["y"]));
+    expect(fund?.erste.id).toBe("x");
+    expect(fund?.zweite.id).toBe("y");
+  });
+
+  it("ignoriert Überschneidungen zwischen unveränderten Schichten", () => {
+    expect(findeUeberschneidung([zeit("x", "08:00", "12:00"), zeit("y", "11:00", "15:00")], new Set(["z"]))).toBeNull();
+  });
+
+  it("lässt Berührung zu", () => {
+    expect(
+      findeUeberschneidung([zeit("x", "08:00", "12:00"), zeit("y", "12:00", "15:00")], new Set(["x", "y"])),
+    ).toBeNull();
+  });
+
+  it("ignoriert verschiedene Personen und offene Schichten", () => {
+    expect(
+      findeUeberschneidung([zeit("x", "08:00", "12:00", "a"), zeit("y", "09:00", "12:00", "b")], new Set(["x", "y"])),
+    ).toBeNull();
+    expect(
+      findeUeberschneidung([zeit("x", "08:00", "12:00", null), zeit("y", "09:00", "12:00", null)], new Set(["x", "y"])),
+    ).toBeNull();
+  });
+
+  it("billigt einen Endzustand, in dem zwei Schichten derselben Person die Plätze getauscht haben", () => {
+    // Früh 8-12 und Spät 13-17 vertauscht: Früh 13-17, Spät 8-12. Einzeln gegen die DB wäre das ein Konflikt.
+    expect(
+      findeUeberschneidung(
+        [zeit("frueh", "13:00", "17:00"), zeit("spaet", "08:00", "12:00")],
+        new Set(["frueh", "spaet"]),
+      ),
+    ).toBeNull();
   });
 });

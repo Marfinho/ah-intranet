@@ -59,3 +59,42 @@ export function tauschrechte(
 export function stichtagVorbei(deadline: Date, now: Date = new Date()): boolean {
   return deadline <= now;
 }
+
+export interface SchichtZeit {
+  id: string;
+  label: string;
+  assigneeId: string | null;
+  startsAt: Date;
+  endsAt: Date;
+}
+
+/**
+ * Sucht eine Überschneidung derselben Person im **Endzustand** eines Stapels.
+ *
+ * `schichten` enthält die Schichten so, wie sie nach dem Speichern aussähen;
+ * `geaenderte` nennt, welche davon der Stapel anfasst. Geprüft wird jedes Paar
+ * derselben Person, von dem mindestens eine Schicht geändert wurde. Einzeln gegen
+ * den Stand der Datenbank zu prüfen, wäre falsch: Tauschen zwei Schichten einer
+ * Person die Plätze, überschneidet jede einzelne zunächst die andere - der
+ * Endzustand ist aber in Ordnung.
+ */
+export function findeUeberschneidung(
+  schichten: readonly SchichtZeit[],
+  geaenderte: ReadonlySet<string>,
+): { erste: SchichtZeit; zweite: SchichtZeit } | null {
+  for (let i = 0; i < schichten.length; i += 1) {
+    for (let j = i + 1; j < schichten.length; j += 1) {
+      const a = schichten[i];
+      const b = schichten[j];
+      if (
+        a.assigneeId &&
+        a.assigneeId === b.assigneeId &&
+        (geaenderte.has(a.id) || geaenderte.has(b.id)) &&
+        ueberschneidet(a, b)
+      ) {
+        return { erste: a, zweite: b };
+      }
+    }
+  }
+  return null;
+}
