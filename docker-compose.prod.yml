@@ -97,6 +97,9 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+    # Ausdrücklicher Name: der Aktualisierer etikettiert das laufende Image als
+    # Rückfallebene (scripts/aktualisierer.sh).
+    image: ahoi-web:prod
     <<: *haertung
     restart: unless-stopped
     environment:
@@ -132,6 +135,9 @@ services:
       BASE_DOMAIN: ${BASE_DOMAIN:?}
       # Adresse der Pitch-Seite (Betreiber-Mandant, z. B. https://verwaltung.<domain>): daraus entstehen die Links für Interessenten.
       PITCH_BASIS_URL: ${PITCH_BASIS_URL:-}
+      # Quelle der Aktualisierung. Ein Token (nur Leserecht auf Inhalte und Checks) ist nur bei einem privaten Repository nötig.
+      GITHUB_REPO: ${GITHUB_REPO:-Marfinho/ah-intranet}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:3002/api/health || exit 1"]
       interval: 15s

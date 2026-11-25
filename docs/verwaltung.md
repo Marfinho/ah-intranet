@@ -34,6 +34,7 @@ einen Schritt vor allen Häusern. Jetzt gilt:
 - **System**: Zustand der Kunden-API, Datenbank (Größe, Verbindungen,
   Zwischenspeicher, Deadlocks, größte Tabellen), Migrationen, Alter der letzten
   Sicherung, Konfiguration ohne Geheimnisse, Registries.
+- **Aktualisierung**: Hauptzweig von GitHub holen und installieren (siehe unten).
 - **Protokoll**: jede Änderung und jede Anmeldung, getrennt vom Audit-Log der Häuser.
 
 Lesende Konten (`lesend`) sehen alles und ändern nichts.
@@ -79,6 +80,83 @@ docker compose -f docker-compose.prod.yml exec -T verwaltung pnpm --filter verwa
 
 Lokal: `apps/verwaltung/.env.example` kopieren, `pnpm --filter verwaltung prisma:generate`,
 `pnpm --filter verwaltung prisma:migrate deploy`, `pnpm --filter verwaltung dev`.
+
+## Aktualisieren (Hauptzweig von GitHub holen und installieren)
+
+Unter **Verwaltung → Aktualisierung** sieht der Betreiber, welcher Stand läuft, was
+auf `main` neu ist (Commits, betroffene Dateien, Hinweise zu Migrationen), ob die
+Prüfpipeline dieses Standes grün ist, und kann das Update mit einem Klick
+anfordern. Nur `inhaber`; zur Bestätigung ist das Passwort noch einmal nötig.
+
+**Wer was tut - und warum nicht anders:**
+
+```
+Verwaltung (Container)            Aktualisierer (Skript auf dem Server)
+  zeigt Stand, prüft, legt          läuft jede Minute als root (cron):
+  einen AUFTRAG in der Datenbank ─▶ holt main, sichert, baut, startet,
+  ◀─ liest Protokoll und Ergebnis   prüft, rollt bei Fehler zurück
+```
+
+Die Verwaltung baut und startet nichts selbst und hat **keinen Zugriff auf Docker**.
+Dürfte ein Webdienst Container steuern, wäre jede Lücke in ihm eine Lücke im Server.
+Außerdem müsste sie sich dabei selbst ersetzen. Der Aktualisierer ist ein
+kleines Skript außerhalb der Container (`scripts/aktualisierer.sh`); es hat keinen
+Netzzugang von außen, sondern liest nur die Datenbank und GitHub.
+
+**Was geprüft wird, bevor etwas geschieht** (Verwaltung _und_ Skript, das der
+Datenbank nicht glaubt):
+
+- Der Zielstand liegt auf `main` und ist **neuer** als der installierte (Zurückgehen
+  ist kein Update, sondern ein Eingriff von Hand).
+- Die **Prüfpipeline des Standes ist grün**. Rot, laufend oder fehlend blockiert -
+  ohne Beweis kein Einspielen. Es gibt keinen Schalter, das zu übergehen.
+- Es gibt keinen zweiten Auftrag (die Datenbank lässt nur einen aktiven zu), der
+  Aktualisierer meldet sich (Lebenszeichen jede Minute), genug Platz ist frei, das
+  Installationsverzeichnis hat keine lokalen Änderungen.
+
+**Ablauf des Skripts:** Sicherung der Datenbank → Stand wechseln → nur geänderte
+Images bauen (nacheinander) → Datenbankrolle der Verwaltung einspielen → starten
+(die Migrationen laufen beim Start) → warten, bis API, Verwaltung und Oberfläche
+gesund melden. Das Protokoll erscheint live in der Oberfläche.
+
+**Wenn etwas schiefgeht:** Das Skript geht zurück auf den alten Code und die alten
+Images (`ahoi-<dienst>:vorher`) und meldet „zurückgerollt“. **Grenze:** Datenbank-
+migrationen gehen nur vorwärts. Wurden welche angewendet, bevor der Fehler auftrat,
+läuft der alte Code gegen das neue Schema - meist verträglich, nicht garantiert.
+Die Meldung sagt das ausdrücklich und nennt die Sicherung
+(`scripts/wiederherstellung.sh`). Scheitert auch der Rückweg, steht dort
+„MANUELL EINGREIFEN“.
+
+**Einrichten (einmalig, als root auf dem Server):**
+
+```bash
+echo '* * * * * root /opt/ah-intranet/scripts/aktualisierer.sh >>/var/log/ahoi-aktualisierer.log 2>&1' \
+  >/etc/cron.d/ahoi-aktualisierer && chmod 644 /etc/cron.d/ahoi-aktualisierer
+```
+
+`vps-einrichten.sh` trägt das selbst ein. Das Repository muss ohne Anmeldung
+lesbar sein (`git fetch origin main`) - oder der Server hat einen Deploy-Schlüssel.
+Für ein **privates** Repository zusätzlich `GITHUB_TOKEN` (nur Leserecht auf
+Inhalte und Checks) in der `.env` und `GITHUB_REPO=<owner>/<name>` setzen, falls es
+nicht `Marfinho/ah-intranet` ist.
+
+Beim ersten Lauf hält der Aktualisierer den aktuell ausgecheckten Stand als
+„installiert“ fest - das stimmt, wenn die Container aus diesem Stand gebaut sind
+(so richtet `vps-einrichten.sh` es ein). Bei einem Zweifel: einmal von Hand
+`docker compose -f docker-compose.prod.yml up -d --build`, dann gilt es.
+
+**Grenzen (ehrlich benannt):**
+
+- Während des Neustarts sind die Häuser und diese Verwaltung kurz nicht erreichbar;
+  die Oberfläche versucht es weiter, bis der Auftrag beendet ist.
+- Ein Update des Aktualisierers selbst (`scripts/aktualisierer.sh`) gilt erst beim
+  **nächsten** Lauf; der laufende liest sein Skript als Ganzes ein.
+- Compose-Änderungen mit neuen Pflichteinstellungen in der `.env` brechen den Start
+  ab und lösen den Rückweg aus; die Hinweise der Oberfläche nennen die betroffene Datei.
+- Es wird nur `main` installiert, nicht ein beliebiger Zweig oder Tag.
+- Die Pipeline-Prüfung verlässt sich auf GitHub; ohne Netz zu GitHub gibt es keine
+  Aktualisierung (die Seite zeigt den Grund). Unangemeldet erlaubt GitHub 60 Anfragen
+  je Stunde, das reicht, die Antworten werden kurz zwischengespeichert.
 
 ## Interessenten und Hausanlage
 

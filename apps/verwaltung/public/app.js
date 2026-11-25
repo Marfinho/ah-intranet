@@ -11,6 +11,7 @@ const NAV = [
   ["#/interessenten", "Interessenten"],
   ["#/statistik", "Statistik"],
   ["#/system", "System"],
+  ["#/aktualisierung", "Aktualisierung"],
   ["#/protokoll", "Protokoll"],
 ];
 let ich = null;

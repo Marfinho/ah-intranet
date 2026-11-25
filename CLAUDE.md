@@ -104,6 +104,11 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
   dort über die Datenbankfunktion `verwaltung_haus_anlegen` (nur neue Mandanten,
   kein `INSERT` auf Konten oder Rollen für die Rolle). In der Kunden-Anwendung
   bleibt nur die öffentliche Pitch-Seite.
+- **Aktualisierung von GitHub:** die Verwaltung legt nur einen Auftrag an, ein
+  Skript auf dem Server (`scripts/aktualisierer.sh`, cron) führt ihn aus - nie die
+  Verwaltung selbst, die keinen Zugriff auf Docker hat. Installiert wird nur ein
+  neuerer Stand auf `main` mit grüner Pipeline; bei Fehlern Rückweg. Einzelheiten
+  und Grenzen: `docs/verwaltung.md`.
 - **Übergang:** die alten Seiten unter `/plattform` (Häuserliste, Module,
   Kennzahlen, Status) laufen noch und sind durch die Verwaltung ersetzt.
 

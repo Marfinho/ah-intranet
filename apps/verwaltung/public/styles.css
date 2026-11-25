@@ -545,3 +545,22 @@ code,
     transition: none;
   }
 }
+
+pre.protokoll {
+  background: var(--grund);
+  border: 1px solid var(--linie);
+  border-radius: 0.55rem;
+  padding: 0.7rem 0.9rem;
+  margin: 0;
+  max-height: 360px;
+  overflow: auto;
+  font:
+    0.8rem/1.5 ui-monospace,
+    monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+ul {
+  padding-left: 1.2rem;
+  margin: 0.3rem 0 0.8rem;
+}

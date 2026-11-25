@@ -574,6 +574,10 @@ export const seiten = {
   },
 
   /* ================================================================= System */
+  async aktualisierung(id, ctx) {
+    return aktualisierungSeite(id, ctx);
+  },
+
   async system() {
     const s = await api("/system");
     const d = s.datenbank;
@@ -755,6 +759,274 @@ export const seiten = {
     ];
   },
 };
+
+/* ------------------------------------------------------ Aktualisierung */
+const AUFTRAG_STATUS = {
+  angefordert: ["wartet", "warn"],
+  laeuft: ["läuft", "warn"],
+  fertig: ["fertig", "gut"],
+  fehlgeschlagen: ["fehlgeschlagen", "schlecht"],
+  zurueckgerollt: ["zurückgerollt", "schlecht"],
+  abgebrochen: ["abgebrochen", "neutral"],
+};
+const CI_ANZEIGE = {
+  gruen: ["grün", "gut"],
+  rot: ["rot", "schlecht"],
+  laeuft: ["läuft", "warn"],
+  unbekannt: ["unbekannt", "neutral"],
+};
+const istAktiv = (status) => status === "angefordert" || status === "laeuft";
+const kurzSha = (sha) => (sha ? sha.slice(0, 7) : "–");
+
+/** Beobachtet einen Auftrag, bis er beendet ist. Während des Neustarts der Dienste ist die Verwaltung kurz weg - dann wird weiter versucht. */
+function beobachte(id, platz, beiEnde) {
+  const zeichne = (a, getrennt) => {
+    const [text, ton] = AUFTRAG_STATUS[a.status];
+    platz.replaceChildren(
+      ...[
+        el(
+          "div",
+          { class: "leiste", style: "margin-bottom:.6rem" },
+          zustand(text, ton),
+          el("span", { class: "gedaempft" }, `${kurzSha(a.vonSha)} → ${kurzSha(a.zielSha)}`),
+          getrennt &&
+            el("span", { class: "leise" }, "Verbindung zur Verwaltung unterbrochen (Neustart?), versuche es weiter …"),
+        ),
+        a.meldung &&
+          el(
+            "p",
+            { class: a.status === "fertig" ? "erfolg" : a.status === "abgebrochen" ? "gedaempft" : "fehler" },
+            a.meldung,
+          ),
+        el(
+          "pre",
+          { class: "protokoll", tabindex: 0 },
+          a.protokoll || "Wartet auf den Aktualisierer (läuft jede Minute) …",
+        ),
+      ].filter(Boolean),
+    );
+    const pre = platz.querySelector("pre");
+    pre.scrollTop = pre.scrollHeight;
+  };
+  let letzter = null;
+  const tick = async () => {
+    if (!document.body.contains(platz)) return;
+    try {
+      letzter = await api(`/aktualisierung/${id}`);
+      zeichne(letzter, false);
+      if (!istAktiv(letzter.status)) return beiEnde?.(letzter);
+    } catch (f) {
+      if (f.status === 401) return location.reload();
+      if (letzter) zeichne(letzter, true);
+    }
+    setTimeout(tick, 3000);
+  };
+  // Erst nach dem Einhängen in die Seite: `tick` beendet sich, sobald das Element nicht mehr zu sehen ist.
+  setTimeout(tick, 0);
+}
+
+async function aktualisierungSeite(id, { neuZeichnen }) {
+  if (id) return auftragSeite(id);
+  const u = await api("/aktualisierung");
+  const schreiben = darfSchreiben();
+  const b = u.bewertung;
+  const lebt = u.aktualisierer.lebt;
+  const [ciText, ciTon] = u.ci ? CI_ANZEIGE[u.ci.zustand] : ["unbekannt", "neutral"];
+  const platz = el("div");
+  if (u.aktiverAuftrag) beobachte(u.aktiverAuftrag.id, platz, neuZeichnen);
+
+  const bestaetigung =
+    schreiben && u.kopf && b.darfAnfordern
+      ? formular(
+          [
+            {
+              name: "passwort",
+              art: "password",
+              text: "Passwort zur Bestätigung",
+              pflicht: true,
+              hilfe: "Das Einspielen tauscht die Software aller Häuser aus - deshalb noch einmal das Passwort.",
+            },
+          ],
+          `Auf ${kurzSha(u.kopf.sha)} aktualisieren`,
+          async (d) => {
+            if (
+              !confirm(
+                `Jetzt auf ${kurzSha(u.kopf.sha)} aktualisieren?\n\nVorher wird die Datenbank gesichert. Während des Neustarts sind die Häuser und diese Verwaltung kurz nicht erreichbar.`,
+              )
+            )
+              return;
+            await api("/aktualisierung", { methode: "POST", daten: { zielSha: u.kopf.sha, passwort: d.passwort } });
+            await neuZeichnen();
+          },
+        )
+      : null;
+
+  return [
+    kopf(
+      "Aktualisierung",
+      `Holt den Stand von ${u.repo} (${u.zweig}) und installiert ihn auf diesem Server.`,
+      el("button", { onclick: () => neuZeichnen() }, "Aktualisieren"),
+    ),
+    el(
+      "div",
+      { class: "raster" },
+      kachel(
+        "Installiert",
+        kurzSha(u.installiert?.sha),
+        u.installiert?.commit
+          ? `${u.installiert.commit.titel} · ${datum(u.installiert.commit.datum)}`
+          : "noch nicht gemeldet",
+      ),
+      kachel(
+        `Neuester Stand (${u.zweig})`,
+        u.kopf ? kurzSha(u.kopf.sha) : "–",
+        u.kopf ? `${u.kopf.titel} · ${datum(u.kopf.datum)}` : u.github.fehler,
+      ),
+      kachel("Prüfpipeline", zustand(ciText, ciTon), u.ci ? `${u.ci.laeufe.length} Prüfungen` : "nicht lesbar"),
+      kachel(
+        "Aktualisierer auf dem Server",
+        lebt ? "läuft" : "meldet sich nicht",
+        u.aktualisierer.zuletztGesehen
+          ? `zuletzt ${vor(u.aktualisierer.zuletztGesehen)}`
+          : "noch nie gesehen (Einrichtung: docs/verwaltung.md)",
+      ),
+    ),
+    u.aktiverAuftrag &&
+      karte(
+        "Auftrag",
+        platz,
+        schreiben &&
+          u.aktiverAuftrag.status === "angefordert" &&
+          el(
+            "div",
+            { class: "leiste", style: "margin-top:.6rem" },
+            el(
+              "button",
+              {
+                class: "gefahr",
+                onclick: () =>
+                  aendere(
+                    "Zurückziehen",
+                    () => api(`/aktualisierung/${u.aktiverAuftrag.id}/abbrechen`, { methode: "POST" }),
+                    neuZeichnen,
+                  ),
+              },
+              "Auftrag zurückziehen",
+            ),
+          ),
+      ),
+    u.kopf &&
+      !u.aktiverAuftrag &&
+      karte(
+        b.darfAnfordern
+          ? "Update verfügbar"
+          : u.installiert?.sha === u.kopf.sha
+            ? "Auf dem neuesten Stand"
+            : "Update derzeit nicht möglich",
+        !b.darfAnfordern &&
+          b.gruende.length > 0 &&
+          el(
+            "ul",
+            {},
+            b.gruende.map((g) => el("li", {}, g)),
+          ),
+        bestaetigung,
+        b.darfAnfordern && !schreiben && el("p", { class: "gedaempft" }, "Diese Rolle darf nur lesen."),
+      ),
+    u.vergleich &&
+      karte(
+        `Änderungen (${u.vergleich.voraus} Commits, ${u.vergleich.dateienAnzahl} Dateien)`,
+        u.vergleich.auswirkungen.length > 0 &&
+          el(
+            "div",
+            { style: "margin-bottom:.8rem" },
+            u.vergleich.auswirkungen.map((a) =>
+              el(
+                "div",
+                { class: "hinweis" },
+                zustand(a.art === "migration" ? "Datenbank" : "Hinweis", a.art === "migration" ? "warn" : "neutral"),
+                el("span", {}, a.text),
+              ),
+            ),
+          ),
+        el(
+          "p",
+          { class: "gedaempft" },
+          `Neu gebaut werden: ${
+            ["api", "web", "verwaltung"]
+              .filter((d) => u.vergleich.bauen[d])
+              .map((d) => ({ api: "Kunden-API", web: "Kunden-Oberfläche", verwaltung: "Verwaltung" })[d])
+              .join(", ") || "nichts (nur Konfiguration)"
+          }.`,
+        ),
+        tabelle(
+          [
+            { name: "Stand", zelle: (c) => el("code", {}, kurzSha(c.sha)) },
+            { name: "Änderung", zelle: (c) => c.titel },
+            { name: "Datum", zelle: (c) => datum(c.datum) },
+          ],
+          u.vergleich.commits,
+          { leer: "Keine Änderungen." },
+        ),
+      ),
+    u.ci &&
+      karte(
+        "Prüfungen des neuesten Stands",
+        tabelle(
+          [
+            { name: "Prüfung", zelle: (l) => l.name },
+            {
+              name: "Ergebnis",
+              zelle: (l) =>
+                zustand(
+                  l.ergebnis === "success"
+                    ? "bestanden"
+                    : l.ergebnis === "skipped"
+                      ? "übersprungen"
+                      : l.ergebnis === "in_progress" || l.ergebnis === "queued"
+                        ? "läuft"
+                        : l.ergebnis,
+                  l.ergebnis === "success" || l.ergebnis === "skipped"
+                    ? "gut"
+                    : l.ergebnis === "in_progress" || l.ergebnis === "queued"
+                      ? "warn"
+                      : "schlecht",
+                ),
+            },
+          ],
+          u.ci.laeufe,
+        ),
+      ),
+    karte(
+      "Verlauf",
+      tabelle(
+        [
+          { name: "Angefordert", zelle: (a) => zeit(a.angefordertAm), sort: (a) => a.angefordertAm },
+          { name: "Von", zelle: (a) => a.betreiberName },
+          { name: "Stand", zelle: (a) => el("code", {}, `${kurzSha(a.vonSha)} → ${kurzSha(a.zielSha)}`) },
+          { name: "Ergebnis", zelle: (a) => zustand(...AUFTRAG_STATUS[a.status]) },
+          { name: "Meldung", zelle: (a) => a.meldung ?? "" },
+        ],
+        u.verlauf,
+        { beiKlick: (a) => (location.hash = `#/aktualisierung/${a.id}`), leer: "Noch keine Aktualisierung." },
+      ),
+    ),
+  ];
+}
+
+async function auftragSeite(id) {
+  const a = await api(`/aktualisierung/${id}`);
+  const platz = el("div");
+  beobachte(id, platz);
+  return [
+    el("p", {}, el("a", { href: "#/aktualisierung" }, "← Aktualisierung")),
+    kopf(
+      `Auftrag ${id.slice(0, 8)}`,
+      `${a.betreiberName} · angefordert ${zeit(a.angefordertAm)}${a.sicherung ? ` · Sicherung ${a.sicherung}` : ""}`,
+    ),
+    karte(null, platz),
+  ];
+}
 
 /* ------------------------------------------------------------ Häuser */
 async function hausListe() {

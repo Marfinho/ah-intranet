@@ -71,6 +71,12 @@ cd "$DIR"
 echo "0 3 * * * root $DIR/scripts/vps-sicherung.sh >>/var/log/ahoi-sicherung.log 2>&1" >/etc/cron.d/ahoi-sicherung
 chmod 644 /etc/cron.d/ahoi-sicherung
 
+# Aktualisierer: führt Aufträge der Verwaltung aus (Aktualisierung von GitHub).
+# Existiert das Skript im Stand noch nicht, entsteht der Eintrag trotzdem - cron
+# meldet dann nur einen Fehler, bis ein Stand mit dem Skript installiert ist.
+echo "* * * * * root $DIR/scripts/aktualisierer.sh >>/var/log/ahoi-aktualisierer.log 2>&1" >/etc/cron.d/ahoi-aktualisierer
+chmod 644 /etc/cron.d/ahoi-aktualisierer
+
 IP="$(curl -4 -fsS --max-time 10 https://api.ipify.org || hostname -I | awk '{print $1}')"
 BASE="$(echo "$IP" | tr . -).sslip.io"
 

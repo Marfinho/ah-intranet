@@ -5,6 +5,7 @@ import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { AppController } from "./app.controller";
 import { CoreModule } from "./core/core.module";
 import { SitzungsGuard } from "./modules/auth/auth.guard";
+import { AktualisierungModule } from "./modules/aktualisierung/aktualisierung.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { HaeuserModule } from "./modules/haeuser/haeuser.module";
 import { InteressentenModule } from "./modules/interessenten/interessenten.module";
@@ -23,6 +24,7 @@ import { SystemModule } from "./modules/system/system.module";
     StatistikModule,
     SystemModule,
     ProtokollModule,
+    AktualisierungModule,
   ],
   controllers: [AppController],
   // Erst drosseln, dann anmelden - die Sitzungsprüfung selbst steckt im AuthModule.

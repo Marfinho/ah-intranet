@@ -70,3 +70,47 @@ model Schnappschuss {
   @@unique([tag, bereich])
   @@index([bereich, tag])
 }
+
+/// Stand eines Aktualisierungsauftrags. Die Verwaltung fordert an, der
+/// Aktualisierer auf dem Server (scripts/aktualisierer.sh) führt aus: die
+/// Verwaltung selbst baut und startet nichts und hat keinen Zugriff auf Docker.
+enum AktualisierungStatus {
+  angefordert
+  laeuft
+  fertig
+  fehlgeschlagen
+  zurueckgerollt
+  abgebrochen
+}
+
+model Aktualisierung {
+  id            String               @id @default(cuid())
+  /// Der Stand von `main`, der installiert werden soll - so, wie er beim Anfordern angezeigt wurde.
+  zielSha       String
+  /// Was vorher lief (vom Aktualisierer festgehalten).
+  vonSha        String?
+  status        AktualisierungStatus @default(angefordert)
+  betreiberId   String?
+  betreiberName String
+  angefordertAm DateTime             @default(now())
+  gestartetAm   DateTime?
+  beendetAm     DateTime?
+  /// Fortlaufendes Protokoll des Aktualisierers, eine Zeile je Schritt.
+  protokoll     String               @default("")
+  /// Dateiname der Sicherung, die vor dem Einspielen gemacht wurde.
+  sicherung     String?
+  meldung       String?
+
+  @@index([status])
+  @@index([angefordertAm])
+}
+
+/// Lebenszeichen und Stand des Aktualisierers (eine Zeile, `id = 1`). Ohne
+/// Lebenszeichen weiß die Oberfläche nicht, ob ein Auftrag je ausgeführt wird.
+model AktualisiererStatus {
+  id              Int      @id
+  zuletztGesehen  DateTime
+  /// Der Stand, den der Aktualisierer als installiert führt (nach Erfolg gesetzt).
+  installierteSha String?
+  skriptVersion   String?
+}
