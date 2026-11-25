@@ -1,4 +1,4 @@
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 # Alpine bringt von Haus aus kein OpenSSL mit - `prisma generate` bindet die
 # Engine an das zur Bauzeit vorgefundene OpenSSL. Fehlt es, rät Prisma
@@ -16,7 +16,7 @@ COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter api prisma:generate && pnpm --filter api build
 
-FROM node:22-alpine
+FROM node:26-alpine
 WORKDIR /app
 # Muss zum OpenSSL der Build-Stufe passen, sonst passt die dort gebundene
 # Engine nicht zum Laufzeit-Image.
