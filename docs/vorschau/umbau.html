@@ -351,6 +351,71 @@
         background: var(--flaeche);
       }
 
+      .kalt {
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 11px;
+      }
+      .kalt th,
+      .kalt td {
+        padding: 0;
+        text-align: center;
+        border-top: 1px solid var(--linie);
+      }
+      .kalt thead th {
+        border-top: 0;
+        padding: 6px 0;
+        color: var(--gedaempft);
+        font-weight: 500;
+        width: 22px;
+        min-width: 22px;
+      }
+      .kalt .p {
+        text-align: left;
+        white-space: nowrap;
+        padding: 6px 12px 6px 0;
+        font-weight: 600;
+        font-size: 12px;
+        background: var(--flaeche);
+        position: sticky;
+        left: 0;
+      }
+      .kalt td {
+        height: 26px;
+      }
+      .kalt .w {
+        background: color-mix(in srgb, var(--linie) 60%, transparent);
+      }
+      .kalt .u {
+        background: #bae6fd;
+        color: #0c4a6e;
+      }
+      .kalt .k {
+        background: #fecdd3;
+        color: #881337;
+      }
+      .kalt .f {
+        background: #fde68a;
+        color: #78350f;
+      }
+      .kalt .b {
+        opacity: 0.55;
+      }
+      @media (prefers-color-scheme: dark) {
+        .kalt .u {
+          background: #0c4a6e;
+          color: #bae6fd;
+        }
+        .kalt .k {
+          background: #881337;
+          color: #fecdd3;
+        }
+        .kalt .f {
+          background: #78350f;
+          color: #fde68a;
+        }
+      }
+
       label.check {
         display: flex;
         gap: 10px;
@@ -695,11 +760,290 @@
       <section class="block">
         <div class="kopf">
           <h2>C · Abwesenheiten</h2>
-          <span class="stand offen">folgt</span>
+          <span class="stand fertig">fertig</span>
         </div>
-        <p class="klein">
-          Krank ohne Freigabe, Halbtage, Teamkalender, Erfassung für Personen ohne Zugang durch Abteilungsleitungen.
-        </p>
+        <ul class="liste">
+          <li>
+            <strong>Krankmeldung ohne Freigabe:</strong> sie gilt mit dem Eintrag, die Führungskraft wird zur Kenntnis
+            benachrichtigt.
+          </li>
+          <li><strong>Halbe Tage</strong> am ersten und letzten Tag. Bei einem Einzeltag: der halbe Tag.</li>
+          <li>
+            <strong>Arbeitstage</strong> rechnen den Betriebskalender mit: Wochenenden und freie Tage zählen nicht – am
+            Standort überstimmt der Standort das Haus.
+          </li>
+          <li>
+            <strong>Eintrag für andere:</strong> Führungskräfte tragen für Unterstellte ein, auch für Personen ohne
+            Zugang. Der Eintrag gilt sofort und nennt, wer ihn gemacht hat.
+          </li>
+          <li>
+            <strong>Abwesenheitskalender:</strong> wer fehlt wann – nur für den eigenen Zuständigkeitsbereich, nicht für
+            alle Kolleginnen.
+          </li>
+        </ul>
+        <h3>Abwesenheiten → Neuer Antrag oder Eintrag (Führungskraft)</h3>
+        <div class="mock">
+          <div class="raster">
+            <span class="feld" style="grid-column: 1/-1"
+              >Für
+              <div class="eingabe">Jonas Brandt (ohne Zugang) ▾</div>
+              <span class="klein">Für Ihr Team eintragen – gilt sofort, ohne Freigabe</span></span
+            >
+            <span class="feld"
+              >Art *
+              <div class="eingabe">Krankmeldung ▾</div></span
+            >
+            <span class="feld"
+              >Anmerkung
+              <div class="eingabe">optional</div>
+              <span class="klein">z. B. Vertretungsregelung – bei Krankmeldungen keine Diagnose angeben</span></span
+            >
+            <span class="feld"
+              >Von *
+              <div class="eingabe">02.12.2026</div></span
+            >
+            <span class="feld"
+              >Bis *
+              <div class="eingabe">04.12.2026</div></span
+            >
+          </div>
+          <p class="klein" style="margin: 12px 0 4px">☐ Erster Tag nur halb &nbsp;&nbsp; ☐ Letzter Tag nur halb</p>
+          <span class="btn primaer">Eintragen</span>
+          <p class="klein">
+            Gilt sofort, ohne Freigabe. Wochenenden und freie Tage aus dem Betriebskalender zählen nicht.
+          </p>
+        </div>
+        <h3>Abwesenheiten → Liste (Team)</h3>
+        <div class="mock">
+          <div class="karte">
+            <div class="zeile">
+              <div>
+                <span class="name">02.12.2026 – 04.12.2026</span>
+                <div class="klein">Krankmeldung · 3 Arbeitstage · Jonas Brandt</div>
+                <div class="klein">Eingetragen von Karin Meyer</div>
+              </div>
+              <span class="badge ok">Genehmigt</span>
+            </div>
+          </div>
+          <div class="karte" style="margin-top: 10px">
+            <div class="zeile">
+              <div>
+                <span class="name">14.12.2026 – 14.12.2026</span>
+                <div class="klein">Urlaub · 0.5 Arbeitstage (mit halbem Tag) · Lena Vogt</div>
+                <div class="klein">Eingetragen von Karin Meyer</div>
+              </div>
+              <span class="badge ok">Genehmigt</span>
+            </div>
+            <p style="margin: 10px 0 0"><span class="btn">Stornieren</span></p>
+          </div>
+          <div class="karte" style="margin-top: 10px">
+            <div class="zeile">
+              <div>
+                <span class="name">28.12.2026 – 30.12.2026</span>
+                <div class="klein">Urlaub · 3 Arbeitstage · Selin Aydin</div>
+              </div>
+              <span class="badge warn">In Freigabe</span>
+            </div>
+            <p style="margin: 10px 0 0">
+              <span class="btn primaer">Genehmigen</span> <span class="btn">Ablehnen</span>
+            </p>
+          </div>
+          <p class="klein">
+            Namen sind erfunden. Weihnachten fällt 2026 auf Freitag und Samstag – die beiden Tage zählen nicht als
+            Urlaub.
+          </p>
+        </div>
+        <h3>Abwesenheiten → Kalender</h3>
+        <div class="mock">
+          <div class="titel">Dezember 2026 &nbsp;·&nbsp; ← Vormonat &nbsp; Folgemonat →</div>
+          <div class="tree-scroll">
+            <table class="kalt">
+              <thead>
+                <tr>
+                  <th class="p"></th>
+                  <th>1</th>
+                  <th>2</th>
+                  <th>3</th>
+                  <th>4</th>
+                  <th>5</th>
+                  <th>6</th>
+                  <th>7</th>
+                  <th>8</th>
+                  <th>9</th>
+                  <th>10</th>
+                  <th>11</th>
+                  <th>12</th>
+                  <th>13</th>
+                  <th>14</th>
+                  <th>15</th>
+                  <th>16</th>
+                  <th>17</th>
+                  <th>18</th>
+                  <th>19</th>
+                  <th>20</th>
+                  <th>21</th>
+                  <th>22</th>
+                  <th>23</th>
+                  <th>24</th>
+                  <th>25</th>
+                  <th>26</th>
+                  <th>27</th>
+                  <th>28</th>
+                  <th>29</th>
+                  <th>30</th>
+                  <th>31</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th class="p">Karin Meyer</th>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class="w"></td>
+                  <td class="w"></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class="w"></td>
+                  <td class="w"></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class="w"></td>
+                  <td class="w"></td>
+                  <td class="u"></td>
+                  <td class="u"></td>
+                  <td class="u"></td>
+                  <td class="u"></td>
+                  <td class="w"></td>
+                  <td class="w"></td>
+                  <td class="w"></td>
+                  <td class="u"></td>
+                  <td class="u"></td>
+                  <td class="u"></td>
+                  <td class="u"></td>
+                </tr>
+                <tr>
+                  <th class="p">Jonas Brandt <span class="klein">ohne Zugang</span></th>
+                  <td class=""></td>
+                  <td class="k"></td>
+                  <td class="k"></td>
+                  <td class="k"></td>
+                  <td class="w"></td>
+                  <td class="w"></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class="w"></td>
+                  <td class="w"></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class="w"></td>
+                  <td class="w"></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class="w"></td>
+                  <td class="w"></td>
+                  <td class="w"></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                </tr>
+                <tr>
+                  <th class="p">Selin Aydin</th>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class="w"></td>
+                  <td class="w"></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class="f"></td>
+                  <td class="f"></td>
+                  <td class=""></td>
+                  <td class="w"></td>
+                  <td class="w"></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class="w"></td>
+                  <td class="w"></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class="w"></td>
+                  <td class="w"></td>
+                  <td class="w"></td>
+                  <td class="u b"></td>
+                  <td class="u b"></td>
+                  <td class="u b"></td>
+                  <td class=""></td>
+                </tr>
+                <tr>
+                  <th class="p">Lena Vogt <span class="klein">ohne Zugang</span></th>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class="w"></td>
+                  <td class="w"></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class="w"></td>
+                  <td class="w"></td>
+                  <td class="u">½</td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class="w"></td>
+                  <td class="w"></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class="w"></td>
+                  <td class="w"></td>
+                  <td class="w"></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                  <td class=""></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="klein" style="margin: 10px 0 0">
+            <span class="badge" style="background: #bae6fd; color: #0c4a6e; border: 0">Urlaub</span>
+            <span class="badge" style="background: #fecdd3; color: #881337; border: 0">Krank</span>
+            <span class="badge" style="background: #fde68a; color: #78350f; border: 0">Schulung</span> &nbsp; Blass =
+            beantragt · ½ = halber Tag · grau = Wochenende oder frei
+          </p>
+          <p class="klein">
+            Zu sehen sind nur Personen, für die man zuständig ist. Wer nichts freigeben darf, sieht nur sich selbst.
+          </p>
+        </div>
       </section>
       <section class="block">
         <div class="kopf">
