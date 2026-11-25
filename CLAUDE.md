@@ -196,6 +196,18 @@ die Plattformverwaltung. Drei Regeln darin sind bewusst hart:
 - Der **Bestellschluss** wird serverseitig geprüft, nicht nur angezeigt. Wer
   nach der Abholfahrt bestellt, bekommt nichts.
 
+Die **Autoplanung** (`modules/alltag/schichtplanung.ts`, reine Funktionen,
+deterministisch, Ortszeit fest Europe/Berlin) plant aus **Schichtarten**
+(Zeitblock, Pause, Mindest- und Idealbesetzung als Pflicht, je Standort,
+Abteilung und/oder Team) und dem **Arbeitszeitprofil** je Person
+(`User.wochenstunden`, `zeitfensterVon/Bis`, `arbeitstage`). Hart sind Bereich,
+Arbeitstage, Zeitfenster, genehmigte Abwesenheit, Betriebskalender, keine
+Überschneidung, Wochenstunden als Obergrenze, zehn Stunden je Tag und elf
+Stunden Ruhezeit; Lücken meldet sie, statt Regeln zu biegen. Je Tag erst alle
+Schichtarten bis zur Mindest-, dann bis zur Idealbesetzung. Die **Vorschau
+rechnet nur, die Übernahme rechnet neu** - der Client schickt nie
+Zuweisungen. Offene Schichten entstehen nur für die Lücke zur Mindestbesetzung.
+
 **Entfernt:** Schnittstellen zu Fremdsystemen, Fahrzeugbestand und Fuhrpark –
 samt Oberflächen, API-Modulen, Datenmodellen und Tabellen. AHOI betrachtet den
 Betriebsalltag, nicht das Autogeschäft; dort haben die Häuser bereits Software.
@@ -299,10 +311,14 @@ Erfolg des Restores.
   Rechtsgrundlage, Mitbestimmung, Frist, Fallstricke. Vier Module sind scharf –
   Abwesenheiten (Gesundheitsdaten), Schichtplan (Arbeitszeit), Umfragen (**nicht
   anonym**, obwohl es so aussieht) und das Audit-Log.
-- **Ehrlich benannte Lücke:** Der Schichtplan weist Doppelbelegungen ab, prüft
-  aber **nicht** die Ruhezeit nach § 5 ArbZG, die Höchstarbeitszeit nach § 3 und
-  die Pausen nach § 4. Wer das automatisiert, muss es bauen – zu behaupten, es
-  sei da, wäre schlimmer als die Lücke.
+- **Ehrlich benannte Grenze:** Der Schichtplan weist Doppelbelegungen ab und
+  **markiert** Verstöße gegen Ruhezeit (§ 5 ArbZG), Höchstarbeitszeit (§ 3) und
+  Pausen (§ 4), **sperrt aber nichts** – der Plan lässt sich mit Markierung
+  speichern. Die Autoplanung erzeugt selbst keinen solchen Verstoß. **Nicht
+  geprüft:** Sonn- und Feiertagsarbeit (§§ 9-11), Jugendarbeitsschutz, der
+  Durchschnitt über sechs Monate, tarifliche Abweichungen. Das gehört in jede
+  Aussage über das Modul - zu behaupten, es sei vollständig, wäre schlimmer als
+  die Grenze.
 - Vorlagen für Auftragsverarbeitung und Betriebsvereinbarung:
   [`docs/vorlagen/`](docs/vorlagen/).
 - Einzelheiten und die Mitbestimmung nach § 87 BetrVG: [`docs/datenschutz.md`](docs/datenschutz.md).
@@ -337,4 +353,6 @@ Offen vor dem Produktivbetrieb:
   der Datenbank, nicht auf einem Dateisystem – ein einzelnes kleines Bild je
   Haus braucht keinen eigenen Speicherort und läuft so in derselben Sicherung
   wie der Rest der Daten mit.
-- **Arbeitszeitgrenzen im Schichtplan** (siehe Datenschutz).
+- **Arbeitszeitgrenzen im Schichtplan:** markiert, nicht gesperrt; Sonn- und
+  Feiertagsarbeit, Jugendarbeitsschutz und Sechsmonatsdurchschnitt fehlen (siehe
+  Datenschutz).

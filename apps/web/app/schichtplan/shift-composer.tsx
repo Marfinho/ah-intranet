@@ -40,6 +40,10 @@ export function ShiftComposer({
         <input name="endsAt" type="datetime-local" required className={inputClass} />
       </Field>
 
+      <Field label="Pause (Minuten)" hint="Unbezahlt - Grundlage der Prüfung nach Arbeitszeitgesetz">
+        <input name="pauseMinuten" type="number" min={0} max={240} defaultValue={0} className={inputClass} />
+      </Field>
+
       <Field label="Standort">
         <select name="locationId" defaultValue="" className={inputClass}>
           <option value="">– ohne –</option>

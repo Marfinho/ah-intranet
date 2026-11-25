@@ -1,4 +1,5 @@
-import type { EmployeeDirectoryEntry, ShiftItem, ShiftSwapItem } from "@ah-intranet/shared";
+import Link from "next/link";
+import type { ArbeitszeitBefund, EmployeeDirectoryEntry, ShiftItem, ShiftSwapItem } from "@ah-intranet/shared";
 import { SHIFT_SWAP_LABELS } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, Section, Tag } from "@/components/ui";
@@ -28,11 +29,15 @@ export default async function SchichtplanPage(props: { searchParams: Promise<{ m
   const query = new URLSearchParams();
   if (searchParams.mine === "true") query.set("mine", "true");
 
-  const [shifts, swaps, organisation, directory] = await Promise.all([
+  const heute = new Date().toISOString().slice(0, 10);
+  const spaeter = new Date(Date.now() + 28 * 86_400_000).toISOString().slice(0, 10);
+
+  const [shifts, swaps, organisation, directory, befunde] = await Promise.all([
     apiGet<ShiftItem[]>(`/schichtplan?${query.toString()}`),
     apiGet<ShiftSwapItem[]>("/diensttausch"),
     darfPflegen ? apiGet<Organisation>("/users/organisation") : Promise.resolve({ locations: [], departments: [] }),
     apiGet<{ items: EmployeeDirectoryEntry[] }>("/directory"),
+    apiGet<ArbeitszeitBefund[]>(`/schichtplanung/pruefung?von=${heute}&bis=${spaeter}`),
   ]);
 
   // Nach Tagen gruppieren: eine flache Liste über vier Wochen liest niemand.
@@ -47,6 +52,47 @@ export default async function SchichtplanPage(props: { searchParams: Promise<{ m
 
   return (
     <AppShell title="Schichtplan" subtitle="Besetzung der nächsten vier Wochen, mit Diensttausch">
+      {darfPflegen ? (
+        <p className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold">
+          <Link href="/schichtplan/planung" className="text-brand-700 hover:underline">
+            Automatisch planen
+          </Link>
+          <Link href="/schichtplan/arten" className="text-brand-700 hover:underline">
+            Schichtarten
+          </Link>
+          <Link href="/schichtplan/personal" className="text-brand-700 hover:underline">
+            Arbeitszeitprofile
+          </Link>
+        </p>
+      ) : null}
+
+      {befunde.length > 0 ? (
+        <Section
+          title={`${befunde.length} Hinweis(e) zum Arbeitszeitgesetz`}
+          subtitle={
+            darfPflegen
+              ? "Markiert nur - der Plan lässt sich trotzdem speichern. Die Verantwortung liegt beim Haus."
+              : "Betrifft Ihre eigenen Schichten"
+          }
+        >
+          <ul className="space-y-2">
+            {befunde.map((befund, index) => (
+              <li
+                key={`${befund.userId}${befund.datum}${index}`}
+                className={`rounded-xl px-4 py-3 text-sm ${
+                  befund.schwere === "verstoss" ? "bg-rose-50 text-rose-900" : "bg-amber-50 text-amber-900"
+                }`}
+              >
+                <strong>{befund.schwere === "verstoss" ? "Verstoß" : "Hinweis"}</strong> · {befund.name} ·{" "}
+                {tag(`${befund.datum}T12:00:00Z`)}
+                <br />
+                {befund.text}
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
+
       {offeneVorgaenge.length > 0 ? (
         <Section
           title={`${offeneVorgaenge.length} laufende Tauschvorgänge`}

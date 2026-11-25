@@ -454,6 +454,70 @@
         margin-bottom: 8px;
       }
 
+      .tg {
+        display: inline-flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .tg span {
+        font-size: 12px;
+        padding: 4px 10px;
+        border: 1px solid var(--linie);
+        border-radius: 10px;
+        background: var(--flaeche);
+      }
+      .tg span.an {
+        background: var(--akzent-zart);
+        border-color: transparent;
+        color: var(--akzent-text);
+        font-weight: 600;
+      }
+      .zeile2 {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 10px 12px;
+        border: 1px solid var(--linie);
+        border-radius: 12px;
+        font-size: 13px;
+        background: var(--flaeche);
+        margin-top: 8px;
+      }
+      .zeile2.rot {
+        background: var(--rot-bg);
+        border-color: transparent;
+      }
+      .zeile2.gelb {
+        background: var(--warn-bg);
+        border-color: transparent;
+      }
+      .hint {
+        padding: 8px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        margin-top: 8px;
+      }
+      .hint.rot {
+        background: var(--rot-bg);
+        color: var(--rot);
+      }
+      .hint.gelb {
+        background: var(--warn-bg);
+        color: var(--warn);
+      }
+      .grid3 {
+        display: grid;
+        gap: 0 16px;
+        grid-template-columns: repeat(3, 1fr);
+      }
+      @media (max-width: 640px) {
+        .grid3 {
+          grid-template-columns: 1fr;
+        }
+      }
+
       label.check {
         display: flex;
         gap: 10px;
@@ -1243,11 +1307,253 @@
       <section class="block">
         <div class="kopf">
           <h2>F · Schichtplaner</h2>
-          <span class="stand offen">folgt</span>
+          <span class="stand fertig">fertig</span>
         </div>
-        <p class="klein">
-          Schichtarten, Arbeitszeitfenster, Autoplanung unter Beachtung von Urlaub, Feiertagen und Arbeitszeitgesetz.
-        </p>
+        <ul class="liste">
+          <li>
+            <strong>Schichtarten</strong> je Standort, Abteilung und Team (auch kombiniert): Zeitblock, Pause,
+            <strong>Mindest- und Idealbesetzung als Pflichtfelder</strong>, Wochentage.
+          </li>
+          <li>
+            <strong>Arbeitszeitprofil je Person:</strong> Wochenarbeitszeit, Zeitfenster (Teilzeit nur vormittags) und
+            Arbeitstage.
+          </li>
+          <li>
+            <strong>Automatische Planung</strong> mit Vorschau: berücksichtigt Zeitfenster, Arbeitstage, Wochenstunden,
+            genehmigte Abwesenheit und den Betriebskalender. Sie erzeugt selbst nie einen Verstoß gegen Ruhezeit oder
+            Höchstarbeitszeit.
+          </li>
+          <li>
+            <strong>Arbeitszeitgesetz: nur markieren.</strong> Ruhezeit, Höchstarbeitszeit und Pausen werden angezeigt,
+            der Plan lässt sich trotzdem speichern.
+          </li>
+        </ul>
+
+        <h3>Schichtplan → Schichtarten</h3>
+        <div class="mock">
+          <div class="titel">Neue Schichtart</div>
+          <div class="grid3">
+            <span class="feld"
+              >Name *
+              <div class="eingabe">Frühschicht</div></span
+            >
+            <span class="feld"
+              >Beginn *
+              <div class="eingabe">08:00</div></span
+            >
+            <span class="feld"
+              >Ende *
+              <div class="eingabe">15:00</div>
+              <span class="klein">Früher als der Beginn heißt: über Mitternacht</span></span
+            >
+            <span class="feld"
+              >Mindestbesetzung *
+              <div class="eingabe">2</div>
+              <span class="klein">Darunter ist die Schicht unterbesetzt</span></span
+            >
+            <span class="feld"
+              >Idealbesetzung *
+              <div class="eingabe">3</div>
+              <span class="klein">Zielwert der Planung</span></span
+            >
+            <span class="feld"
+              >Pause (Minuten)
+              <div class="eingabe">30</div></span
+            >
+          </div>
+          <p class="klein" style="margin: 12px 0 4px"><strong>Wochentage *</strong></p>
+          <span class="tg"
+            ><span class="an">Mo</span><span class="an">Di</span><span class="an">Mi</span><span class="an">Do</span
+            ><span class="an">Fr</span><span class="">Sa</span><span class="">So</span></span
+          >
+          <div class="grid3" style="margin-top: 8px">
+            <span class="feld"
+              >Standort
+              <div class="eingabe">Bremen-Hauptbetrieb ▾</div></span
+            >
+            <span class="feld"
+              >Abteilung
+              <div class="eingabe">Service ▾</div></span
+            >
+            <span class="feld"
+              >Team
+              <div class="eingabe">Team Karin Meyer ▾</div>
+              <span class="klein">Die direkt Unterstellten</span></span
+            >
+          </div>
+          <p class="klein" style="margin: 10px 0 12px">☐ Auch an Sondertagen (z. B. verkaufsoffener Sonntag)</p>
+          <span class="btn primaer">Schichtart anlegen</span>
+
+          <div class="titel" style="margin-top: 22px">3 Schichtarten</div>
+          <div class="karte">
+            <div class="zeile">
+              <div>
+                <span class="name">Frühschicht</span> <span class="badge">08:00–15:00 Uhr</span>
+                <div class="klein">Bremen-Hauptbetrieb · Service · mindestens 2, ideal 3 · Pause 30 Min.</div>
+                <div class="klein">Mo, Di, Mi, Do, Fr</div>
+              </div>
+              <span class="klein"
+                ><span style="color: var(--akzent-text); font-weight: 600">Bearbeiten</span> &nbsp;
+                <span style="color: var(--rot); font-weight: 600">Löschen</span></span
+              >
+            </div>
+          </div>
+          <div class="karte" style="margin-top: 10px">
+            <div class="zeile">
+              <div>
+                <span class="name">Spätschicht</span> <span class="badge">12:00–20:00 Uhr</span>
+                <div class="klein">Bremen-Hauptbetrieb · Service · mindestens 1, ideal 2 · Pause 30 Min.</div>
+                <div class="klein">Mo, Di, Mi, Do, Fr, Sa</div>
+              </div>
+              <span class="klein"
+                ><span style="color: var(--akzent-text); font-weight: 600">Bearbeiten</span> &nbsp;
+                <span style="color: var(--rot); font-weight: 600">Löschen</span></span
+              >
+            </div>
+          </div>
+          <div class="karte" style="margin-top: 10px">
+            <div class="zeile">
+              <div>
+                <span class="name">Verkaufsoffen</span> <span class="badge">09:00–17:30 Uhr</span>
+                <div class="klein">Ganzes Haus · mindestens 3, ideal 4 · Pause 30 Min.</div>
+                <div class="klein">auch an Sondertagen</div>
+              </div>
+              <span class="klein"
+                ><span style="color: var(--akzent-text); font-weight: 600">Bearbeiten</span> &nbsp;
+                <span style="color: var(--rot); font-weight: 600">Löschen</span></span
+              >
+            </div>
+            <div class="hint gelb">
+              Hinweis: 9 Stunden Arbeitszeit: über acht Stunden nur mit Ausgleich zulässig (§ 3 ArbZG).
+            </div>
+          </div>
+          <p class="klein">
+            Namen sind erfunden. Die Hinweise nach Arbeitszeitgesetz markieren nur, sie sperren nichts.
+          </p>
+        </div>
+
+        <h3>Schichtplan → Arbeitszeitprofile</h3>
+        <div class="mock">
+          <div class="karte">
+            <div class="zeile">
+              <span class="name">Selin Aydin</span><span class="klein">Bremen-Hauptbetrieb · Service</span>
+            </div>
+            <div class="grid3" style="margin-top: 6px">
+              <span class="feld"
+                >Wochenarbeitszeit (Stunden)
+                <div class="eingabe">20</div>
+                <span class="klein">Die Planung überschreitet sie nie</span></span
+              >
+              <span class="feld"
+                >Zeitfenster ab
+                <div class="eingabe">08:00</div></span
+              >
+              <span class="feld"
+                >Zeitfenster bis
+                <div class="eingabe">13:00</div>
+                <span class="klein">z. B. 13:00 für nur vormittags</span></span
+              >
+            </div>
+            <p class="klein" style="margin: 12px 0 4px"><strong>Arbeitstage</strong></p>
+            <span class="tg"
+              ><span class="an">Mo</span><span class="an">Di</span><span class="an">Mi</span><span class="an">Do</span
+              ><span class="">Fr</span><span class="">Sa</span><span class="">So</span></span
+            >
+            <p style="margin: 12px 0 0"><span class="btn primaer">Speichern</span></p>
+          </div>
+          <p class="klein">
+            Selin Aydin arbeitet 20 Stunden, nur vormittags und Montag bis Donnerstag. Sie wird nur für Schichten
+            eingeplant, die in 8–13 Uhr liegen.
+          </p>
+        </div>
+
+        <h3>Schichtplan → Automatisch planen</h3>
+        <div class="mock">
+          <div class="grid3" style="grid-template-columns: 1fr 1fr">
+            <span class="feld"
+              >Von
+              <div class="eingabe">07.12.2026</div></span
+            ><span class="feld"
+              >Bis
+              <div class="eingabe">20.12.2026</div></span
+            >
+          </div>
+          <p class="klein" style="margin: 10px 0 4px">
+            <strong>Schichtarten</strong> – keine Auswahl heißt: alle aktiven
+          </p>
+          <span class="chip">☑ Frühschicht</span><span class="chip">☑ Spätschicht</span
+          ><span class="chip">☐ Verkaufsoffen</span>
+          <p style="margin: 12px 0 0"><span class="btn primaer">Vorschau berechnen</span></p>
+
+          <div class="titel" style="margin-top: 22px">
+            Vorschau Mo 07.12. – So 20.12. · 24 Schichten würden besetzt, 3 Lücken
+          </div>
+          <div class="hint rot" style="margin: 0 0 10px">
+            <strong>1 Schicht bleibt unter der Mindestbesetzung.</strong> Für sie legt die Übernahme offene Schichten
+            an, damit sie im Plan sichtbar sind.
+          </div>
+          <div class="hint gelb" style="margin: 0 0 10px">
+            Ohne hinterlegte Wochenarbeitszeit (keine Obergrenze): Tom Hagen.
+          </div>
+          <p
+            class="klein"
+            style="margin: 10px 0 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em"
+          >
+            Mo 07.12.
+          </p>
+          <div class="zeile2">
+            <span class="name">Frühschicht</span><span>08:00–15:00 Uhr</span><span class="badge ok">Karin Meyer</span>
+          </div>
+          <div class="zeile2">
+            <span class="name">Frühschicht</span><span>08:00–15:00 Uhr</span><span class="badge ok">Lena Vogt</span>
+          </div>
+          <div class="zeile2">
+            <span class="name">Frühschicht</span><span>08:00–15:00 Uhr</span><span class="badge ok">Tom Hagen</span>
+          </div>
+          <div class="zeile2">
+            <span class="name">Spätschicht</span><span>12:00–20:00 Uhr</span><span class="badge ok">Jonas Brandt</span>
+          </div>
+          <div class="zeile2 gelb">
+            <span class="name">Spätschicht</span><span>1 von 2 besetzt (mindestens 1)</span
+            ><span class="badge warn">unter Ideal</span>
+          </div>
+          <p
+            class="klein"
+            style="margin: 14px 0 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em"
+          >
+            Sa 12.12.
+          </p>
+          <div class="zeile2 rot">
+            <span class="name">Spätschicht</span><span>0 von 2 besetzt (mindestens 1)</span
+            ><span class="badge rot">unter Mindestbesetzung</span>
+          </div>
+          <p style="margin: 16px 0 0">
+            <span class="btn primaer">24 Schicht(en) übernehmen</span>
+            <span class="klein"
+              >Die Planung wird bei der Übernahme neu gerechnet; eingeteilte Personen werden benachrichtigt.</span
+            >
+          </p>
+          <p class="klein">
+            Namen und Zahlen sind erfunden. Weihnachten fehlt im Zeitraum bewusst: freie Tage aus dem Betriebskalender
+            werden nicht verplant.
+          </p>
+        </div>
+
+        <h3>Schichtplan → Hinweise zum Arbeitszeitgesetz</h3>
+        <div class="mock">
+          <div class="titel">
+            2 Hinweis(e) zum Arbeitszeitgesetz · Markiert nur – der Plan lässt sich trotzdem speichern. Die
+            Verantwortung liegt beim Haus.
+          </div>
+          <div class="hint rot" style="margin-top: 0">
+            <strong>Verstoß</strong> · Jonas Brandt · Di 15.12.<br />Ruhezeit unterschritten: zwischen dem Ende der
+            Schicht um 22:00 und dem Beginn um 06:00 liegen 8 Stunden, § 5 ArbZG verlangt elf Stunden.
+          </div>
+          <div class="hint gelb">
+            <strong>Hinweis</strong> · Lena Vogt · Do 17.12.<br />9 Stunden an einem Tag: über acht Stunden ist nur mit
+            Ausgleich innerhalb von sechs Monaten zulässig (§ 3 ArbZG).
+          </div>
+        </div>
       </section>
     </main>
   </body>

@@ -998,6 +998,7 @@ export async function createShiftAction(_previous: ActionState, formData: FormDa
     departmentId: String(formData.get("departmentId") ?? "") || undefined,
     assigneeId: String(formData.get("assigneeId") ?? "") || undefined,
     note: String(formData.get("note") ?? "") || undefined,
+    pauseMinuten: Number(formData.get("pauseMinuten") ?? 0) || 0,
   };
   return run(() => apiSend("POST", "/schichtplan", payload), ["/schichtplan", "/"], "Schicht angelegt.");
 }
@@ -1159,4 +1160,75 @@ export async function leereSchluesselAction(funktion: string, stufe: number): Pr
 
 export async function setzeVertretungsMeldungAction(vertretungsMeldung: string): Promise<ActionState> {
   return run(() => apiSend("PATCH", "/schluessel/einstellung", { vertretungsMeldung }), SCHLUESSEL);
+}
+
+/* ------------------------------------- Schichtarten, Profile, Planung */
+
+const PLANUNG = ["/schichtplan", "/schichtplan/arten", "/schichtplan/personal", "/schichtplan/planung"];
+
+function schichtartAusFormular(formData: FormData) {
+  return {
+    name: String(formData.get("name") ?? ""),
+    startZeit: String(formData.get("startZeit") ?? ""),
+    endZeit: String(formData.get("endZeit") ?? ""),
+    pauseMinuten: Number(formData.get("pauseMinuten") ?? 0) || 0,
+    mindestBesetzung: Number(formData.get("mindestBesetzung") ?? 0),
+    idealBesetzung: Number(formData.get("idealBesetzung") ?? 0),
+    tage: formData.getAll("tage").map(Number),
+    beiSondertag: formData.get("beiSondertag") === "on",
+    aktiv: formData.has("aktivGesendet") ? formData.get("aktiv") === "on" : true,
+    locationId: String(formData.get("locationId") ?? "") || undefined,
+    departmentId: String(formData.get("departmentId") ?? "") || undefined,
+    teamLeadId: String(formData.get("teamLeadId") ?? "") || undefined,
+  };
+}
+
+export async function createSchichtartAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  return run(
+    () => apiSend("POST", "/schichtplanung/arten", schichtartAusFormular(formData)),
+    PLANUNG,
+    "Schichtart angelegt.",
+  );
+}
+
+export async function updateSchichtartAction(
+  id: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return run(
+    () => apiSend("PUT", `/schichtplanung/arten/${id}`, schichtartAusFormular(formData)),
+    PLANUNG,
+    "Gespeichert.",
+  );
+}
+
+export async function deleteSchichtartAction(id: string): Promise<ActionState> {
+  return run(() => apiSend("DELETE", `/schichtplanung/arten/${id}`), PLANUNG);
+}
+
+export async function setzeArbeitszeitProfilAction(
+  userId: string,
+  profil: { wochenstunden: number | null; zeitfensterVon: string | null; zeitfensterBis: string | null; arbeitstage: number[] },
+): Promise<ActionState> {
+  return run(() => apiSend("PATCH", `/schichtplanung/personal/${userId}`, profil), PLANUNG, "Gespeichert.");
+}
+
+export async function uebernehmePlanAction(von: string, bis: string, schichtartIds: string[]): Promise<ActionState> {
+  try {
+    const ergebnis = await apiSend<{ geplant: number; offen: number }>("POST", "/schichtplanung/uebernehmen", {
+      von,
+      bis,
+      schichtartIds: schichtartIds.length > 0 ? schichtartIds : undefined,
+    });
+    for (const pfad of PLANUNG) {
+      revalidatePath(pfad);
+    }
+    return {
+      ok: true,
+      detail: `${ergebnis.geplant} Schicht(en) besetzt${ergebnis.offen > 0 ? `, ${ergebnis.offen} offen` : ""}.`,
+    };
+  } catch (error) {
+    return { ok: false, message: error instanceof ApiError ? error.message : "Planung fehlgeschlagen." };
+  }
 }

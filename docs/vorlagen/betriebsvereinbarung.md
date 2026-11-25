@@ -119,9 +119,15 @@ Monaten.
    zweistufige Folge technisch durch; ein Tausch gegen den Willen einer der
    beiden Personen ist nicht möglich.
 3. **Die Einhaltung des Arbeitszeitgesetzes bleibt Aufgabe des Arbeitgebers.**
-   Die Software weist Doppelbelegungen ab, prüft aber **nicht** die Ruhezeit
-   von elf Stunden (§ 5 ArbZG), die Höchstarbeitszeit (§ 3 ArbZG) und die
-   Pausen (§ 4 ArbZG).
+   Die Software weist Doppelbelegungen ab und **markiert** Verstöße gegen die
+   Ruhezeit von elf Stunden (§ 5 ArbZG), die Höchstarbeitszeit (§ 3 ArbZG) und
+   die Pausen (§ 4 ArbZG), **sperrt sie aber nicht**. Nicht geprüft werden
+   Sonn- und Feiertagsarbeit (§§ 9-11 ArbZG), der Jugendarbeitsschutz und der
+   Durchschnitt über sechs Monate. Die automatische Planung liefert einen
+   Vorschlag, den [Funktion] prüft und übernimmt; sie erzeugt selbst keinen
+   Verstoß gegen Ruhezeit und Höchstarbeitszeit. Wochenarbeitszeit, Zeitfenster
+   und Arbeitstage der Beschäftigten werden im Profil hinterlegt und nur zur
+   Planung verwendet.
 4. Der Betriebsrat erhält Zugang zum Schichtplan.
 5. Der Schichtplan ist **keine Arbeitszeiterfassung**; Beginn und Ende der
    tatsächlichen Arbeitszeit werden [in … ] erfasst.

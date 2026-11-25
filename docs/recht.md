@@ -177,14 +177,29 @@ Abs. 1 DSGVO, für die ein Verarbeitungsverbot mit Erlaubnisvorbehalt gilt.
 - **§ 99 BetrVG** kann hinzukommen, wenn eine Zuweisung dauerhaft ist und den
   Arbeitsbereich erheblich ändert – dann liegt eine Versetzung nach § 95 Abs. 3
   vor, die der Zustimmung bedarf. Der einzelne Diensttausch ist das nicht.
-- **Die Lücke, ehrlich benannt:** AHOI weist **Doppelbelegungen** ab – dieselbe
-  Person kann nicht zur selben Zeit an zwei Orten stehen. Es prüft **nicht**
-  die **Ruhezeit von elf Stunden** nach § 5 ArbZG, nicht die Höchstarbeitszeit
-  nach § 3 ArbZG und keine Pausen nach § 4 ArbZG. Ein Spätdienst bis 22 Uhr und
-  ein Frühdienst ab 6 Uhr am Folgetag werden anstandslos gespeichert, sind aber
-  rechtswidrig. **Die Einhaltung bleibt beim Haus.** Wenn Sie das automatisiert
-  haben wollen, sagen Sie Bescheid – gebaut ist es nicht, und es zu behaupten
-  wäre schlimmer als die Lücke.
+- **Was AHOI prüft und was nicht, ehrlich benannt:** AHOI weist
+  **Doppelbelegungen** ab. Zusätzlich **markiert** es – ohne zu sperren – die
+  **Ruhezeit von elf Stunden** (§ 5 ArbZG), mehr als **zehn Stunden** am Tag
+  (Verstoß) bzw. über acht (Hinweis, § 3 ArbZG), zu kurze **Pausen** (§ 4 ArbZG:
+  30 Minuten ab sechs, 45 ab neun Stunden Arbeitszeit) und Wochenzeiten über 48
+  Stunden oder über die vereinbarten Stunden. Die Markierung steht auf der
+  Seite des Schichtplans und an der Schichtart selbst. **Ein markierter Plan
+  lässt sich speichern** – die Entscheidung und die Verantwortung bleiben beim
+  Haus. Die **Autoplanung erzeugt selbst nie** einen Verstoß gegen Ruhezeit oder
+  Höchstarbeitszeit; was sie so nicht besetzen kann, meldet sie als Lücke.
+  **Nicht geprüft** werden Sonn- und Feiertagsarbeit (§§ 9-11 ArbZG), der
+  Jugendarbeitsschutz, der Durchschnitt über sechs Monate und tarifliche
+  Abweichungen. Die Pausenprüfung rechnet mit der **eingetragenen** Pause: ob
+  sie tatsächlich genommen wird, weiß die Software nicht.
+- **Autoplanung und Arbeitszeitprofile:** Wochenarbeitszeit, Zeitfenster und
+  Arbeitstage je Person sind Arbeitszeitdaten; sie sind mit der Autoplanung
+  zusammen mitbestimmungspflichtig (§ 87 Abs. 1 Nr. 2 und 3, ggf. Nr. 6).
+  Die Planung liefert einen **Vorschlag**; erst die Übernahme durch eine Person
+  mit `shifts.manage` schreibt Schichten. Es gibt keine rein automatisierte
+  Entscheidung im Sinne von Art. 22 DSGVO. Die Berechnung ist deterministisch
+  und ohne Zufall, damit ein Betriebsrat sie nachvollziehen kann: erst
+  Mindest-, dann Idealbesetzung; unter den Geeigneten kommt zuerst, wer in der
+  Woche am wenigsten ausgelastet ist.
 - **Frist:** 2 Jahre, in Anlehnung an § 16 Abs. 2 ArbZG. Der Plan ist kein
   Arbeitszeitnachweis; wer einen führen muss (§ 17 MiLoG, und nach dem
   BAG-Beschluss vom 13.09.2022 zur Erfassungspflicht ohnehin), führt ihn

@@ -26,6 +26,11 @@ Erster vollständiger Stand. Lauffähig, aber in keinem Haus im Einsatz.
   Mail (Einstellung des Hauses). Anträge gehen an die nächste anwesende
   Führungskraft.
 
+- **Schichtplan:** Schichtarten je Standort, Abteilung und Team mit Zeitblock,
+  Mindest- und Idealbesetzung; Arbeitszeitprofil je Person (Wochenstunden,
+  Zeitfenster, Arbeitstage); automatische Planung mit Vorschau; Markierung von
+  Verstößen gegen das Arbeitszeitgesetz (markiert nur, sperrt nichts).
+
 ### Sicherheit
 
 - **Zweiter Faktor** per Authenticator-App (TOTP nach RFC 6238, gegen die
