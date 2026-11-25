@@ -16,6 +16,12 @@ const ADMIN_LINKS = [
     detail: "Standorte pflegen, Marken zuordnen",
     recht: "organisation.manage",
   },
+  {
+    href: "/admin/betriebskalender",
+    label: "Betriebskalender",
+    detail: "Feiertage, Brückentage, verkaufsoffene Sonntage",
+    recht: "organisation.manage",
+  },
   { href: "/admin/rollen", label: "Rollen & Rechte", detail: "Eigene Rollen anlegen", recht: "roles.manage" },
   {
     href: "/admin/standorte",

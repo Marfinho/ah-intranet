@@ -208,23 +208,6 @@
       .name {
         font-weight: 600;
       }
-      .baum,
-      .baum ul {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-      }
-      .baum ul {
-        margin: 8px 0 0 14px;
-        padding-left: 16px;
-        border-left: 2px solid var(--linie);
-      }
-      .baum li + li {
-        margin-top: 8px;
-      }
-      .baum .karte {
-        padding: 10px 14px;
-      }
       .hinweis {
         margin-top: 12px;
         padding: 10px 14px;
@@ -233,6 +216,141 @@
         color: var(--akzent-text);
         font-size: 13px;
       }
+      .tree-scroll {
+        overflow-x: auto;
+        padding-bottom: 8px;
+      }
+      .org,
+      .org ul {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        margin: 0;
+        padding: 24px 0 0;
+        list-style: none;
+      }
+      .org {
+        padding-top: 0;
+        width: max-content;
+        min-width: 100%;
+        margin-inline: auto;
+      }
+      .org ul::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 50%;
+        height: 24px;
+        border-left: 2px solid var(--linie);
+      }
+      .org li {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 24px 6px 0;
+      }
+      .org li::before,
+      .org li::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 50%;
+        width: 50%;
+        height: 24px;
+        border-top: 2px solid var(--linie);
+      }
+      .org li::after {
+        right: auto;
+        left: 50%;
+        border-left: 2px solid var(--linie);
+      }
+      .org li:only-child {
+        padding-top: 0;
+      }
+      .org li:only-child::before,
+      .org li:only-child::after,
+      .org > li::before,
+      .org > li::after {
+        display: none;
+      }
+      .org > li {
+        padding-top: 0;
+      }
+      .org li:first-child::before,
+      .org li:last-child::after {
+        border: 0 none;
+      }
+      .org li:last-child::before {
+        border-right: 2px solid var(--linie);
+        border-radius: 0 8px 0 0;
+      }
+      .org li:first-child::after {
+        border-radius: 8px 0 0 0;
+      }
+      .org .knoten {
+        width: 144px;
+        text-align: center;
+        background: var(--flaeche);
+        border: 1px solid var(--linie);
+        border-radius: 16px;
+        padding: 10px 12px;
+      }
+      .org .knoten .name {
+        font-size: 13px;
+      }
+      .org .knoten .klein {
+        font-size: 12px;
+      }
+      .kal-zeile {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+        border-top: 1px solid var(--linie);
+        font-size: 13px;
+      }
+      .kal-zeile .tag {
+        width: 76px;
+        color: var(--gedaempft);
+        font-variant-numeric: tabular-nums;
+      }
+      .kal-zeile .bez {
+        flex: 1;
+        min-width: 120px;
+        font-weight: 600;
+      }
+      .vorschlag {
+        background: var(--akzent-zart);
+        color: var(--akzent-text);
+        border-radius: 12px;
+        padding: 10px 14px;
+        font-size: 13px;
+        margin: 10px 0;
+      }
+      .vorschlag .btn.primaer {
+        margin-top: 8px;
+      }
+      .chip {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 5px 12px;
+        border-radius: 12px;
+        border: 1px solid var(--linie);
+        background: var(--flaeche);
+        margin: 4px 6px 0 0;
+      }
+      .sel {
+        display: inline-block;
+        font-size: 12px;
+        padding: 3px 10px;
+        border: 1px solid var(--linie);
+        border-radius: 8px;
+        background: var(--flaeche);
+      }
+
       label.check {
         display: flex;
         gap: 10px;
@@ -270,7 +388,10 @@
         <ul class="liste">
           <li>Personen stehen im Personalstamm, ohne sich anmelden zu können – zählen nicht zum Lizenzkontingent.</li>
           <li>Vorgesetzte lassen sich beim Anlegen wählen; Kreise werden abgewiesen.</li>
-          <li>Organigramm unter <code>/mitarbeiter/organigramm</code>, Zugang einrichten und entziehen.</li>
+          <li>
+            Organigramm als Baum von oben nach unten unter <code>/mitarbeiter/organigramm</code>; Zugang einrichten und
+            entziehen.
+          </li>
         </ul>
 
         <h3>Administration → Benutzerverwaltung · neues Konto</h3>
@@ -345,57 +466,217 @@
           </div>
         </div>
 
-        <h3>Mitarbeiter → Organigramm</h3>
+        <h3>Mitarbeiter → Organigramm (von oben nach unten)</h3>
         <div class="mock">
-          <ul class="baum">
-            <li>
-              <div class="karte">
-                <span class="name">Dirk Lorenz</span>
-                <div class="klein">Geschäftsführung · Bremen · ohne Abteilung</div>
-              </div>
-              <ul>
-                <li>
-                  <div class="karte">
-                    <span class="name">Karin Meyer</span>
-                    <div class="klein">Werkstattleitung · Bremen · Service</div>
-                  </div>
-                  <ul>
-                    <li>
-                      <div class="karte">
-                        <span class="name">Jonas Brandt</span> <span class="badge">ohne Zugang</span>
-                        <div class="klein">Kfz-Mechatroniker · Bremen · Service</div>
-                      </div>
-                    </li>
-                    <li>
-                      <div class="karte">
-                        <span class="name">Selin Aydin</span>
-                        <div class="klein">Serviceberaterin · Bremen · Service</div>
-                      </div>
-                    </li>
-                  </ul>
-                </li>
-                <li>
-                  <div class="karte">
-                    <span class="name">Tom Hagen</span>
-                    <div class="klein">Verkaufsleitung · Bremen · Verkauf</div>
-                  </div>
-                </li>
-              </ul>
-            </li>
-          </ul>
-          <p class="klein">Namen und Zahlen sind erfunden.</p>
+          <div class="tree-scroll">
+            <ul class="org">
+              <li>
+                <div class="knoten">
+                  <span class="name">Dirk Lorenz</span>
+                  <div class="klein">Geschäftsführung</div>
+                  <div class="klein">Bremen</div>
+                </div>
+                <ul>
+                  <li>
+                    <div class="knoten">
+                      <span class="name">Karin Meyer</span>
+                      <div class="klein">Werkstattleitung</div>
+                      <div class="klein">Service</div>
+                    </div>
+                    <ul>
+                      <li>
+                        <div class="knoten">
+                          <span class="name">Jonas Brandt</span>
+                          <div class="klein">Kfz-Mechatroniker</div>
+                          <div class="klein">Service</div>
+                          <span class="badge" style="margin-top: 6px">ohne Zugang</span>
+                        </div>
+                      </li>
+                      <li>
+                        <div class="knoten">
+                          <span class="name">Selin Aydin</span>
+                          <div class="klein">Serviceberaterin</div>
+                          <div class="klein">Service</div>
+                        </div>
+                      </li>
+                      <li>
+                        <div class="knoten">
+                          <span class="name">Lena Vogt</span>
+                          <div class="klein">Kfz-Mechatronikerin</div>
+                          <div class="klein">Service</div>
+                          <span class="badge" style="margin-top: 6px">ohne Zugang</span>
+                        </div>
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    <div class="knoten">
+                      <span class="name">Tom Hagen</span>
+                      <div class="klein">Verkaufsleitung</div>
+                      <div class="klein">Verkauf</div>
+                    </div>
+                    <ul>
+                      <li>
+                        <div class="knoten">
+                          <span class="name">Mia Roth</span>
+                          <div class="klein">Verkaufsberaterin</div>
+                          <div class="klein">Verkauf</div>
+                        </div>
+                      </li>
+                      <li>
+                        <div class="knoten">
+                          <span class="name">Ben Krüger</span>
+                          <div class="klein">Verkaufsberater</div>
+                          <div class="klein">Verkauf</div>
+                        </div>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+          <p class="klein">Namen sind erfunden. Auf dem Telefon lässt sich der Baum seitlich wischen.</p>
         </div>
       </section>
 
       <section class="block">
         <div class="kopf">
           <h2>B · Betriebskalender</h2>
-          <span class="stand offen">folgt</span>
+          <span class="stand fertig">fertig</span>
         </div>
-        <p class="klein">
-          Feiertage je Bundesland als Vorschlag, frei änderbar; eigene Einträge wie Brückentage und verkaufsoffene
-          Sonntage.
-        </p>
+        <ul class="liste">
+          <li>
+            Feiertage je Bundesland als <strong>Vorschlag</strong>: übernehmen, dann ändern oder löschen.
+            Gemeinde-Feiertage trägt das Haus selbst nach.
+          </li>
+          <li>
+            Eigene Tage: Brückentage, verkaufsoffene Sonntage, Betriebsurlaub, Hausmesse – je Standort oder für das
+            ganze Haus.
+          </li>
+          <li>Jeder Tag trägt „arbeitsfrei" oder „Arbeitstag". Ein verkaufsoffener Sonntag ist ein Arbeitstag.</li>
+          <li>
+            Unter <code>/admin/betriebskalender</code>, mit dem Recht „Standorte und Marken verwalten". Die Tage fließen
+            in Block C (Urlaub) und F (Schichtplan) ein.
+          </li>
+        </ul>
+        <h3>Administration → Standorte &amp; Marken</h3>
+        <div class="mock">
+          <div class="karte">
+            <div class="zeile">
+              <div>
+                <span class="name">Bremen-Hauptbetrieb</span>
+                <div class="klein">Hans-Böckler-Str. 12, Bremen</div>
+              </div>
+              <span class="klein">HB</span>
+            </div>
+            <span class="feld" style="max-width: 320px"
+              >BUNDESLAND
+              <div class="eingabe">Bremen ▾</div></span
+            >
+          </div>
+          <p class="klein">Neues Feld je Standort. Ohne Bundesland gibt es keine Feiertagsvorschläge.</p>
+        </div>
+        <h3>Administration → Betriebskalender</h3>
+        <div class="mock">
+          <div class="titel">Eintragen</div>
+          <div class="raster">
+            <span class="feld"
+              >Datum *
+              <div class="eingabe">12.04.2026</div></span
+            >
+            <span class="feld"
+              >Art *
+              <div class="eingabe">Verkaufsoffener Sonntag ▾</div>
+              <span class="klein">Sonst arbeitsfreier Tag, an dem geöffnet ist und gearbeitet wird</span></span
+            >
+            <span class="feld"
+              >Bezeichnung *
+              <div class="eingabe">Frühlingsfest</div></span
+            >
+            <span class="feld"
+              >Gilt für
+              <div class="eingabe">Bremen-Hauptbetrieb ▾</div></span
+            >
+          </div>
+          <label class="check" style="margin-top: 12px"
+            ><span class="box" style="background: var(--linie)"></span
+            ><span
+              ><strong>Arbeitsfrei</strong><br /><span class="klein"
+                >Zählt nicht als Arbeitstag bei Urlaub und Schichtplanung. Abwählen für Tage, an denen trotz Sonntag
+                oder Feiertag gearbeitet wird.</span
+              ></span
+            ></label
+          >
+          <span class="btn primaer">Eintragen</span>
+          <div class="titel" style="margin-top: 20px">Kalenderjahr 2026 &nbsp;·&nbsp; ← 2025 &nbsp; 2027 →</div>
+          <div class="karte">
+            <div class="zeile"><span class="name">Bremen-Hauptbetrieb</span><span class="klein">Bremen</span></div>
+            <div class="kal-zeile">
+              <span class="tag">Do 01.01.</span><span class="bez">Neujahr</span><span class="badge">Feiertag</span
+              ><span class="sel">arbeitsfrei ▾</span><span class="klein" style="color: var(--rot)">Löschen</span>
+            </div>
+            <div class="kal-zeile">
+              <span class="tag">Fr 03.04.</span><span class="bez">Karfreitag</span><span class="badge">Feiertag</span
+              ><span class="sel">arbeitsfrei ▾</span><span class="klein" style="color: var(--rot)">Löschen</span>
+            </div>
+            <div class="kal-zeile">
+              <span class="tag">Mo 06.04.</span><span class="bez">Ostermontag</span><span class="badge">Feiertag</span
+              ><span class="sel">arbeitsfrei ▾</span><span class="klein" style="color: var(--rot)">Löschen</span>
+            </div>
+            <div class="kal-zeile">
+              <span class="tag">So 12.04.</span><span class="bez">Frühlingsfest</span
+              ><span class="badge warn">Verkaufsoffener Sonntag</span><span class="sel">Arbeitstag ▾</span
+              ><span class="klein" style="color: var(--rot)">Löschen</span>
+            </div>
+            <div class="kal-zeile">
+              <span class="tag">Fr 15.05.</span><span class="bez">Brückentag (Christi Himmelfahrt)</span
+              ><span class="badge">Brückentag</span><span class="sel">arbeitsfrei ▾</span
+              ><span class="klein" style="color: var(--rot)">Löschen</span>
+            </div>
+            <div class="kal-zeile">
+              <span class="tag">Mo 21.12.</span><span class="bez">Inventur</span><span class="badge">Betriebsfrei</span
+              ><span class="sel">arbeitsfrei ▾</span><span class="klein" style="color: var(--rot)">Löschen</span>
+            </div>
+            <p class="klein" style="margin: 8px 0 0">… und 7 weitere Feiertage</p>
+            <div style="margin-top: 10px">
+              <span class="klein" style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em"
+                >Mögliche Brückentage</span
+              ><br /><span class="chip">+ Fr 02.01. · Neujahr</span>
+            </div>
+          </div>
+          <div class="karte" style="margin-top: 12px">
+            <div class="zeile"><span class="name">Delmenhorst</span><span class="klein">Niedersachsen</span></div>
+            <div class="vorschlag">
+              <strong>10 Feiertage als Vorschlag</strong><br />Do 01.01. Neujahr · Fr 03.04. Karfreitag · Mo 06.04.
+              Ostermontag · Fr 01.05. Tag der Arbeit · Do 14.05. Christi Himmelfahrt · Mo 25.05. Pfingstmontag · Sa
+              03.10. Tag der Deutschen Einheit · Sa 31.10. Reformationstag · Fr 25.12. 1. Weihnachtstag · Sa 26.12. 2.
+              Weihnachtstag<br /><span style="font-size: 12px"
+                >Ortsabhängige Feiertage (z. B. Fronleichnam in Teilen Sachsens) bitte selbst prüfen und
+                nachtragen.</span
+              ><br /><span class="btn primaer">Alle 10 übernehmen</span>
+            </div>
+          </div>
+          <div class="karte" style="margin-top: 12px">
+            <div class="zeile">
+              <span class="name">Werkstatt Nord</span><span class="klein">Bundesland nicht angegeben</span>
+            </div>
+            <p
+              style="
+                margin: 10px 0 0;
+                padding: 8px 12px;
+                border-radius: 12px;
+                background: var(--warn-bg);
+                color: var(--warn);
+                font-size: 13px;
+              "
+            >
+              Ohne Bundesland gibt es keine Feiertagsvorschläge. Tragen Sie es unter Standorte &amp; Marken ein.
+            </p>
+            <p class="klein" style="margin-bottom: 0">Noch keine Einträge für 2026.</p>
+          </div>
+          <p class="klein">Namen und Zahlen sind erfunden.</p>
+        </div>
       </section>
       <section class="block">
         <div class="kopf">

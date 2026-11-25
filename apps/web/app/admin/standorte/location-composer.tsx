@@ -1,6 +1,7 @@
 "use client";
 
 import { useFormState } from "react-dom";
+import { BUNDESLAENDER } from "@ah-intranet/shared";
 import { Field, FormAlert, SubmitButton, inputClass } from "@/components/forms";
 import { createLocationAction, type ActionState } from "@/lib/actions";
 
@@ -27,8 +28,19 @@ export function LocationComposer({ brands }: { brands: Brand[] }) {
         <input name="code" required minLength={2} maxLength={10} className={inputClass} />
       </Field>
 
-      <Field label="Adresse" wide>
+      <Field label="Adresse">
         <input name="address" className={inputClass} />
+      </Field>
+
+      <Field label="Bundesland" hint="Grundlage der Feiertagsvorschläge im Betriebskalender">
+        <select name="bundesland" defaultValue="" className={inputClass}>
+          <option value="">– nicht angegeben –</option>
+          {BUNDESLAENDER.map((land) => (
+            <option key={land.code} value={land.code}>
+              {land.name}
+            </option>
+          ))}
+        </select>
       </Field>
 
       <Field label="Marken" wide hint="Welche Marken führt dieser Standort? Mehrfachauswahl möglich">

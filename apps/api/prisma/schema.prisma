@@ -109,6 +109,14 @@ enum TicketStatus {
   geloest
 }
 
+enum BetriebstagArt {
+  feiertag
+  brueckentag
+  verkaufsoffen
+  betriebsfrei
+  sondertag
+}
+
 enum AbsenceType {
   urlaub
   krank
@@ -142,13 +150,13 @@ enum NotificationChannel {
 /// Ein Autohaus als Mandant. Sämtliche Fachdaten hängen daran; das Löschen
 /// eines Mandanten entfernt über die Kaskade auch seine Daten.
 model Tenant {
-  id        String   @id @default(cuid())
+  id            String   @id @default(cuid())
   /// Kurzkennung, auch als Subdomain verwendbar.
-  slug      String   @unique
-  name      String
+  slug          String   @unique
+  name          String
   /// Eigene Domain, falls der Mandant nicht über die Subdomain kommt.
-  domain    String?  @unique
-  isActive  Boolean  @default(true)
+  domain        String?  @unique
+  isActive      Boolean  @default(true)
   /// Höchstzahl aktiver Konten. `null` heißt unbegrenzt - nicht jedes Haus
   /// hat ein Lizenzmodell, und ein erfundenes Limit wäre schlimmer als keins.
   licensedSeats Int?
@@ -158,17 +166,17 @@ model Tenant {
   /// Alle Konten dieses Hauses brauchen einen zweiten Faktor. Aus ist der
   /// Normalfall: ein Haus soll ohne IT-Termin starten können. Konten der
   /// Plattformverwaltung brauchen ihn unabhängig davon immer.
-  mfaPflicht Boolean @default(false)
-  notes     String?
+  mfaPflicht    Boolean  @default(false)
+  notes         String?
   /// Eigenes Logo des Hauses (Weißmarke) - ersetzt das AHOI-Zeichen in
   /// Kopfzeile und Anmeldeseite dieses Mandanten. In der Datenbank statt auf
   /// einem eigenen Dateisystem: ein einzelnes kleines Bild je Haus, damit
   /// gesichert von denselben Skripten wie der Rest der Daten (`scripts/`),
   /// ohne einen zweiten Aufbewahrungsweg zu brauchen.
-  logo      Bytes?
-  logoMime  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  logo          Bytes?
+  logoMime      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   locations                    Location[]
   departments                  Department[]
@@ -226,6 +234,7 @@ model Tenant {
   custodyItems                 CustodyItem[]
   custodyEvents                CustodyEvent[]
   mealOffers                   MealOffer[]
+  betriebstage                 Betriebstag[]
   mealOptions                  MealOption[]
   mealOrders                   MealOrder[]
 
@@ -269,15 +278,18 @@ model TenantAuthProvider {
 // ------------------------------------------------------- Organisation
 
 model Location {
-  id        String   @id @default(cuid())
-  tenantId  String   @default("")
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name      String
-  code      String
-  address   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  tenantId   String   @default("")
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name       String
+  code       String
+  address    String?
+  /// Kürzel des Bundeslands (BW, BY, ...), Grundlage der Feiertagsvorschläge.
+  bundesland String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
+  betriebstage        Betriebstag[]
   users               User[]
   orderCycles         OrderCycle[]
   locationDepartments LocationDepartment[]
@@ -1101,6 +1113,32 @@ model OnboardingItem {
 
   @@unique([tenantId, assignmentId, stepId])
   @@index([tenantId])
+}
+
+// ------------------------------------------------------ Betriebskalender
+
+/// Ein Tag, der die Planung betrifft: Feiertag, Brückentag, verkaufsoffener
+/// Sonntag, Betriebsurlaub. Feiertage entstehen als Vorschlag aus der Rechnung
+/// und werden vom Haus übernommen - danach sind sie Daten wie jeder andere
+/// Eintrag, änderbar und löschbar.
+model Betriebstag {
+  id          String         @id @default(cuid())
+  tenantId    String         @default("")
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  /// Leer = gilt für das ganze Haus.
+  locationId  String?
+  location    Location?      @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  datum       DateTime       @db.Date
+  art         BetriebstagArt
+  name        String
+  /// Wahr: zählt nicht als Arbeitstag (Urlaub, Schichtplanung). Falsch: ein
+  /// sonst freier Tag, an dem gearbeitet wird (verkaufsoffener Sonntag).
+  arbeitsfrei Boolean
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([tenantId, datum])
+  @@index([locationId])
 }
 
 // ------------------------------------------------------ Abwesenheiten

@@ -92,6 +92,15 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
 - **Organigramm** (`modules/people/organigramm.ts`): reine Funktionen für
   Kreisprüfung, Baum und Unterstellte. Die Kreisprüfung läuft bei jeder Änderung
   des Vorgesetzten; `alleUnterstellten` trägt später die Erfassung für andere.
+- **Betriebskalender** (`Betriebstag`, `modules/people/betriebskalender.*`):
+  Feiertage, Brückentage, verkaufsoffene Sonntage, Betriebsurlaub - je Standort
+  oder für das ganze Haus. Feiertage rechnet `feiertage.ts` je Bundesland
+  (`Location.bundesland`) nur als **Vorschlag**; erst die Übernahme macht sie zu
+  Daten des Hauses, die sich ändern und löschen lassen. Ortsabhängige Feiertage
+  kennt die Rechnung nicht - das Haus trägt sie nach. Jeder Tag trägt
+  `arbeitsfrei`: ein verkaufsoffener Sonntag ist ein Arbeitstag. Gepflegt mit
+  `organisation.manage`, gelesen von allen (`GET /betriebskalender/tage`), damit
+  Urlaubsanträge und Schichtplan dieselbe Quelle nutzen.
 - Ein neues Haus entsteht samt Rollen, Rechten und erstem Administrationskonto
   in einer Transaktion – ein halb eingerichteter Mandant wäre nicht benutzbar.
 

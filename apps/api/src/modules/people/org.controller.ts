@@ -8,6 +8,7 @@ class LocationBodyDto {
   @IsString() @MinLength(2) name!: string;
   @IsString() @MinLength(2) code!: string;
   @IsOptional() @IsString() address?: string;
+  @IsOptional() @IsString() bundesland?: string;
   @IsOptional() @IsArray() @ArrayUnique() @IsString({ each: true }) brandIds?: string[];
 }
 
@@ -15,6 +16,7 @@ class LocationPatchDto {
   @IsOptional() @IsString() @MinLength(2) name?: string;
   @IsOptional() @IsString() @MinLength(2) code?: string;
   @IsOptional() @IsString() address?: string;
+  @IsOptional() @IsString() bundesland?: string;
   @IsOptional() @IsArray() @ArrayUnique() @IsString({ each: true }) brandIds?: string[];
 }
 

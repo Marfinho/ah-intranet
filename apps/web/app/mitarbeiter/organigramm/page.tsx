@@ -4,21 +4,22 @@ import { EmptyState, Section } from "@/components/ui";
 import { apiGet } from "@/lib/api";
 import { requireModule } from "@/lib/session";
 
-/** Eine Person samt Unterstellten. Verschachtelte Listen statt Zeichnung: lesbar auf dem Telefon in der Halle. */
+/**
+ * Eine Person samt Unterstellten. Der Baum läuft von oben nach unten; die
+ * Verbinder zeichnet `.org-baum` in globals.css. Die Karten sind gleich breit,
+ * damit die Linien mittig sitzen.
+ */
 function Zweig({ knoten }: { knoten: OrganigrammKnoten }) {
   return (
     <li>
-      <div className="rounded-2xl border border-slate-200 px-4 py-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="font-semibold text-slate-900">{knoten.displayName}</p>
-          {!knoten.hasAccess ? <span className="badge bg-slate-100 text-slate-600">ohne Zugang</span> : null}
-        </div>
-        <p className="text-sm text-slate-600">
-          {knoten.jobTitle} · {knoten.location ?? "ohne Standort"} · {knoten.department ?? "ohne Abteilung"}
-        </p>
+      <div className="w-40 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-center">
+        <p className="text-sm font-semibold text-slate-900">{knoten.displayName}</p>
+        <p className="mt-0.5 text-xs text-slate-600">{knoten.jobTitle}</p>
+        <p className="mt-0.5 text-xs text-slate-500">{knoten.department ?? knoten.location ?? "ohne Abteilung"}</p>
+        {!knoten.hasAccess ? <span className="badge mt-2 bg-slate-100 text-slate-600">ohne Zugang</span> : null}
       </div>
       {knoten.unterstellte.length > 0 ? (
-        <ul className="ml-4 mt-2 space-y-2 border-l-2 border-slate-200 pl-4">
+        <ul>
           {knoten.unterstellte.map((kind) => (
             <Zweig key={kind.id} knoten={kind} />
           ))}
@@ -38,11 +39,13 @@ export default async function OrganigrammPage() {
         {wurzeln.length === 0 ? (
           <EmptyState title="Noch keine Personen" detail="Sobald Personen angelegt sind, erscheinen sie hier." />
         ) : (
-          <ul className="space-y-2">
-            {wurzeln.map((knoten) => (
-              <Zweig key={knoten.id} knoten={knoten} />
-            ))}
-          </ul>
+          <div className="overflow-x-auto pb-4">
+            <ul className="org-baum mx-auto w-max min-w-full">
+              {wurzeln.map((knoten) => (
+                <Zweig key={knoten.id} knoten={knoten} />
+              ))}
+            </ul>
+          </div>
         )}
       </Section>
     </AppShell>

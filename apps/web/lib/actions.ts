@@ -818,6 +818,7 @@ export async function createLocationAction(_previous: ActionState, formData: For
     name: String(formData.get("name") ?? ""),
     code: String(formData.get("code") ?? ""),
     address: String(formData.get("address") ?? "") || undefined,
+    bundesland: String(formData.get("bundesland") ?? "") || undefined,
     brandIds: formData.getAll("brandIds").map(String),
   };
   return run(() => apiSend("POST", "/standorte", payload), ["/admin/standorte"], "Standort angelegt.");
@@ -825,9 +826,13 @@ export async function createLocationAction(_previous: ActionState, formData: For
 
 export async function updateLocationAction(
   locationId: string,
-  input: { name?: string; code?: string; address?: string | null; brandIds?: string[] },
+  input: { name?: string; code?: string; address?: string | null; bundesland?: string | null; brandIds?: string[] },
 ): Promise<ActionState> {
-  return run(() => apiSend("PATCH", `/standorte/${locationId}`, input), ["/admin/standorte", "/admin/news"]);
+  return run(() => apiSend("PATCH", `/standorte/${locationId}`, input), [
+    "/admin/standorte",
+    "/admin/news",
+    "/admin/betriebskalender",
+  ]);
 }
 
 export async function deleteLocationAction(locationId: string): Promise<ActionState> {
@@ -1059,4 +1064,47 @@ export async function orderMealAction(offerId: string, optionId: string, quantit
 
 export async function cancelMealAction(offerId: string): Promise<ActionState> {
   return run(() => apiSend("DELETE", `/essen/angebote/${offerId}/bestellung`), ["/essen", "/"]);
+}
+
+/* ------------------------------------------------- Betriebskalender */
+
+const KALENDER = ["/admin/betriebskalender"];
+
+export interface BetriebstagInput {
+  datum: string;
+  art: string;
+  name: string;
+  arbeitsfrei?: boolean;
+  locationId?: string;
+}
+
+export async function createBetriebstagAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const payload: BetriebstagInput = {
+    datum: String(formData.get("datum") ?? ""),
+    art: String(formData.get("art") ?? ""),
+    name: String(formData.get("name") ?? ""),
+    arbeitsfrei: formData.get("arbeitsfrei") === "on",
+    locationId: String(formData.get("locationId") ?? "") || undefined,
+  };
+  return run(() => apiSend("POST", "/betriebskalender", payload), KALENDER, "Eintrag gespeichert.");
+}
+
+/** Ein Vorschlag wird einzeln übernommen, z. B. ein Brückentag. */
+export async function uebernimmVorschlagAction(input: BetriebstagInput): Promise<ActionState> {
+  return run(() => apiSend("POST", "/betriebskalender", input), KALENDER);
+}
+
+export async function uebernimmFeiertageAction(jahr: number, locationId: string): Promise<ActionState> {
+  return run(() => apiSend("POST", "/betriebskalender/uebernehmen", { jahr, locationId, arten: ["feiertag"] }), KALENDER);
+}
+
+export async function updateBetriebstagAction(
+  id: string,
+  input: { name?: string; arbeitsfrei?: boolean; art?: string },
+): Promise<ActionState> {
+  return run(() => apiSend("PATCH", `/betriebskalender/${id}`, input), KALENDER);
+}
+
+export async function deleteBetriebstagAction(id: string): Promise<ActionState> {
+  return run(() => apiSend("DELETE", `/betriebskalender/${id}`), KALENDER);
 }

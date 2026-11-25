@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { BUNDESLAENDER } from "@ah-intranet/shared";
 import { deleteLocationAction, updateLocationAction } from "@/lib/actions";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +17,7 @@ interface LocationSummary {
   name: string;
   code: string;
   address: string | null;
+  bundesland: string | null;
   brands: Brand[];
 }
 
@@ -74,6 +76,25 @@ export function LocationRow({ location, allBrands }: { location: LocationSummary
           Standort löschen
         </button>
       </div>
+
+      <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+        Bundesland
+        <select
+          defaultValue={location.bundesland ?? ""}
+          disabled={pending}
+          onChange={(event) =>
+            startTransition(async () => melde(await updateLocationAction(location.id, { bundesland: event.target.value })))
+          }
+          className="mt-2 block w-full max-w-xs rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal normal-case tracking-normal text-slate-800"
+        >
+          <option value="">– nicht angegeben –</option>
+          {BUNDESLAENDER.map((land) => (
+            <option key={land.code} value={land.code}>
+              {land.name}
+            </option>
+          ))}
+        </select>
+      </label>
 
       <div className="mt-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Marken</p>

@@ -18,6 +18,7 @@ interface LocationSummary {
   name: string;
   code: string;
   address: string | null;
+  bundesland: string | null;
   brands: Brand[];
 }
 

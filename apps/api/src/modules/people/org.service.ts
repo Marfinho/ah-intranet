@@ -5,11 +5,14 @@ import { AuditService } from "../../core/audit.service";
 import { resolveUserScopes } from "../../core/mappers";
 import type { RequestUser } from "../../core/request-user";
 import { requireTenantId } from "../../core/tenant-context";
+import { istBundesland } from "@ah-intranet/shared";
 
 export interface LocationInput {
   name: string;
   code: string;
   address?: string | null;
+  /** Kürzel des Bundeslands; Grundlage der Feiertagsvorschläge. Leer = keine Vorschläge. */
+  bundesland?: string | null;
   /** Ids der Marken, die dieser Standort führt. Fehlt das Feld, bleibt die Zuordnung unverändert. */
   brandIds?: string[];
 }
@@ -60,7 +63,7 @@ export class OrgService {
 
     const location = await this.prisma.$transaction(async (tx) => {
       const created = await tx.location.create({
-        data: { name: input.name.trim(), code, address: input.address?.trim() || null },
+        data: { name: input.name.trim(), code, address: input.address?.trim() || null, bundesland: this.bundesland(input.bundesland) },
       });
       await this.setLocationBrands(tx, created.id, input.brandIds ?? []);
       return created;
@@ -113,6 +116,7 @@ export class OrgService {
           ...(input.name !== undefined ? { name: input.name.trim() } : {}),
           ...(input.code !== undefined ? { code: this.normalizeCode(input.code) } : {}),
           ...(input.address !== undefined ? { address: input.address?.trim() || null } : {}),
+          ...(input.bundesland !== undefined ? { bundesland: this.bundesland(input.bundesland) } : {}),
         },
       });
 
@@ -283,12 +287,25 @@ export class OrgService {
     }
   }
 
+  /** Leer heißt: keins. Ein unbekanntes Kürzel würde stillschweigend keine Feiertage liefern. */
+  private bundesland(wert?: string | null): string | null {
+    const code = wert?.trim().toUpperCase();
+    if (!code) {
+      return null;
+    }
+    if (!istBundesland(code)) {
+      throw new BadRequestException(`Unbekanntes Bundesland: ${wert}`);
+    }
+    return code;
+  }
+
   private toLocationSummary(location: LocationWithBrands) {
     return {
       id: location.id,
       name: location.name,
       code: location.code,
       address: location.address,
+      bundesland: location.bundesland,
       brands: location.locationBrands.map((entry) => ({
         id: entry.brand.id,
         name: entry.brand.name,

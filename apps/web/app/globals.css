@@ -187,3 +187,85 @@ h3,
 .label {
   @apply font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500;
 }
+
+/*
+ * Organigramm: Baum von oben nach unten. Die Verbinder sind reine Rahmenlinien
+ * an li und ul - die Struktur bleibt eine verschachtelte Liste und damit für
+ * Screenreader als solche lesbar.
+ */
+.org-baum,
+.org-baum ul {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  padding: 1.5rem 0 0;
+  list-style: none;
+}
+
+.org-baum {
+  padding-top: 0;
+}
+
+.org-baum ul::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: 1.5rem;
+  border-left: 2px solid var(--ahoi-line);
+}
+
+.org-baum li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 0.5rem 0;
+}
+
+.org-baum li::before,
+.org-baum li::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 50%;
+  width: 50%;
+  height: 1.5rem;
+  border-top: 2px solid var(--ahoi-line);
+}
+
+.org-baum li::after {
+  right: auto;
+  left: 50%;
+  border-left: 2px solid var(--ahoi-line);
+}
+
+.org-baum li:only-child {
+  padding-top: 0;
+}
+
+.org-baum li:only-child::before,
+.org-baum li:only-child::after,
+.org-baum > li::before,
+.org-baum > li::after {
+  display: none;
+}
+
+.org-baum > li {
+  padding-top: 0;
+}
+
+.org-baum li:first-child::before,
+.org-baum li:last-child::after {
+  border: 0 none;
+}
+
+.org-baum li:last-child::before {
+  border-right: 2px solid var(--ahoi-line);
+  border-radius: 0 0.5rem 0 0;
+}
+
+.org-baum li:first-child::after {
+  border-radius: 0.5rem 0 0 0;
+}
