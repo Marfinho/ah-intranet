@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AHOI Umbau Personal – Vorschau</title>
+    <style>
+      :root {
+        --grund: #f1f3f5;
+        --flaeche: #fff;
+        --schrift: #0f1417;
+        --gedaempft: #4c575e;
+        --leise: #78848b;
+        --linie: #d3d9dd;
+        --akzent: #dc3a14;
+        --akzent-text: #a2270c;
+        --akzent-zart: #fbe3d9;
+        --ok-bg: #dcfce7;
+        --ok: #166534;
+        --warn-bg: #fef3c7;
+        --warn: #92400e;
+        --rot-bg: #ffe4e6;
+        --rot: #9f1239;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --grund: #0e1113;
+          --flaeche: #181c1f;
+          --schrift: #e6eaec;
+          --gedaempft: #a3afb5;
+          --leise: #7b878e;
+          --linie: #2a3338;
+          --akzent: #ff6b41;
+          --akzent-text: #ff8a66;
+          --akzent-zart: #3a1a0f;
+          --ok-bg: #12301d;
+          --ok: #86efac;
+          --warn-bg: #3a2c0a;
+          --warn: #fcd34d;
+          --rot-bg: #3b1520;
+          --rot: #fda4af;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--grund);
+        color: var(--schrift);
+        font:
+          15px/1.5 system-ui,
+          sans-serif;
+      }
+      main {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 24px 16px 64px;
+      }
+      h1 {
+        font-size: 26px;
+        margin: 0 0 4px;
+      }
+      h2 {
+        font-size: 20px;
+        margin: 0;
+      }
+      h3 {
+        font-size: 15px;
+        margin: 24px 0 8px;
+        color: var(--gedaempft);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .lead,
+      .klein {
+        color: var(--gedaempft);
+      }
+      .klein {
+        font-size: 13px;
+      }
+      .block {
+        background: var(--flaeche);
+        border: 1px solid var(--linie);
+        border-radius: 20px;
+        padding: 24px;
+        margin-top: 24px;
+      }
+      .kopf {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .stand {
+        font-size: 12px;
+        font-weight: 600;
+        padding: 3px 12px;
+        border-radius: 99px;
+      }
+      .fertig {
+        background: var(--ok-bg);
+        color: var(--ok);
+      }
+      .offen {
+        background: var(--grund);
+        color: var(--leise);
+        border: 1px solid var(--linie);
+      }
+      ul.liste {
+        padding-left: 20px;
+        margin: 8px 0;
+      }
+      .karte {
+        background: var(--flaeche);
+        border: 1px solid var(--linie);
+        border-radius: 16px;
+        padding: 16px 18px;
+      }
+      .mock {
+        background: var(--grund);
+        border: 1px dashed var(--linie);
+        border-radius: 16px;
+        padding: 16px;
+        margin-top: 8px;
+      }
+      .mock > .titel {
+        font-size: 12px;
+        color: var(--leise);
+        margin-bottom: 10px;
+      }
+      .badge {
+        display: inline-flex;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 2px 10px;
+        border-radius: 99px;
+        background: var(--grund);
+        border: 1px solid var(--linie);
+        color: var(--gedaempft);
+      }
+      .badge.warn {
+        background: var(--warn-bg);
+        color: var(--warn);
+        border-color: transparent;
+      }
+      .badge.ok {
+        background: var(--ok-bg);
+        color: var(--ok);
+        border-color: transparent;
+      }
+      .badge.rot {
+        background: var(--rot-bg);
+        color: var(--rot);
+        border-color: transparent;
+      }
+      .btn {
+        display: inline-block;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 7px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--linie);
+        background: var(--flaeche);
+        color: var(--schrift);
+      }
+      .btn.primaer {
+        background: var(--akzent);
+        border-color: var(--akzent);
+        color: #fff;
+      }
+      .feld {
+        display: block;
+        margin-top: 10px;
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .feld .eingabe {
+        margin-top: 4px;
+        padding: 9px 12px;
+        border: 1px solid var(--linie);
+        border-radius: 14px;
+        background: var(--flaeche);
+        color: var(--leise);
+        font-weight: 400;
+      }
+      .raster {
+        display: grid;
+        gap: 0 16px;
+        grid-template-columns: 1fr 1fr;
+      }
+      @media (max-width: 640px) {
+        .raster {
+          grid-template-columns: 1fr;
+        }
+      }
+      .zeile {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .zeile + .zeile {
+        margin-top: 10px;
+      }
+      .name {
+        font-weight: 600;
+      }
+      .baum,
+      .baum ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .baum ul {
+        margin: 8px 0 0 14px;
+        padding-left: 16px;
+        border-left: 2px solid var(--linie);
+      }
+      .baum li + li {
+        margin-top: 8px;
+      }
+      .baum .karte {
+        padding: 10px 14px;
+      }
+      .hinweis {
+        margin-top: 12px;
+        padding: 10px 14px;
+        border-radius: 12px;
+        background: var(--akzent-zart);
+        color: var(--akzent-text);
+        font-size: 13px;
+      }
+      label.check {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        border: 1px solid var(--linie);
+        border-radius: 14px;
+        padding: 10px 14px;
+        background: var(--flaeche);
+        font-size: 13px;
+        margin-bottom: 4px;
+      }
+      .box {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        background: var(--akzent);
+        margin-top: 3px;
+        flex: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>AHOI – Umbau Personal und Vertretung</h1>
+      <p class="lead">
+        Vorschau je Baustein. Die Ansichten sind <strong>nachgezeichnete Skizzen</strong> in den Farben des
+        Erscheinungsbilds, keine Bildschirmfotos – hier läuft keine Datenbank. Die Datei wächst nach jedem Block.
+      </p>
+
+      <section class="block">
+        <div class="kopf">
+          <h2>A · Personen ohne Zugang und Organigramm</h2>
+          <span class="stand fertig">fertig</span>
+        </div>
+        <ul class="liste">
+          <li>Personen stehen im Personalstamm, ohne sich anmelden zu können – zählen nicht zum Lizenzkontingent.</li>
+          <li>Vorgesetzte lassen sich beim Anlegen wählen; Kreise werden abgewiesen.</li>
+          <li>Organigramm unter <code>/mitarbeiter/organigramm</code>, Zugang einrichten und entziehen.</li>
+        </ul>
+
+        <h3>Administration → Benutzerverwaltung · neues Konto</h3>
+        <div class="mock">
+          <div class="titel">Formular „Neues Konto"</div>
+          <label class="check"
+            ><span class="box"></span
+            ><span
+              ><strong>Mit Zugang zum Intranet</strong><br /><span class="klein"
+                >Ohne Zugang steht die Person im Personalstamm, Organigramm und Schichtplan, kann sich aber nicht
+                anmelden (z. B. Werkstatt ohne Rechner). Das Lizenzkontingent zählt sie nicht mit.</span
+              ></span
+            ></label
+          >
+          <div class="raster">
+            <span class="feld"
+              >Vorname *
+              <div class="eingabe">Jonas</div></span
+            >
+            <span class="feld"
+              >Nachname *
+              <div class="eingabe">Brandt</div></span
+            >
+            <span class="feld"
+              >Funktion
+              <div class="eingabe">Kfz-Mechatroniker</div></span
+            >
+            <span class="feld"
+              >Vorgesetzte Person
+              <div class="eingabe">Meyer, Karin (Werkstattleitung) ▾</div>
+              <span class="klein">Bestimmt das Organigramm und wer Abwesenheiten freigibt</span></span
+            >
+            <span class="feld"
+              >Standort
+              <div class="eingabe">Bremen ▾</div></span
+            >
+            <span class="feld"
+              >Abteilung
+              <div class="eingabe">Service ▾</div></span
+            >
+          </div>
+          <p class="klein">
+            Bei ausgeschaltetem Zugang entfällt das Feld „Benutzername"; die Kennung wird intern erzeugt.
+          </p>
+          <span class="btn primaer">Person anlegen</span>
+        </div>
+
+        <h3>Administration → Benutzerverwaltung · Liste</h3>
+        <div class="mock">
+          <div class="karte">
+            <div class="zeile">
+              <div>
+                <span class="name">Karin Meyer</span> <span class="badge">k.meyer</span>
+                <span class="badge">Führungskraft</span>
+                <div class="klein">Werkstattleitung · Bremen · Service</div>
+              </div>
+              <div>
+                <span class="btn">Zugang entziehen</span> <span class="btn">2. Faktor zurücksetzen</span>
+                <span class="btn">Passwort zurücksetzen</span> <span class="btn">Deaktivieren</span>
+              </div>
+            </div>
+          </div>
+          <div class="karte" style="margin-top: 10px">
+            <div class="zeile">
+              <div>
+                <span class="name">Jonas Brandt</span> <span class="badge">jonas.brandt</span>
+                <span class="badge">Mitarbeitende</span> <span class="badge warn">ohne Zugang</span>
+                <div class="klein">Kfz-Mechatroniker · Bremen · Service</div>
+              </div>
+              <div><span class="btn">Zugang einrichten</span> <span class="btn">Deaktivieren</span></div>
+            </div>
+          </div>
+        </div>
+
+        <h3>Mitarbeiter → Organigramm</h3>
+        <div class="mock">
+          <ul class="baum">
+            <li>
+              <div class="karte">
+                <span class="name">Dirk Lorenz</span>
+                <div class="klein">Geschäftsführung · Bremen · ohne Abteilung</div>
+              </div>
+              <ul>
+                <li>
+                  <div class="karte">
+                    <span class="name">Karin Meyer</span>
+                    <div class="klein">Werkstattleitung · Bremen · Service</div>
+                  </div>
+                  <ul>
+                    <li>
+                      <div class="karte">
+                        <span class="name">Jonas Brandt</span> <span class="badge">ohne Zugang</span>
+                        <div class="klein">Kfz-Mechatroniker · Bremen · Service</div>
+                      </div>
+                    </li>
+                    <li>
+                      <div class="karte">
+                        <span class="name">Selin Aydin</span>
+                        <div class="klein">Serviceberaterin · Bremen · Service</div>
+                      </div>
+                    </li>
+                  </ul>
+                </li>
+                <li>
+                  <div class="karte">
+                    <span class="name">Tom Hagen</span>
+                    <div class="klein">Verkaufsleitung · Bremen · Verkauf</div>
+                  </div>
+                </li>
+              </ul>
+            </li>
+          </ul>
+          <p class="klein">Namen und Zahlen sind erfunden.</p>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="kopf">
+          <h2>B · Betriebskalender</h2>
+          <span class="stand offen">folgt</span>
+        </div>
+        <p class="klein">
+          Feiertage je Bundesland als Vorschlag, frei änderbar; eigene Einträge wie Brückentage und verkaufsoffene
+          Sonntage.
+        </p>
+      </section>
+      <section class="block">
+        <div class="kopf">
+          <h2>C · Abwesenheiten</h2>
+          <span class="stand offen">folgt</span>
+        </div>
+        <p class="klein">
+          Krank ohne Freigabe, Halbtage, Teamkalender, Erfassung für Personen ohne Zugang durch Abteilungsleitungen.
+        </p>
+      </section>
+      <section class="block">
+        <div class="kopf">
+          <h2>D · Schlüsselfunktionen und Vertretung</h2>
+          <span class="stand offen">folgt</span>
+        </div>
+        <p class="klein">
+          Key User → 1. Vertreter → 2. Vertreter → Geschäftsführung, Mail bei Abwesenheit (Einstellung des Hausadmins).
+        </p>
+      </section>
+      <section class="block">
+        <div class="kopf">
+          <h2>E · Zweiter Faktor (TOTP)</h2>
+          <span class="stand offen">in main · Anbindung folgt</span>
+        </div>
+        <p class="klein">
+          TOTP liegt bereits in <code>main</code>. Offen ist nur die Verknüpfung mit den Schlüsselfunktionen aus D.
+        </p>
+      </section>
+      <section class="block">
+        <div class="kopf">
+          <h2>F · Schichtplaner</h2>
+          <span class="stand offen">folgt</span>
+        </div>
+        <p class="klein">
+          Schichtarten, Arbeitszeitfenster, Autoplanung unter Beachtung von Urlaub, Feiertagen und Arbeitszeitgesetz.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>
