@@ -325,6 +325,11 @@ export interface EmployeeDirectoryEntry {
   status: UserAccountStatus;
   /** Falsch bei Personen ohne Anmeldung - sie stehen im Personalstamm, nicht im Login. */
   hasAccess: boolean;
+  /**
+   * Nur in der Antwort auf eine Deaktivierung oder einen Zugangsentzug: welche
+   * Schlüsselfunktionen dadurch nicht mehr besetzt sind. Sonst fehlt das Feld.
+   */
+  hinweis?: string | null;
 }
 
 /** Eine Person im Organigramm samt den ihr direkt Unterstellten. */

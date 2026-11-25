@@ -66,12 +66,41 @@ export interface UserInput {
   zugang?: boolean;
 }
 
+/** Wird aufgerufen, wenn ein Konto nicht mehr handlungsfähig ist; liefert einen Hinweis für die ausführende Person. */
+export type KontoAusfallHandler = (ereignis: {
+  userId: string;
+  actor: RequestUser;
+  anlass: string;
+}) => Promise<string | null>;
+
 @Injectable()
 export class PeopleService {
+  /**
+   * Beobachter statt direktem Aufruf: die Schlüsselfunktionen brauchen den
+   * Personaldienst, und der soll sie nicht kennen müssen - sonst bildeten beide
+   * einen Kreis. Wer wissen will, wenn ein Konto ausfällt, trägt sich hier ein.
+   */
+  private readonly ausfallHandler: KontoAusfallHandler[] = [];
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
   ) {}
+
+  registriereKontoAusfall(handler: KontoAusfallHandler): void {
+    this.ausfallHandler.push(handler);
+  }
+
+  private async meldeKontoAusfall(userId: string, actor: RequestUser, anlass: string): Promise<string | null> {
+    const hinweise: string[] = [];
+    for (const handler of this.ausfallHandler) {
+      const hinweis = await handler({ userId, actor, anlass });
+      if (hinweis) {
+        hinweise.push(hinweis);
+      }
+    }
+    return hinweise.length > 0 ? hinweise.join("\n\n") : null;
+  }
 
   /* ------------------------------------------------------ Verzeichnis */
 
@@ -319,7 +348,10 @@ export class PeopleService {
       detail: `Benutzer ${updated.username} bearbeitet`,
     });
 
-    return this.toDirectoryEntry(updated);
+    // Erst nach dem Speichern: die Prüfung der Besetzung liest den neuen Stand.
+    const deaktiviert = input.status === "inactive" && existing.status === "active";
+    const hinweis = deaktiviert ? await this.meldeKontoAusfall(id, actor, "wurde deaktiviert") : null;
+    return { ...this.toDirectoryEntry(updated), ...(hinweis ? { hinweis } : {}) };
   }
 
   async resetPassword(actor: RequestUser, id: string): Promise<{ initialPassword: string }> {
@@ -426,7 +458,8 @@ export class PeopleService {
       entityId: id,
       detail: `Zugang von ${user.username} entzogen`,
     });
-    return this.toDirectoryEntry(aktualisiert);
+    const hinweis = user.loginEnabled ? await this.meldeKontoAusfall(id, actor, "hat keinen Zugang mehr") : null;
+    return { ...this.toDirectoryEntry(aktualisiert), ...(hinweis ? { hinweis } : {}) };
   }
 
   /* ----------------------------------------------------------- Rollen */

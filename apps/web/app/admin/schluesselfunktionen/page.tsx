@@ -40,11 +40,7 @@ export default async function SchluesselfunktionenPage() {
 
       <div className="space-y-4">
         {daten.funktionen.map((funktion) => (
-          <Section
-            key={funktion.key}
-            title={funktion.name}
-            subtitle={funktion.beschreibung}
-          >
+          <Section key={funktion.key} title={funktion.name} subtitle={funktion.beschreibung}>
             <div className="flex flex-wrap items-center gap-3">
               <span className={`badge ${AMPEL[funktion.ampel].stil}`}>{AMPEL[funktion.ampel].text}</span>
               <p className="text-sm text-slate-600">
@@ -75,8 +71,8 @@ export default async function SchluesselfunktionenPage() {
             </ul>
             {darfPflegen ? (
               <p className="mt-3 text-xs text-slate-500">
-                Einsetzen kann man nur Konten mit dem Recht „{funktion.recht}" - sonst könnte die Vertretung im Ernstfall
-                nichts tun.
+                Einsetzen kann man nur Konten mit dem Recht „{funktion.recht}" - sonst könnte die Vertretung im
+                Ernstfall nichts tun.
               </p>
             ) : null}
           </Section>

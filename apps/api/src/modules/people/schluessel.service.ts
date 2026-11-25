@@ -16,7 +16,15 @@ import { displayName } from "../../core/mappers";
 import { can, type RequestUser } from "../../core/request-user";
 import { requireTenantId } from "../../core/tenant-context";
 import { PeopleService } from "./people.service";
-import { ampel, darfLeeren, empfaengerBeiAbwesenheit, zustaendig } from "./schluesselregeln";
+import {
+  ampel,
+  ausfallEmpfaenger,
+  ausfallZeilen,
+  darfLeeren,
+  empfaengerBeiAbwesenheit,
+  zustaendig,
+  type AusfallFunktion,
+} from "./schluesselregeln";
 
 /** Der Teil einer Abwesenheit, den die Meldung braucht. */
 export interface AbwesenheitFuerMeldung {
@@ -52,7 +60,9 @@ export class SchluesselService {
     private readonly audit: AuditService,
     private readonly notifications: NotificationsService,
     private readonly people: PeopleService,
-  ) {}
+  ) {
+    people.registriereKontoAusfall((ereignis) => this.meldeAusfall(ereignis));
+  }
 
   /* ---------------------------------------------------------- Ansicht */
 
@@ -286,6 +296,75 @@ export class SchluesselService {
       });
     }
     return true;
+  }
+
+  /* ----------------------------------------------- Ausfall eines Trägers */
+
+  /**
+   * Meldet, welche Stufen frei werden, wenn ein Träger deaktiviert wird oder den
+   * Zugang verliert.
+   *
+   * Die Besetzung bleibt stehen - die Funktion zeigt dann „zählt nicht" und
+   * die Ampel rot, so dass die Verwaltung den Ersatz sieht und nicht eine
+   * stillschweigend geleerte Stufe. Gemeldet wird immer, auch bei „Meldung aus":
+   * die Einstellung regelt Abwesenheiten, hier fehlt dauerhaft jemand.
+   *
+   * @returns den Hinweistext für die ausführende Person, oder `null`, wenn die Person nichts hielt.
+   */
+  async meldeAusfall(ereignis: { userId: string; actor: RequestUser; anlass: string }): Promise<string | null> {
+    const daten = await this.laden();
+    if (!daten.besetzungen.some((eintrag) => eintrag.userId === ereignis.userId)) {
+      return null;
+    }
+
+    // `laden()` filtert auf aktive Konten mit Zugang: der ausgefallene Träger fehlt in den gültigen Mengen schon.
+    const funktionen: AusfallFunktion[] = SCHLUESSELFUNKTIONEN.map((funktion) => ({
+      key: funktion.key,
+      name: funktion.name,
+      stufen: this.stufen(daten.besetzungen, funktion.key),
+      gueltigNachher: new Set([...(daten.gueltig.get(funktion.recht) ?? [])].filter((id) => id !== ereignis.userId)),
+    }));
+    const zeilen = ausfallZeilen(ereignis.userId, funktionen);
+    if (zeilen.length === 0) {
+      return null;
+    }
+
+    const name = daten.namen.get(ereignis.userId) ?? "Ein Konto";
+    const aufzaehlung = zeilen
+      .map(
+        (zeile) =>
+          `- ${zeile.funktion}: ${zeile.freigewordeneStufen.join(", ")} nicht mehr besetzt - ` +
+          (zeile.unterbesetzt
+            ? `nur noch ${zeile.verbleibend} von ${SCHLUESSEL_STUFEN.length} erreichbar, Mindestbesetzung unterschritten`
+            : `noch ${zeile.verbleibend} von ${SCHLUESSEL_STUFEN.length} besetzt`),
+      )
+      .join("\n");
+    const hinweis = `${name} ${ereignis.anlass}. Dadurch sind in Schlüsselfunktionen nicht mehr besetzt:\n${aufzaehlung}`;
+
+    const empfaenger = ausfallEmpfaenger({
+      traegerId: ereignis.userId,
+      funktionen,
+      eskalation: daten.eskalation,
+    }).filter((eintrag) => eintrag.userId !== ereignis.actor.id);
+
+    for (const eintrag of empfaenger) {
+      await this.notifications.notify({
+        userIds: [eintrag.userId],
+        title: `${name} ${ereignis.anlass} - Schlüsselfunktion nicht mehr besetzt`,
+        detail: `${hinweis}\n\nBitte sorgen Sie für Ersatz (Administration → Schlüsselfunktionen).`,
+        link: "/admin/schluesselfunktionen",
+        auchPerMail: true,
+      });
+    }
+
+    await this.audit.log({
+      actor: ereignis.actor,
+      action: "schluessel.traeger_ausgefallen",
+      entityType: "schluesselfunktion",
+      entityId: ereignis.userId,
+      detail: `${name} ${ereignis.anlass}; ${zeilen.length} Funktion(en) betroffen, ${empfaenger.length} Person(en) informiert`,
+    });
+    return hinweis;
   }
 
   /** Tageslauf: Abwesenheiten, die laufen oder beginnen und noch nicht gemeldet sind. */

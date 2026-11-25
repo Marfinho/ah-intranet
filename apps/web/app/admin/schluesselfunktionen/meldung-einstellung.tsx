@@ -32,8 +32,8 @@ export function MeldungEinstellung({ aktuell }: { aktuell: VertretungsMeldung })
         ))}
       </select>
       <span className="mt-1 block text-xs font-normal text-slate-500">
-        {gewaehlt?.beschreibung}. Die Meldung nennt nur „abwesend", nie den Grund. Mails gehen nur, wenn der
-        Mailversand eingerichtet ist.
+        {gewaehlt?.beschreibung}. Die Meldung nennt nur „abwesend", nie den Grund. Mails gehen nur, wenn der Mailversand
+        eingerichtet ist.
       </span>
     </label>
   );

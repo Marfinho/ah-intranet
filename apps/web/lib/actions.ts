@@ -746,8 +746,17 @@ export async function createUserAction(_previous: ActionState, formData: FormDat
   }
 }
 
+/** Die Antwort kann einen Hinweis tragen, welche Schlüsselfunktionen dadurch nicht mehr besetzt sind. */
 export async function updateUserStatusAction(id: string, status: "active" | "inactive"): Promise<ActionState> {
-  return run(() => apiSend("PATCH", `/users/${id}`, { status }), ["/admin/benutzer", "/mitarbeiter"]);
+  try {
+    const entry = await apiSend<{ hinweis?: string | null }>("PATCH", `/users/${id}`, { status });
+    revalidatePath("/admin/benutzer");
+    revalidatePath("/mitarbeiter");
+    revalidatePath("/admin/schluesselfunktionen");
+    return { ok: true, detail: entry?.hinweis ?? undefined };
+  } catch (error) {
+    return { ok: false, message: error instanceof ApiError ? error.message : "Unerwarteter Fehler." };
+  }
 }
 
 export async function resetUserPasswordAction(id: string): Promise<ActionState> {
@@ -775,7 +784,15 @@ export async function grantAccessAction(id: string): Promise<ActionState> {
 }
 
 export async function revokeAccessAction(id: string): Promise<ActionState> {
-  return run(() => apiSend("DELETE", `/users/${id}/zugang`), ["/admin/benutzer", "/mitarbeiter"]);
+  try {
+    const entry = await apiSend<{ hinweis?: string | null }>("DELETE", `/users/${id}/zugang`);
+    revalidatePath("/admin/benutzer");
+    revalidatePath("/mitarbeiter");
+    revalidatePath("/admin/schluesselfunktionen");
+    return { ok: true, detail: entry?.hinweis ?? undefined };
+  } catch (error) {
+    return { ok: false, message: error instanceof ApiError ? error.message : "Unerwarteter Fehler." };
+  }
 }
 
 export async function setRolePermissionsAction(roleId: string, permissions: string[]): Promise<ActionState> {

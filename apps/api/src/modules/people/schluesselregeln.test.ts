@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { SCHLUESSELFUNKTIONEN, isPermissionKey } from "@ah-intranet/shared";
-import { ampel, darfLeeren, empfaengerBeiAbwesenheit, ganztaegigAbwesend, zustaendig } from "./schluesselregeln";
+import {
+  ampel,
+  ausfallEmpfaenger,
+  ausfallZeilen,
+  darfLeeren,
+  empfaengerBeiAbwesenheit,
+  ganztaegigAbwesend,
+  zustaendig,
+} from "./schluesselregeln";
 
 const menge = (...ids: string[]) => new Set(ids);
 const keine = new Set<string>();
@@ -185,5 +193,75 @@ describe("ganztaegigAbwesend", () => {
   it("zählt einen halben Einzeltag als anwesend", () => {
     expect(ganztaegigAbwesend(zeitraum("2026-12-14", "2026-12-14", true), tag("2026-12-14"))).toBe(false);
     expect(ganztaegigAbwesend(zeitraum("2026-12-14", "2026-12-14"), tag("2026-12-14"))).toBe(true);
+  });
+});
+
+describe("Ausfall eines Trägers", () => {
+  // Karin ist Key User der Benutzerverwaltung und 1. Vertreterin beim zweiten Faktor.
+  const benutzer = {
+    key: "benutzerverwaltung",
+    name: "Benutzerverwaltung",
+    stufen: ["karin", "selin", "tom"],
+    gueltigNachher: menge("selin", "tom"),
+  };
+  const faktor = {
+    key: "zweiter_faktor",
+    name: "Zweiter Faktor",
+    stufen: ["selin", "karin", null],
+    gueltigNachher: menge("selin"),
+  };
+  const rollen = {
+    key: "rollenverwaltung",
+    name: "Rollen und Rechte",
+    stufen: ["tom", "selin", null],
+    gueltigNachher: menge("tom", "selin"),
+  };
+  const alle = [benutzer, faktor, rollen];
+
+  it("nennt je Funktion die freigewordene Stufe", () => {
+    const zeilen = ausfallZeilen("karin", alle);
+    expect(zeilen).toEqual([
+      { funktion: "Benutzerverwaltung", freigewordeneStufen: ["Key User"], verbleibend: 2, unterbesetzt: false },
+      { funktion: "Zweiter Faktor", freigewordeneStufen: ["1. Vertreter"], verbleibend: 1, unterbesetzt: true },
+    ]);
+  });
+
+  it("lässt Funktionen aus, in denen der Träger nichts hielt", () => {
+    expect(ausfallZeilen("karin", alle).map((zeile) => zeile.funktion)).not.toContain("Rollen und Rechte");
+  });
+
+  it("ist leer für Personen ohne Schlüsselfunktion", () => {
+    expect(ausfallZeilen("niemand", alle)).toEqual([]);
+  });
+
+  it("zählt nur gültige Träger als verbleibend", () => {
+    const ohneTom = { ...benutzer, gueltigNachher: menge("selin") };
+    expect(ausfallZeilen("karin", [ohneTom])[0].verbleibend).toBe(1);
+  });
+
+  it("informiert die anderen Träger der betroffenen Funktionen und die Geschäftsführung", () => {
+    const empfaenger = ausfallEmpfaenger({ traegerId: "karin", funktionen: alle, eskalation: ["gf"] });
+    const nach = Object.fromEntries(empfaenger.map((eintrag) => [eintrag.userId, eintrag.funktionen]));
+    expect(nach.selin).toEqual(["Benutzerverwaltung", "Zweiter Faktor"]);
+    expect(nach.tom).toEqual(["Benutzerverwaltung"]);
+    expect(nach.gf).toEqual(["Benutzerverwaltung", "Zweiter Faktor"]);
+  });
+
+  it("informiert nicht den Träger selbst und nicht Träger unbeteiligter Funktionen", () => {
+    const empfaenger = ausfallEmpfaenger({ traegerId: "karin", funktionen: alle, eskalation: ["gf", "karin"] });
+    expect(empfaenger.map((eintrag) => eintrag.userId)).not.toContain("karin");
+    // Tom trägt die Rollenverwaltung, die von Karin unberührt bleibt - er wird nur wegen der Benutzerverwaltung informiert.
+    expect(empfaenger.find((eintrag) => eintrag.userId === "tom")?.funktionen).toEqual(["Benutzerverwaltung"]);
+  });
+
+  it("informiert Träger auch dann, wenn sie heute abwesend sind - es geht um die Besetzung", () => {
+    const empfaenger = ausfallEmpfaenger({ traegerId: "karin", funktionen: [benutzer], eskalation: [] });
+    expect(empfaenger.map((eintrag) => eintrag.userId).sort()).toEqual(["selin", "tom"]);
+  });
+
+  it("überspringt ungültige Träger", () => {
+    const ungueltig = { ...benutzer, gueltigNachher: menge("tom") };
+    const empfaenger = ausfallEmpfaenger({ traegerId: "karin", funktionen: [ungueltig], eskalation: [] });
+    expect(empfaenger.map((eintrag) => eintrag.userId)).toEqual(["tom"]);
   });
 });

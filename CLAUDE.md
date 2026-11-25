@@ -125,7 +125,15 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
   gehört der Fall dem Recht `schluessel.eskalation` (Rolle „Geschäftsführung"),
   ohne Träger der Benutzerverwaltung - Eskalation läuft nie ins Leere. Fehlt ein
   Träger, informieren Intranet und Mail die anderen Träger (nur „abwesend", nie
-  der Grund). Einstellung je Haus (`Tenant.vertretungsMeldung`): sofort, am
+  der Grund). Wird ein Träger deaktiviert
+  oder verliert den Zugang, nennt ein Hinweis (Antwort der Verwaltung, dazu
+  Intranet und Mail an die anderen Träger und die Geschäftsführung), welche
+  Stufen frei werden und ob die Mindestbesetzung unterschritten ist; die
+  Besetzung bleibt als „zählt nicht" stehen. Das läuft über einen Beobachter in
+  `PeopleService.registriereKontoAusfall`, damit Personal- und
+  Schlüsseldienst keinen Kreis bilden - gemeldet wird auch bei „Meldung aus".
+  Nicht erfasst: Anonymisierung und der Entzug eines Rechts über die Rolle.
+  Einstellung je Haus (`Tenant.vertretungsMeldung`): sofort, am
   ersten Tag (Tageslauf `scripts/vertretung.ts`) oder aus. Rollen der
   Grundausstattung, die einem Haus fehlen (Geschäftsführung), legt der Start an -
   hat das Haus unter dem Schlüssel schon eine eigene Rolle, bleibt sie unberührt.

@@ -61,6 +61,8 @@ export function UserRowActions({
               const result = hasAccess ? await revokeAccessAction(userId) : await grantAccessAction(userId);
               if (!hasAccess && result.ok) {
                 setPassword(result.detail ?? null);
+              } else if (hasAccess && result.ok && result.detail) {
+                window.alert(result.detail);
               } else if (!result.ok) {
                 window.alert(result.message ?? "Fehlgeschlagen");
               }
@@ -102,6 +104,9 @@ export function UserRowActions({
               const result = await updateUserStatusAction(userId, next);
               if (!result.ok && result.message) {
                 window.alert(result.message);
+              } else if (result.ok && result.detail) {
+                // Welche Schlüsselfunktionen dadurch nicht mehr besetzt sind.
+                window.alert(result.detail);
               }
             });
           }}

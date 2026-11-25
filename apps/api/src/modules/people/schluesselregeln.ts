@@ -133,3 +133,83 @@ export function ganztaegigAbwesend(zeitraum: AbwesenheitsZeitraum, heute: Date):
   }
   return true;
 }
+
+export interface AusfallFunktion {
+  key: string;
+  name: string;
+  stufen: Stufen;
+  /** Gültige Träger **nach** dem Ausfall. Der ausgefallene Träger gehört nicht mehr dazu. */
+  gueltigNachher: ReadonlySet<string>;
+}
+
+export interface AusfallZeile {
+  funktion: string;
+  /** Stufen, die der ausgefallene Träger gehalten hat und die jetzt nicht mehr besetzt sind. */
+  freigewordeneStufen: string[];
+  /** Wie viele Stufen der Funktion danach noch gültig besetzt sind. */
+  verbleibend: number;
+  /** Unter der Mindestbesetzung von zwei. */
+  unterbesetzt: boolean;
+}
+
+/** Was der Ausfall eines Trägers je Funktion bedeutet. Funktionen, in denen er nichts hielt, fehlen. */
+export function ausfallZeilen(traegerId: string, funktionen: readonly AusfallFunktion[]): AusfallZeile[] {
+  return funktionen.flatMap((funktion) => {
+    const frei = funktion.stufen.flatMap((userId, stufe) => (userId === traegerId ? [stufenName(stufe)] : []));
+    if (frei.length === 0) {
+      return [];
+    }
+    const verbleibend = funktion.stufen.filter(
+      (userId) => userId && userId !== traegerId && funktion.gueltigNachher.has(userId),
+    ).length;
+    return [{ funktion: funktion.name, freigewordeneStufen: frei, verbleibend, unterbesetzt: verbleibend < 2 }];
+  });
+}
+
+export interface AusfallEmpfaenger {
+  userId: string;
+  /** Funktionen, derentwegen dieser Empfänger die Meldung bekommt. */
+  funktionen: string[];
+}
+
+/**
+ * Wer über den Ausfall informiert wird.
+ *
+ * Die anderen gültigen Träger jeder betroffenen Funktion - egal ob sie heute da
+ * sind, denn es geht um die Besetzung, nicht um den Tag - und immer die
+ * Geschäftsführung: sie trägt die Verantwortung, wenn eine Funktion dünn wird.
+ */
+export function ausfallEmpfaenger({
+  traegerId,
+  funktionen,
+  eskalation,
+}: {
+  traegerId: string;
+  funktionen: readonly AusfallFunktion[];
+  eskalation: readonly string[];
+}): AusfallEmpfaenger[] {
+  const betroffen = funktionen.filter((funktion) => funktion.stufen.includes(traegerId));
+  const proPerson = new Map<string, string[]>();
+  const merke = (userId: string, funktion: string) => {
+    if (userId === traegerId) {
+      return;
+    }
+    const liste = proPerson.get(userId) ?? [];
+    if (!liste.includes(funktion)) {
+      liste.push(funktion);
+    }
+    proPerson.set(userId, liste);
+  };
+
+  for (const funktion of betroffen) {
+    for (const userId of funktion.stufen) {
+      if (userId && funktion.gueltigNachher.has(userId)) {
+        merke(userId, funktion.name);
+      }
+    }
+    for (const userId of eskalation) {
+      merke(userId, funktion.name);
+    }
+  }
+  return [...proPerson].map(([userId, namen]) => ({ userId, funktionen: namen }));
+}
