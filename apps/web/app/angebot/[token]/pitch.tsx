@@ -1807,7 +1807,7 @@ export function Intranet({
   );
 }
 
-function ModulDetail({
+export function ModulDetail({
   schluessel,
   gewaehlt,
   haeuser,
@@ -1868,7 +1868,7 @@ function ModulDetail({
   );
 }
 
-function HausDetail({
+export function HausDetail({
   haus,
   gewaehlt,
   onModul,
