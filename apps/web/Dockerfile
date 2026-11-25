@@ -1,4 +1,4 @@
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 # pnpm global statt über Corepack - Begründung in apps/api/Dockerfile.
 RUN npm install -g pnpm@10.18.3
@@ -6,7 +6,7 @@ COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter web build
 
-FROM node:22-alpine
+FROM node:26-alpine
 WORKDIR /app
 RUN npm install -g pnpm@10.18.3
 COPY --from=build --chown=node:node /app .
