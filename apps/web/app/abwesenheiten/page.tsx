@@ -1,4 +1,5 @@
-import type { Absence, AbsenceBalance } from "@ah-intranet/shared";
+import Link from "next/link";
+import type { Absence, AbsenceBalance, ErfassbarePerson } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
 import { FilterBar } from "@/components/filter-bar";
 import { ActionButton } from "@/components/forms";
@@ -22,9 +23,10 @@ export default async function AbsencesPage(props: { searchParams: Promise<{ scop
   const query = new URLSearchParams({ scope });
   if (searchParams.status) query.set("status", searchParams.status);
 
-  const [data, balance] = await Promise.all([
+  const [data, balance, erfassbar] = await Promise.all([
     apiGet<AbsencesResponse>(`/absences?${query.toString()}`),
     apiGet<AbsenceBalance>("/absences/balance"),
+    apiGet<ErfassbarePerson[]>("/absences/erfassbar"),
   ]);
 
   return (
@@ -36,8 +38,11 @@ export default async function AbsencesPage(props: { searchParams: Promise<{ scop
         <MetricCard label="Rest" value={String(balance.remaining)} helper="verfügbare Arbeitstage" />
       </DataGrid>
 
-      <Section title="Neuer Antrag" subtitle="Arbeitstage werden automatisch berechnet, Wochenenden zählen nicht">
-        <AbsenceComposer />
+      <Section
+        title={erfassbar.length > 0 ? "Neuer Antrag oder Eintrag" : "Neuer Antrag"}
+        subtitle="Arbeitstage werden automatisch berechnet: ohne Wochenenden und freie Tage"
+      >
+        <AbsenceComposer erfassbar={erfassbar} />
       </Section>
 
       <Section
@@ -47,6 +52,11 @@ export default async function AbsencesPage(props: { searchParams: Promise<{ scop
         }
       >
         <div className="space-y-4">
+          <p className="text-sm">
+            <Link href="/abwesenheiten/kalender" className="font-semibold text-brand-700 hover:underline">
+              Kalender ansehen: wer fehlt wann
+            </Link>
+          </p>
           <FilterBar
             showSearch={false}
             selects={[
@@ -79,6 +89,7 @@ export default async function AbsencesPage(props: { searchParams: Promise<{ scop
             <ul className="space-y-3">
               {data.items.map((absence) => {
                 const isOwn = absence.employeeUsername === session.username;
+                const canCancel = isOwn || (scope === "team" && data.canSeeTeam);
                 const canDecide = scope === "team" && absence.status === "submitted" && !isOwn;
 
                 return (
@@ -90,9 +101,13 @@ export default async function AbsencesPage(props: { searchParams: Promise<{ scop
                         </p>
                         <p className="mt-1 text-sm text-slate-600">
                           {statusLabel(absence.type)} · {absence.workingDays} Arbeitstage
+                          {absence.startHalb || absence.endHalb ? " (mit halbem Tag)" : ""}
                           {scope === "team" ? ` · ${absence.employee}` : ""}
                         </p>
                         {absence.note ? <p className="mt-1 text-sm text-slate-700">{absence.note}</p> : null}
+                        {absence.recordedBy ? (
+                          <p className="mt-1 text-xs text-slate-500">Eingetragen von {absence.recordedBy}</p>
+                        ) : null}
                         {absence.decidedBy ? (
                           <p className="mt-1 text-xs text-slate-500">
                             Entschieden von {absence.decidedBy} am {formatDate(absence.decidedAt)}
@@ -121,7 +136,7 @@ export default async function AbsencesPage(props: { searchParams: Promise<{ scop
                         </>
                       ) : null}
 
-                      {isOwn && ["submitted", "approved"].includes(absence.status) ? (
+                      {canCancel && ["submitted", "approved"].includes(absence.status) ? (
                         <ActionButton
                           variant="ghost"
                           confirm="Antrag stornieren?"

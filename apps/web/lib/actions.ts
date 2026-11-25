@@ -564,8 +564,17 @@ export async function createAbsenceAction(_previous: ActionState, formData: Form
     startDate: String(formData.get("startDate") ?? ""),
     endDate: String(formData.get("endDate") ?? ""),
     note: String(formData.get("note") ?? "") || undefined,
+    userId: String(formData.get("userId") ?? "") || undefined,
+    startHalb: formData.get("startHalb") === "on",
+    endHalb: formData.get("endHalb") === "on",
   };
-  return run(() => apiSend("POST", "/absences", payload), ["/abwesenheiten", "/"], "Antrag eingereicht.");
+  // Krankmeldungen und Einträge für andere gelten sofort - die Rückmeldung sagt das.
+  const sofort = payload.type === "krank" || payload.userId !== undefined;
+  return run(
+    () => apiSend("POST", "/absences", payload),
+    ["/abwesenheiten", "/abwesenheiten/kalender", "/"],
+    sofort ? "Eingetragen." : "Antrag eingereicht.",
+  );
 }
 
 export async function decideAbsenceAction(id: string, approve: boolean, note?: string): Promise<ActionState> {

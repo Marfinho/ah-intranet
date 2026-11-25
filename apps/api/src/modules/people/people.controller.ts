@@ -98,6 +98,10 @@ class AbsenceDto {
   @IsString() startDate!: string;
   @IsString() endDate!: string;
   @IsOptional() @IsString() note?: string;
+  /** Eintrag für eine andere Person (Freigaberecht und Unterstellung nötig). */
+  @IsOptional() @IsString() userId?: string;
+  @IsOptional() @IsBoolean() startHalb?: boolean;
+  @IsOptional() @IsBoolean() endHalb?: boolean;
 }
 
 class DecisionDto {
@@ -273,6 +277,16 @@ export class AbsencesController {
   @Get("balance")
   balance(@CurrentUser() user: RequestUser) {
     return this.absences.balance(user);
+  }
+
+  @Get("erfassbar")
+  erfassbar(@CurrentUser() user: RequestUser) {
+    return this.absences.erfassbar(user);
+  }
+
+  @Get("kalender")
+  kalender(@CurrentUser() user: RequestUser, @Query("von") von: string, @Query("bis") bis: string) {
+    return this.absences.kalender(user, von, bis);
   }
 
   @Post()

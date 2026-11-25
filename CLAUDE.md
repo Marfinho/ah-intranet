@@ -102,6 +102,16 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
   `arbeitsfrei`: ein verkaufsoffener Sonntag ist ein Arbeitstag. Gepflegt mit
   `organisation.manage`, gelesen von allen (`GET /betriebskalender/tage`), damit
   Urlaubsanträge und Schichtplan dieselbe Quelle nutzen.
+- **Abwesenheiten** (`modules/people/abwesenheitsregeln.ts`, reine Funktionen):
+  Arbeitstage = Montag bis Freitag abzüglich der freien Tage des
+  Betriebskalenders (Standort schlägt Haus, auf gleicher Ebene gewinnt „frei");
+  Samstag und Sonntag zählen nie, auch nicht an verkaufsoffenen Sonntagen. Halbe
+  Tage nur an Arbeitstagen. **Krankmeldungen und Einträge für andere gelten
+  sofort**, nur der eigene Urlaubsantrag wartet auf Freigabe. Für andere trägt
+  ein, wer `absences.approve` hat und die Person (auch mittelbar) unter sich
+  hat, oder `absences.viewAll` - bewusst kein neues Recht: ein neues Recht käme
+  in bestehende Häuser ohne Rollenzuordnung an. Der Teamkalender zeigt Arten nur
+  mit Freigaberecht für den eigenen Bereich.
 - Ein neues Haus entsteht samt Rollen, Rechten und erstem Administrationskonto
   in einer Transaktion – ein halb eingerichteter Mandant wäre nicht benutzbar.
 

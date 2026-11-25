@@ -133,6 +133,26 @@ Abs. 1 DSGVO, für die ein Verarbeitungsverbot mit Erlaubnisvorbehalt gilt.
 - **Zugriff:** nur über `absences.approve` bzw. `absences.viewAll`. Wer diese
   Rechte einer Rolle gibt, gibt Zugriff auf Gesundheitsdaten – das gehört in
   die Betriebsvereinbarung und nicht in eine stille Rollenänderung.
+- **Eintrag für andere:** Mit `absences.approve` trägt eine Führungskraft
+  Abwesenheiten für ihre Unterstellten ein (auch mittelbar), mit
+  `absences.viewAll` für jede Person - gedacht für Beschäftigte ohne Zugang.
+  Der Eintrag gilt sofort und nennt im Datensatz, wer ihn vorgenommen hat
+  (`recordedById`); das Audit-Log hält ihn als `absence.record_for` fest. Eine
+  **Krankmeldung** durch die Führungskraft ist eine Verarbeitung von
+  Gesundheitsdaten durch Dritte: sie gehört in die Betriebsvereinbarung und
+  verlangt, dass die Führungskraft nur den Zeitraum erfasst, nie einen Grund.
+  Die Anmerkung warnt davor, bleibt aber Freitext.
+- **Auskunft ohne Zugang:** Wer kein Konto hat, kann Art. 15 nicht selbst über
+  die Oberfläche ziehen. Die Auskunft läuft über die Administration
+  (_Administration → Datenschutz_); das Haus muss diesen Weg den Betroffenen
+  nennen.
+- **Teamkalender:** zeigt Abwesenheitsarten (auch „krank") nur den Personen mit
+  Freigaberecht für ihren Zuständigkeitsbereich. Wer nichts freigeben darf,
+  sieht nur sich selbst. Ein Kalender, der allen Kolleginnen die Art zeigte,
+  wäre eine Offenlegung von Gesundheitsdaten.
+- **Keine Freigabe für Krankmeldungen:** Sie gelten mit dem Eintrag. Wer sich
+  krank meldet, braucht keine Erlaubnis; eine Freigabe machte aus der Meldung
+  einen Antrag. Die Führungskraft wird zur Kenntnis benachrichtigt.
 - **Mitbestimmung:** § 87 Abs. 1 Nr. 5 (Urlaubsgrundsätze und -plan) und Nr. 6.
 - **Frist:** 3 Jahre. Hintergrund ist die regelmäßige Verjährung (§ 195 BGB).
   Beachten Sie, dass Urlaubsansprüche nach EuGH und BAG (2022) erst verjähren,

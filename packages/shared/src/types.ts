@@ -443,16 +443,53 @@ export interface OnboardingAssignment {
 export interface Absence {
   id: string;
   employee: string;
+  employeeId: string;
   employeeUsername: string;
   type: AbsenceType;
   startDate: string;
   endDate: string;
   workingDays: number;
+  /** Erster Tag nur zur Hälfte; bei einem Einzeltag: der halbe Tag. */
+  startHalb: boolean;
+  endHalb: boolean;
   status: AbsenceStatus;
   note?: string | null;
   decidedBy?: string | null;
   decidedAt?: string | null;
+  /** Wer den Eintrag ohne Freigabe vorgenommen hat (Führungskraft, Krankmeldung). */
+  recordedBy?: string | null;
   createdAt: string;
+}
+
+/** Person, für die der Akteur Abwesenheiten eintragen darf. */
+export interface ErfassbarePerson {
+  id: string;
+  displayName: string;
+  hasAccess: boolean;
+}
+
+/** Teamkalender: wer wann fehlt. Nur Personen, die der Akteur sehen darf. */
+export interface AbwesenheitsKalender {
+  von: string;
+  bis: string;
+  personen: {
+    id: string;
+    name: string;
+    hasAccess: boolean;
+    location: string | null;
+    eintraege: {
+      id: string;
+      art: AbsenceType;
+      status: AbsenceStatus;
+      /** `YYYY-MM-DD` */
+      von: string;
+      bis: string;
+      startHalb: boolean;
+      endHalb: boolean;
+    }[];
+  }[];
+  /** Tage des Betriebskalenders im Zeitraum - für die Schattierung. */
+  tage: { datum: string; locationId: string | null; arbeitsfrei: boolean; name: string }[];
 }
 
 export interface AbsenceBalance {

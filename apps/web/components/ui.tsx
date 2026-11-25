@@ -81,7 +81,7 @@ const STATUS_LABELS: Record<string, string> = {
   krank: "Krankmeldung",
   gleitzeit: "Gleitzeit",
   sonderurlaub: "Sonderurlaub",
-  fortbildung: "Fortbildung",
+  fortbildung: "Fortbildung / Schulung",
 };
 
 export function statusLabel(status: string): string {

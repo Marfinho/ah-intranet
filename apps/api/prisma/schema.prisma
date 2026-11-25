@@ -468,6 +468,7 @@ model User {
   onboarding        OnboardingAssignment[] @relation("OnboardingEmployee")
   absences          Absence[]              @relation("AbsenceEmployee")
   absenceDecisions  Absence[]              @relation("AbsenceDecider")
+  absencesRecorded  Absence[]              @relation("AbsenceRecorder")
   roomBookings      RoomBooking[]
   wikiArticles      WikiArticle[]          @relation("WikiAuthor")
   ideas             Idea[]                 @relation("IdeaAuthor")
@@ -1144,23 +1145,31 @@ model Betriebstag {
 // ------------------------------------------------------ Abwesenheiten
 
 model Absence {
-  id          String        @id @default(cuid())
-  tenantId    String        @default("")
-  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  userId      String
-  type        AbsenceType   @default(urlaub)
-  startDate   DateTime
-  endDate     DateTime
-  workingDays Float
-  status      AbsenceStatus @default(submitted)
-  note        String?
-  deciderId   String?
-  decidedAt   DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id           String        @id @default(cuid())
+  tenantId     String        @default("")
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId       String
+  type         AbsenceType   @default(urlaub)
+  startDate    DateTime
+  endDate      DateTime
+  workingDays  Float
+  /// Erster Tag nur zur Hälfte (z. B. ab mittags). Bei einem Einzeltag: der halbe Tag.
+  startHalb    Boolean       @default(false)
+  /// Letzter Tag nur zur Hälfte (z. B. bis mittags).
+  endHalb      Boolean       @default(false)
+  status       AbsenceStatus @default(submitted)
+  note         String?
+  deciderId    String?
+  decidedAt    DateTime?
+  /// Wer den Eintrag vorgenommen hat, wenn er ohne Freigabe entstand: die
+  /// Führungskraft für eine Person ohne Zugang oder eine Krankmeldung.
+  recordedById String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
-  user    User  @relation("AbsenceEmployee", fields: [userId], references: [id], onDelete: Cascade)
-  decider User? @relation("AbsenceDecider", fields: [deciderId], references: [id])
+  user       User  @relation("AbsenceEmployee", fields: [userId], references: [id], onDelete: Cascade)
+  decider    User? @relation("AbsenceDecider", fields: [deciderId], references: [id])
+  recordedBy User? @relation("AbsenceRecorder", fields: [recordedById], references: [id])
 
   @@index([userId, status])
   @@index([startDate])
