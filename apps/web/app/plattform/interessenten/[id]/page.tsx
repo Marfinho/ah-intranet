@@ -18,7 +18,8 @@ import { LeadActions } from "../lead-actions";
 import { HausForm } from "../haus-form";
 import { LeadForm } from "../lead-form";
 
-export default async function InteressentPage({ params }: { params: { id: string } }) {
+export default async function InteressentPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   await requirePlatformSession();
   const [lead, haus] = await Promise.all([
     apiGet<LeadDetail>(`/leads/${params.id}`),

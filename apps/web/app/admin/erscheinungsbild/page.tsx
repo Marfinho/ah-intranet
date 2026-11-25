@@ -10,7 +10,10 @@ export default async function ErscheinungsbildPage() {
   // Kein eigener JSON-Endpunkt nötig: das Bild selbst beantwortet die Frage,
   // ob eins hinterlegt ist (200 oder 404) - genau das, was der Browser später
   // ohnehin abruft.
-  const antwort = await fetch(`${apiBaseUrl()}/branding/logo`, { headers: tenantHostHeader(), cache: "no-store" });
+  const antwort = await fetch(`${apiBaseUrl()}/branding/logo`, {
+    headers: await tenantHostHeader(),
+    cache: "no-store",
+  });
   const hasLogo = antwort.ok;
 
   return (

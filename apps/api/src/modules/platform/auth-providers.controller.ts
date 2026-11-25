@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put } from "@nestjs/common";
 import { IsBoolean, IsIn, IsOptional, IsString, MinLength } from "class-validator";
 import type { AuthProviderKind } from "@ah-intranet/shared";
 import { AUTH_PROVIDER_DEFINITIONS } from "@ah-intranet/shared";
@@ -14,6 +14,10 @@ class ProviderDto {
   @IsString() @MinLength(2) directory!: string;
   @IsString() @MinLength(2) clientId!: string;
   @IsOptional() @IsString() clientSecret?: string;
+}
+
+class MfaPflichtDto {
+  @IsBoolean() pflicht!: boolean;
 }
 
 class ActiveDto {
@@ -34,6 +38,19 @@ export class AuthProvidersController {
   @Permission("auth.manage")
   async list() {
     return { arten: AUTH_PROVIDER_DEFINITIONS, hinterlegt: await this.providers.list() };
+  }
+
+  /** Zweiter Faktor für alle Konten des Hauses vorschreiben oder freistellen. */
+  @Get("mfa")
+  @Permission("auth.manage")
+  mfaPflicht() {
+    return this.providers.mfaPflicht();
+  }
+
+  @Put("mfa")
+  @Permission("auth.manage")
+  setMfaPflicht(@CurrentUser() user: RequestUser, @Body() dto: MfaPflichtDto) {
+    return this.providers.setMfaPflicht(user, dto.pflicht);
   }
 
   @Post()

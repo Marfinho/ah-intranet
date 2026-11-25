@@ -5,6 +5,7 @@ export const PUBLIC_KEY = "auth:public";
 export const PERMISSION_KEY = "auth:permission";
 export const FEATURE_KEY = "feature:module";
 export const PLATFORM_ADMIN_KEY = "auth:platform-admin";
+export const MFA_EINRICHTUNG_KEY = "auth:mfa-einrichtung";
 
 /** Hebt die global aktive JWT-Prüfung für einzelne Routen auf (Login, Health). */
 export const Public = () => SetMetadata(PUBLIC_KEY, true);
@@ -27,6 +28,16 @@ export const Permission = (permission: string) => SetMetadata(PERMISSION_KEY, pe
  * und darf nicht aus dem Haus heraus vergeben werden können.
  */
 export const PlatformAdmin = () => SetMetadata(PLATFORM_ADMIN_KEY, true);
+
+/**
+ * Lässt die Route auch zu, solange der zweite Faktor noch einzurichten ist.
+ *
+ * Verlangt ein Haus (oder die Plattformverwaltung) den zweiten Faktor, kommt ein
+ * Konto ohne ihn nur an Einrichtung, Abmeldung und die eigene Sitzungsauskunft
+ * heran - alles andere antwortet mit 403. Die Anmeldung gelingt trotzdem, sonst
+ * käme niemand je zur Einrichtung.
+ */
+export const MfaEinrichtung = () => SetMetadata(MFA_EINRICHTUNG_KEY, true);
 
 /**
  * Bindet Controller oder Route an ein Modul der Registry. Ist das Modul

@@ -22,7 +22,7 @@
  * Meier" bleibt stehen, weil kein Datenfeld darauf zeigt. Es zählt am Ende auf,
  * wie viele es gibt – durchsehen muss sie ein Mensch.
  */
-import { PrismaClient } from "@prisma/client";
+import { neuerClient } from "../core/datenbank";
 import * as bcrypt from "bcryptjs";
 
 const ERPROBUNGSKENNWORT = process.env.ERPROBUNG_PASSWORT ?? "Erprobung2026!";
@@ -125,7 +125,7 @@ async function main() {
     process.exit(1);
   }
 
-  const prisma = new PrismaClient();
+  const prisma = neuerClient();
 
   try {
     // Ein Kennwort für alle, einmal gehasht: bcrypt ist absichtlich langsam,

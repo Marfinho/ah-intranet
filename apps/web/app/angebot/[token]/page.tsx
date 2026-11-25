@@ -10,7 +10,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function PitchSeite({ params }: { params: { token: string } }) {
+export default async function PitchSeite(props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   let ansicht: PitchAnsicht;
   try {
     ansicht = await apiGet<PitchAnsicht>(`/angebot/${encodeURIComponent(params.token)}`);

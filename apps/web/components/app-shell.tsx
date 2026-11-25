@@ -17,12 +17,19 @@ export async function AppShell({
   children,
   title,
   subtitle,
+  mfaEinrichtung = false,
 }: {
   children: ReactNode;
   title: string;
   subtitle: string;
+  /** Nur die Einrichtungsseite des zweiten Faktors: sie ist der Weg aus der Sperre, nicht ihr Opfer. */
+  mfaEinrichtung?: boolean;
 }) {
-  const [session, modules, unread] = await Promise.all([requireSession(), getModules(), getUnreadCount()]);
+  const [session, modules, unread] = await Promise.all([
+    requireSession({ mfaEinrichtung }),
+    getModules(),
+    getUnreadCount(),
+  ]);
 
   const visible = modules.filter((module) => {
     if (!module.enabled) return false;

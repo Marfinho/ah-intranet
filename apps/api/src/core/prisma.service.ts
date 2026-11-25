@@ -1,61 +1,88 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
-import { PrismaClient } from "@prisma/client";
+import { neuerClient } from "./datenbank";
+import { mandantenTrennung } from "./mandanten-erweiterung";
 import { currentTenant, hasNoContext, isUnscoped } from "./tenant-context";
-import { applyTenantScope, isGlobalModel } from "./tenant-isolation";
+
+const logger = new Logger("PrismaService");
+
+/**
+ * Der Datenbank-Client der Anwendung: der Prisma-Client mit der Mandantentrennung.
+ *
+ * Das ist die eigentliche Sicherheitsgrenze: Fachcode muss `tenantId` nirgends
+ * mitführen, und ein vergessener Filter in einem Service kann keine fremden
+ * Daten preisgeben. Umgekehrt schlägt jede Abfrage ohne gesetzten
+ * Mandantenkontext fehl, statt stillschweigend über alle Häuser zu laufen.
+ *
+ * Grenze der Methode: `$queryRaw` und `$executeRaw` haben kein Modell und laufen
+ * deshalb ungefiltert. Rohabfragen müssen den Mandanten selbst in die Bedingung
+ * aufnehmen - in dieser Anwendung gibt es bisher nur das `SELECT 1` des
+ * Healthchecks.
+ *
+ * Seit Prisma 7 als Client-Erweiterung (`$extends`) umgesetzt; die frühere
+ * Middleware gibt es dort nicht mehr. Eine Erweiterung liefert einen neuen Client
+ * statt den bestehenden zu verändern. Damit die Klasse als Einspritzmarke
+ * erhalten bleibt und jeder Aufruf im Fachcode unverändert bleibt, gibt der
+ * Konstruktor den erweiterten Client zurück.
+ */
+function baueClient() {
+  return neuerClient().$extends(
+    mandantenTrennung((modell, operation) => {
+      if (isUnscoped()) {
+        return "durchlassen";
+      }
+      const mandant = currentTenant();
+      if (!mandant) {
+        // Lieber ein harter Fehler als eine Abfrage über alle Mandanten.
+        const grund = hasNoContext() ? "kein Mandantenkontext gesetzt" : "Mandant unbekannt";
+        logger.error(`Zugriff auf ${modell}.${operation} abgelehnt: ${grund}`);
+        throw new Error(
+          `Zugriff auf ${modell} ohne Mandantenkontext. Aufrufe außerhalb einer Anfrage müssen runWithTenant oder runUnscoped verwenden.`,
+        );
+      }
+      return { mandant: mandant.tenantId };
+    }),
+  );
+}
+
+export type DatenbankClient = ReturnType<typeof baueClient>;
+
+/**
+ * Was eine Hilfsfunktion braucht, die sowohl mit dem Client als auch innerhalb
+ * einer Transaktion laufen soll. `Prisma.TransactionClient` passt nicht mehr:
+ * der erweiterte Client hat einen eigenen Typ.
+ */
+export type TransaktionsClient = Omit<
+  DatenbankClient,
+  "$connect" | "$disconnect" | "$on" | "$transaction" | "$extends"
+>;
+
+// Deklarationszusammenführung: die Klasse trägt alle Methoden und Modelle des Clients.
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unsafe-declaration-merging
+export interface PrismaService extends DatenbankClient {}
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(PrismaService.name);
-
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
+export class PrismaService {
   constructor() {
-    super();
-    this.installTenantIsolation();
+    return baueClient() as unknown as PrismaService;
   }
+}
+
+/**
+ * Verbindet beim Start und trennt beim Beenden.
+ *
+ * Eigene Klasse, weil der Konstruktor von `PrismaService` den Client selbst
+ * zurückgibt - eine Lebenszyklus-Methode an der Klasse käme bei Nest nicht an.
+ */
+@Injectable()
+export class PrismaLebenszyklus implements OnModuleInit, OnModuleDestroy {
+  constructor(private readonly prisma: PrismaService) {}
 
   async onModuleInit() {
-    await this.$connect();
+    await this.prisma.$connect();
   }
 
   async onModuleDestroy() {
-    await this.$disconnect();
-  }
-
-  /**
-   * Trennt die Mandanten auf Ebene des Datenzugriffs.
-   *
-   * Das ist die eigentliche Sicherheitsgrenze: Fachcode muss `tenantId` nirgends
-   * mitführen, und ein vergessener Filter in einem Service kann keine fremden
-   * Daten preisgeben. Umgekehrt schlägt jede Abfrage ohne gesetzten
-   * Mandantenkontext fehl, statt stillschweigend über alle Häuser zu laufen.
-   *
-   * Grenze der Methode: `$queryRaw` und `$executeRaw` laufen ohne Modell durch
-   * die Middleware und sind damit ungefiltert. Rohabfragen müssen den Mandanten
-   * deshalb selbst in die Bedingung aufnehmen - in dieser Anwendung gibt es
-   * bisher nur das `SELECT 1` des Healthchecks.
-   *
-   * Umgesetzt als Middleware statt als Client-Erweiterung, weil die Erweiterung
-   * einen neuen Client zurückgibt und damit jeden Aufruf im Fachcode ändern
-   * würde. Die Middleware ist in Prisma 5 als veraltet markiert, aber
-   * funktionsfähig; der Wechsel auf `$extends` ist beim Sprung auf Prisma 6 fällig.
-   */
-  private installTenantIsolation(): void {
-    this.$use(async (params, next) => {
-      if (isGlobalModel(params.model) || isUnscoped()) {
-        return next(params);
-      }
-
-      const tenant = currentTenant();
-      if (!tenant) {
-        // Lieber ein harter Fehler als eine Abfrage über alle Mandanten.
-        const grund = hasNoContext() ? "kein Mandantenkontext gesetzt" : "Mandant unbekannt";
-        this.logger.error(`Zugriff auf ${params.model}.${params.action} abgelehnt: ${grund}`);
-        throw new Error(
-          `Zugriff auf ${params.model} ohne Mandantenkontext. Aufrufe außerhalb einer Anfrage müssen runWithTenant oder runUnscoped verwenden.`,
-        );
-      }
-
-      params.args = applyTenantScope(params, tenant.tenantId);
-      return next(params);
-    });
+    await this.prisma.$disconnect();
   }
 }

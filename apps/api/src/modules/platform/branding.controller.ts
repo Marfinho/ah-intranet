@@ -1,7 +1,7 @@
 import { Controller, Delete, Get, NotFoundException, Post, Res, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
-import { BrandingService } from "./branding.service";
+import { BrandingService, type LogoFile } from "./branding.service";
 import { CurrentUser, Permission, Public } from "../../core/decorators";
 import type { RequestUser } from "../../core/request-user";
 
@@ -23,13 +23,16 @@ export class BrandingController {
     }
     response.setHeader("Content-Type", logo.mime);
     response.setHeader("Cache-Control", "no-store");
+    // Falls doch einmal etwas anderes als ein Bild darin liegt: wird die Adresse
+    // direkt geöffnet, darf der Browser nichts ausführen.
+    response.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
     return logo.data;
   }
 
   @Post("logo")
   @Permission("branding.manage")
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: 2 * 1024 * 1024 } }))
-  upload(@CurrentUser() user: RequestUser, @UploadedFile() file?: Express.Multer.File) {
+  upload(@CurrentUser() user: RequestUser, @UploadedFile() file?: LogoFile) {
     return this.branding.upload(user, file);
   }
 

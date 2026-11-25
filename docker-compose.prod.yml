@@ -6,6 +6,15 @@
 # Eigenständige Datei statt Ergänzung zu docker-compose.yml: dort stehen
 # Erprobungswerte (Datenbankpasswort, offene Ports), die sich in einer
 # Ergänzung nicht wieder entfernen ließen. Nach außen ist nur der Proxy offen.
+# Gemeinsame Härtung der eigenen Dienste: keine zusätzlichen Rechte erwerben
+# (setuid & Co.), keine Linux-Fähigkeiten - die Dienste lauschen auf Ports
+# oberhalb 1024 und brauchen keine.
+x-haertung: &haertung
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -27,6 +36,7 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     image: ahoi-api:prod
+    <<: *haertung
     restart: unless-stopped
     # Migrationen beim Start: das Image bringt sie mit, angewendet werden sie
     # sonst nirgends - ohne sie wäre die Datenbank leer und die API liefe ins Leere.
@@ -70,6 +80,7 @@ services:
     # Dasselbe Image wie die API - ein zweiter Bau kostete auf kleinen Servern
     # viele Minuten und brächte nichts.
     image: ahoi-api:prod
+    <<: *haertung
     restart: unless-stopped
     working_dir: /app/apps/api
     command: sh -c "while true; do node dist/scripts/aufbewahrung.js; sleep 86400; done"
@@ -86,6 +97,7 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+    <<: *haertung
     restart: unless-stopped
     environment:
       # Nur serverseitig genutzt: der Browser spricht die API über den Proxy nicht direkt an.
@@ -106,8 +118,12 @@ services:
       - "443:443"
     environment:
       BASE_DOMAIN: ${BASE_DOMAIN:?BASE_DOMAIN fehlt in .env}
+      # Kontakt für Let's Encrypt (Ablaufwarnungen); nur mit Caddyfile.tls gebraucht.
+      ACME_EMAIL: ${ACME_EMAIL:-}
     volumes:
-      - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      # Erprobung ohne Domain: Caddyfile.prod (HTTP). Betrieb mit Domain und
+      # Zertifikaten: CADDYFILE=./Caddyfile.tls in der .env.
+      - ${CADDYFILE:-./Caddyfile.prod}:/etc/caddy/Caddyfile:ro
       - ./landing:/srv/landing:ro
       # Zertifikate müssen einen Neustart überstehen, sonst stellt Caddy sie
       # jedes Mal neu aus und läuft in die Ausstellungsgrenzen.

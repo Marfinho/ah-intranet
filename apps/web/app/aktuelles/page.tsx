@@ -7,11 +7,10 @@ import { apiGet } from "@/lib/api";
 import { can, requireModule } from "@/lib/session";
 import { formatDate } from "@/lib/utils";
 
-export default async function NewsPage({
-  searchParams,
-}: {
-  searchParams: { search?: string; priority?: string; status?: string; unread?: string };
+export default async function NewsPage(props: {
+  searchParams: Promise<{ search?: string; priority?: string; status?: string; unread?: string }>;
 }) {
+  const searchParams = await props.searchParams;
   const session = await requireModule("news");
 
   const query = new URLSearchParams();

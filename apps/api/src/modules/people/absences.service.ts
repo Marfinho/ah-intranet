@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma, type AbsenceStatus, type AbsenceType } from "@prisma/client";
+import { Prisma, type AbsenceStatus, type AbsenceType } from "../../generated/prisma/client";
 import type { Absence, AbsenceBalance } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
 import { AuditService } from "../../core/audit.service";

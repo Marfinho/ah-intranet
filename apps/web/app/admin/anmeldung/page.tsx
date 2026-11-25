@@ -2,6 +2,7 @@ import type { AuthProviderDefinition, AuthProviderSummary } from "@ah-intranet/s
 import { AppShell } from "@/components/app-shell";
 import { Section } from "@/components/ui";
 import { AuthProviderForm } from "./auth-provider-form";
+import { MfaSchalter } from "./mfa-schalter";
 import { apiGet } from "@/lib/api";
 import { requirePermission } from "@/lib/session";
 
@@ -13,7 +14,10 @@ interface Antwort {
 export default async function AnmeldungAdminPage() {
   await requirePermission("auth.manage");
 
-  const { arten, hinterlegt } = await apiGet<Antwort>("/anmeldeverfahren");
+  const [{ arten, hinterlegt }, mfa] = await Promise.all([
+    apiGet<Antwort>("/anmeldeverfahren"),
+    apiGet<{ pflicht: boolean; eingerichtet: number; konten: number }>("/anmeldeverfahren/mfa"),
+  ]);
 
   return (
     <AppShell title="Anmeldung" subtitle="Wie sich die Menschen in diesem Haus anmelden">
@@ -29,6 +33,10 @@ export default async function AnmeldungAdminPage() {
             sich weiterhin wie bisher an.
           </p>
         </div>
+      </Section>
+
+      <Section title="Zweiter Faktor" subtitle="Authenticator-App zusätzlich zum Passwort">
+        <MfaSchalter pflicht={mfa.pflicht} eingerichtet={mfa.eingerichtet} konten={mfa.konten} />
       </Section>
 
       {arten.map((art) => (

@@ -124,4 +124,4 @@ export function Field({
 }
 
 export const inputClass =
-  "mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-brand-600 focus:ring-2";
+  "mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-hidden ring-brand-600 focus:ring-2";

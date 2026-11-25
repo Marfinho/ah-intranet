@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma, type Lead, type LeadStandort } from "@prisma/client";
+import { Prisma, type Lead, type LeadStandort } from "../../generated/prisma/client";
 import {
   PREISLISTE_VERSION,
   berechneAngebot,
