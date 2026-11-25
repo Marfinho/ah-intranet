@@ -150,8 +150,9 @@ function Start({ ansicht }: { ansicht: PitchAnsicht }) {
  * Alltagssituationen aus dem Betrieb. Jede löst sich in Punkte auf, die in "ihr"
  * Wort wandern: Situationen rund um Häuser und Marken werden zu "Autohaus",
  * Abläufe zu "Organisation", Auskünfte zu "Information". Die ersten drei stehen
- * lang genug zum Lesen, die übrigen kommen immer schneller und bauen die Schrift
- * auf. Die Beispiele sind allgemein gehalten und für jeden Interessenten gleich.
+ * so lange, dass man sie lesen kann. Die übrigen erscheinen von derselben
+ * Stelle oben in der Mitte und fliegen immer schneller in ihr Wort. Die
+ * Beispiele sind allgemein gehalten und für jeden Interessenten gleich.
  */
 type Zeile = 0 | 1 | 2;
 const LANGSAM: { text: string; zeile: Zeile }[] = [
@@ -159,84 +160,63 @@ const LANGSAM: { text: string; zeile: Zeile }[] = [
   { text: "Hr. Kopernikus sucht die Telefonnummer von Fr. Hülse im anderen Standort", zeile: 2 },
   { text: "Hr. Meyer braucht einen Raum für ein Meeting", zeile: 1 },
 ];
-
-const SCHNELL_AUTOHAUS = [
-  "Eine neue Marke zieht ein: Wer sieht was?",
-  "Zwei Häuser am selben Standort teilen sich Räume",
-  "Der Standort Nord eröffnet am Montag",
-  "Die Werkstatt braucht eigene Abläufe",
-  "Das Verkaufshaus hat samstags länger geöffnet",
-  "Ein Haus wechselt die Marke",
-  "Das Autohaus plant den Tag der offenen Tür",
-  "Haus Süd hat keine eigene Werkstatt",
-  "Alle Häuser brauchen dieselben Vorgaben",
-  "Jedes Haus gehört zur Gruppe und bleibt eigen",
+const SCHNELL: { text: string; zeile: Zeile }[] = [
+  { text: "Eine neue Marke zieht ein: wer sieht was?", zeile: 0 },
+  { text: "Die neue Regel zur Fahrzeugübergabe muss alle erreichen", zeile: 2 },
+  { text: "Zwei Häuser am selben Standort teilen sich Räume und Termine", zeile: 0 },
+  { text: "Die Werkstatt braucht neue Arbeitskleidung", zeile: 1 },
+  { text: "Wo liegt das aktuelle Garantieformular?", zeile: 2 },
+  { text: "Jedes Haus hat eigene Abläufe und gehört doch zusammen", zeile: 0 },
+  { text: "Eine Hebebühne ist defekt", zeile: 1 },
+  { text: "Wer ist für die Zulassung zuständig?", zeile: 2 },
+  { text: "Hr. Schulz möchte den Sonntagsdienst tauschen", zeile: 1 },
 ];
-const SCHNELL_ORGANISATION = [
-  "Die Werkstatt braucht neue Arbeitskleidung",
-  "Hr. Schulz möchte den Sonntagsdienst tauschen",
-  "Eine Hebebühne ist defekt",
-  "Visitenkarten für die neue Verkäuferin",
-  "Der Urlaubsantrag wartet auf die Leitung",
-  "Die Schulung am Dienstag braucht einen Raum",
-  "Der neue Kollege startet am Montag",
-  "Wer hat den Schlüssel zum Vorführwagen?",
-  "Die Sammelbestellung geht Freitag raus",
-];
-const SCHNELL_INFORMATION = [
-  "Die neue Regel zur Fahrzeugübergabe muss alle erreichen",
-  "Wo liegt das aktuelle Garantieformular?",
-  "Wer ist für die Zulassung zuständig?",
-  "Heute ist die Schulung zur neuen Marke",
-  "Welche Öffnungszeiten gelten an Feiertagen?",
-  "Wo ist die Preisliste vom letzten Jahr?",
-  "Wie läuft eine Probefahrt ab?",
-  "Wer vertritt Fr. Hülse nächste Woche?",
-  "Hat jeder den Aushang zum Arbeitsschutz gelesen?",
-];
-// Reihum gemischt, damit alle drei Wörter gleichzeitig wachsen.
-const SCHNELL: { text: string; zeile: Zeile }[] = Array.from({ length: 10 }, (_, i) => [
-  SCHNELL_AUTOHAUS[i] ? { text: SCHNELL_AUTOHAUS[i], zeile: 0 as Zeile } : null,
-  SCHNELL_ORGANISATION[i] ? { text: SCHNELL_ORGANISATION[i], zeile: 1 as Zeile } : null,
-  SCHNELL_INFORMATION[i] ? { text: SCHNELL_INFORMATION[i], zeile: 2 as Zeile } : null,
-])
-  .flat()
-  .filter((eintrag): eintrag is { text: string; zeile: Zeile } => eintrag !== null);
 const BEISPIELE = [...LANGSAM, ...SCHNELL];
 
-/** Ablauf in Sekunden. Die ersten Beispiele stehen fünf Sekunden, danach wird es immer schneller. */
+/**
+ * Ablauf in Sekunden.
+ *
+ * Die ersten drei fliegen ein und stehen nach Textlänge, mindestens fünf Sekunden.
+ * Die übrigen erscheinen oben in der Mitte, bleiben kurz stehen und fliegen dann
+ * los. Verweildauer, Flugzeit und Abstand schrumpfen von Karte zu Karte: Nr. 4 bis
+ * 8 lassen sich noch lesen, danach wird es ein Strom.
+ */
 const NAME_START = 0.3;
 const NAME_FLUG = 0.9;
-const NAME_HALTEN = 5;
-const NAME_SLOT = NAME_FLUG + NAME_HALTEN;
 const NAME_AUFLOESEN = 1.5;
-const NAME_AUFLOESEN_SCHNELL = 0.7;
-const schnellAbstand = (i: number) => Math.max(0.1, 1.5 * Math.pow(0.88, i));
-const schnellFlug = (i: number) => Math.max(0.45, 1.1 * Math.pow(0.9, i));
+const NAME_AUFLOESEN_SCHNELL = 0.9;
+const lesezeit = (text: string) => Math.max(5, 2.5 + text.length * 0.075);
+const SCHNELL_VERWEILEN = [1.3, 1.1, 0.95, 0.8, 0.7, 0.5, 0.4, 0.3, 0.25];
+const SCHNELL_FLUG = [1.0, 0.9, 0.8, 0.7, 0.65, 0.55, 0.5, 0.45, 0.4];
+const SCHNELL_ABSTAND = [2.0, 1.7, 1.45, 1.25, 1.05, 0.8, 0.65, 0.5, 0.4];
 
-/** Wann jedes Beispiel beginnt, wann es sich auflöst und wie lange das dauert. */
+/** Wann jedes Beispiel erscheint, losfliegt und sich auflöst, und wie lange das Auflösen dauert. */
 const BEISPIEL_BEGINN: number[] = [];
+const BEISPIEL_LOS: number[] = [];
 const BEISPIEL_AUFLOESUNG: number[] = [];
 const BEISPIEL_DAUER: number[] = [];
-LANGSAM.forEach((_, k) => {
-  BEISPIEL_BEGINN[k] = NAME_START + k * NAME_SLOT;
-  BEISPIEL_AUFLOESUNG[k] = BEISPIEL_BEGINN[k] + NAME_SLOT;
+let laufzeit = NAME_START;
+LANGSAM.forEach((beispiel, k) => {
+  BEISPIEL_BEGINN[k] = laufzeit;
+  BEISPIEL_LOS[k] = laufzeit + NAME_FLUG;
+  BEISPIEL_AUFLOESUNG[k] = laufzeit + NAME_FLUG + lesezeit(beispiel.text);
   BEISPIEL_DAUER[k] = NAME_AUFLOESEN;
+  laufzeit = BEISPIEL_AUFLOESUNG[k];
 });
-let laufzeit = NAME_START + LANGSAM.length * NAME_SLOT;
+const NAME_LANGSAM_ENDE = laufzeit;
 SCHNELL.forEach((_, i) => {
   const k = LANGSAM.length + i;
   BEISPIEL_BEGINN[k] = laufzeit;
-  BEISPIEL_AUFLOESUNG[k] = laufzeit + schnellFlug(i);
+  BEISPIEL_LOS[k] = laufzeit + SCHNELL_VERWEILEN[i];
+  BEISPIEL_AUFLOESUNG[k] = BEISPIEL_LOS[k] + SCHNELL_FLUG[i];
   BEISPIEL_DAUER[k] = NAME_AUFLOESEN_SCHNELL;
-  laufzeit += schnellAbstand(i);
+  laufzeit += SCHNELL_ABSTAND[i];
 });
-const NAME_LANGSAM_ENDE = NAME_START + LANGSAM.length * NAME_SLOT;
 const NAME_WOERTER_FERTIG = Math.max(...BEISPIEL_AUFLOESUNG.map((zeit, k) => zeit + BEISPIEL_DAUER[k]));
 const NAME_KUERZEN = { von: NAME_WOERTER_FERTIG + 1.4, dauer: 1.6 };
 const NAME_ZEICHEN = NAME_KUERZEN.von + NAME_KUERZEN.dauer - 0.1;
 const NAME_DAUER = NAME_ZEICHEN + 1.6;
-/** Höhe des Streifens oben, in dem die Beispiele einfliegen. */
+/** Höhe des Streifens oben, in dem die Beispiele erscheinen. */
 const NAME_STREIFEN = 104;
 
 const weich = (t: number) => {
@@ -266,9 +246,12 @@ interface Karte {
   zeilen: string[];
   breite: number;
   hoehe: number;
-  /** Wo die Karte steht (langsam) oder wohin sie fliegt (schnell). */
-  x: number;
-  y: number;
+  /** Ort, an dem jede Karte erscheint: oben in der Mitte. */
+  startX: number;
+  startY: number;
+  /** Wohin eine schnelle Karte fliegt und aufplatzt. */
+  zielX: number;
+  zielY: number;
   seite: 1 | -1;
 }
 
@@ -433,35 +416,34 @@ function baueSzene(breite: number, hoehe: number, kartenSchrift: number) {
     });
   }
 
-  // Karten: die ersten stehen groß im Streifen oben, die schnellen sind kleiner und fliegen zu ihrem Wort.
-  const grosseBreite = Math.min(breite - 24, 620);
-  const kleineBreite = Math.min(breite - 24, 380);
-  const kleineSchrift = Math.round(kartenSchrift * 0.8);
+  // Alle Karten sind gleich groß und erscheinen an derselben Stelle oben in der Mitte.
+  messen.font = `600 ${kartenSchrift}px ${SCHRIFT}`;
+  const kartenBreite = Math.min(breite - 24, 620);
   const karten: Karte[] = BEISPIELE.map((beispiel, k) => {
-    const gross = k < LANGSAM.length;
-    messen.font = `600 ${gross ? kartenSchrift : kleineSchrift}px ${SCHRIFT}`;
-    const kartenBreite = gross ? grosseBreite : kleineBreite;
     const zeilen = umbrechen(messen, beispiel.text, kartenBreite - 40);
-    const schrift = gross ? kartenSchrift : kleineSchrift;
     const ziel = ziele[k];
     return {
       zeilen,
       breite: kartenBreite,
-      hoehe: Math.min(NAME_STREIFEN - 12, zeilen.length * schrift * 1.25 + 24),
-      x: gross || !ziel ? breite / 2 : ziel.x,
-      y: gross || !ziel ? NAME_STREIFEN / 2 : ziel.y,
+      hoehe: Math.min(NAME_STREIFEN - 12, zeilen.length * kartenSchrift * 1.25 + 24),
+      startX: breite / 2,
+      startY: NAME_STREIFEN / 2,
+      zielX: ziel ? ziel.x : breite / 2,
+      zielY: ziel ? ziel.y : NAME_STREIFEN / 2,
       seite: zufallswert() < 0.5 ? -1 : 1,
     };
   });
 
-  // Die Punkte starten dort, wo ihre Karte sich auflöst.
+  // Die Punkte starten dort, wo ihre Karte sich auflöst: die ersten oben, die schnellen im Wort.
   for (const t of teilchen) {
     const karte = karten[t.beispiel];
-    const klein = t.beispiel >= LANGSAM.length;
-    const massB = klein ? karte.breite * 0.35 : karte.breite * 0.9;
-    const massH = klein ? karte.hoehe * 0.35 : karte.hoehe * 0.8;
-    t.sx = karte.x + (zufallswert() - 0.5) * massB;
-    t.sy = karte.y + (zufallswert() - 0.5) * massH;
+    if (t.beispiel < LANGSAM.length) {
+      t.sx = karte.startX + (zufallswert() - 0.5) * karte.breite * 0.9;
+      t.sy = karte.startY + (zufallswert() - 0.5) * karte.hoehe * 0.8;
+    } else {
+      t.sx = karte.zielX + (zufallswert() - 0.5) * karte.breite * 0.3;
+      t.sy = karte.zielY + (zufallswert() - 0.5) * karte.hoehe * 0.3;
+    }
   }
   return { teilchen, karten, woerter };
 }
@@ -534,7 +516,7 @@ function Namensseite({ onWeiter }: { onWeiter: () => void }) {
       const ctx = leinwand.getContext("2d")!;
       ctx.scale(dichte, dichte);
 
-      const kartenSchrift = breite >= 600 ? 22 : 17;
+      const kartenSchrift = breite >= 600 ? 24 : 18;
       const { teilchen, karten, woerter } = baueSzene(breite, hoehe, kartenSchrift);
       const grund = farbe("--fg", "#15181B");
       const flaeche = farbe("--surface", "#FFFFFF");
@@ -554,27 +536,40 @@ function Namensseite({ onWeiter }: { onWeiter: () => void }) {
         for (const punkt of woerter) ctx.fillRect(punkt.x - 0.8, punkt.y - 0.8, 1.6, 1.6);
         ctx.globalAlpha = 1;
 
-        // Beispiele: die ersten stehen fünf Sekunden, die übrigen fliegen immer schneller in ihr Wort.
+        // Beispiele: die ersten stehen so lange, dass man sie lesen kann; die übrigen erscheinen
+        // an derselben Stelle oben in der Mitte und fliegen immer schneller in ihr Wort.
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
+        ctx.font = `600 ${kartenSchrift}px ${SCHRIFT}`;
         karten.forEach((karte, k) => {
-          const gross = k < LANGSAM.length;
-          const schrift = gross ? kartenSchrift : Math.round(kartenSchrift * 0.8);
-          const dauerFlug = gross ? NAME_FLUG : BEISPIEL_AUFLOESUNG[k] - BEISPIEL_BEGINN[k];
-          const da = (t - BEISPIEL_BEGINN[k]) / dauerFlug;
-          if (da <= 0 || t >= BEISPIEL_AUFLOESUNG[k] + (gross ? 0.6 : 0)) return;
-          const ein = gross ? weich(da) : Math.min(1, da) ** 2;
-          const woher = karte.seite === -1 ? -karte.breite : breite + karte.breite;
-          const vonY = NAME_STREIFEN / 2;
-          const mitteX = woher + (karte.x - woher) * ein;
-          const mitteY = gross ? karte.y : vonY + (karte.y - vonY) * ein;
-          const mass = gross ? 1 : 1 - 0.5 * ein;
-          const auf = gross ? (t - BEISPIEL_AUFLOESUNG[k]) / 0.6 : 0;
+          if (t < BEISPIEL_BEGINN[k] || t >= BEISPIEL_AUFLOESUNG[k] + (k < LANGSAM.length ? 0.6 : 0)) return;
+          let mitteX = karte.startX;
+          let mitteY = karte.startY;
+          let mass = 1;
+          let alpha: number;
+          if (k < LANGSAM.length) {
+            const da = (t - BEISPIEL_BEGINN[k]) / NAME_FLUG;
+            const woher = karte.seite === -1 ? -karte.breite : breite + karte.breite;
+            mitteX = woher + (karte.startX - woher) * weich(da);
+            alpha = Math.min(1, da * 1.4) * (1 - weich((t - BEISPIEL_AUFLOESUNG[k]) / 0.6));
+          } else {
+            const i = k - LANGSAM.length;
+            const da = (t - BEISPIEL_BEGINN[k]) / 0.25;
+            alpha = Math.min(1, da);
+            mass = 0.94 + 0.06 * Math.min(1, da);
+            const flug = (t - BEISPIEL_LOS[k]) / SCHNELL_FLUG[i];
+            if (flug > 0) {
+              // Beschleunigt: erst langsam, dann zielstrebig in das Wort.
+              const weg = Math.min(1, flug) ** 1.7;
+              mitteX = karte.startX + (karte.zielX - karte.startX) * weg;
+              mitteY = karte.startY + (karte.zielY - karte.startY) * weg;
+              mass = 1 - (0.25 + 0.3 * (i / (SCHNELL.length - 1))) * weg;
+            }
+          }
           ctx.save();
           ctx.translate(mitteX, mitteY);
           ctx.scale(mass, mass);
-          ctx.globalAlpha = Math.min(1, da * 1.4) * (1 - weich(auf));
-          ctx.font = `600 ${schrift}px ${SCHRIFT}`;
+          ctx.globalAlpha = alpha;
           ctx.fillStyle = flaeche;
           ctx.strokeStyle = linie;
           ctx.lineWidth = 1;
@@ -586,7 +581,7 @@ function Namensseite({ onWeiter }: { onWeiter: () => void }) {
           ctx.stroke();
           ctx.fillStyle = grund;
           karte.zeilen.forEach((zeile, z) =>
-            ctx.fillText(zeile, -karte.breite / 2 + 20, (z - (karte.zeilen.length - 1) / 2) * schrift * 1.25),
+            ctx.fillText(zeile, -karte.breite / 2 + 20, (z - (karte.zeilen.length - 1) / 2) * kartenSchrift * 1.25),
           );
           ctx.restore();
         });
@@ -641,11 +636,11 @@ function Namensseite({ onWeiter }: { onWeiter: () => void }) {
 
   const fertig = zeit >= NAME_DAUER;
   const inSituationen = zeit < NAME_LANGSAM_ENDE;
-  const aktuelle = Math.min(LANGSAM.length - 1, Math.max(0, Math.floor((zeit - NAME_START) / NAME_SLOT)));
+  const aktuelle = LANGSAM.reduce((stand, _, k) => (zeit >= BEISPIEL_BEGINN[k] ? k : stand), 0);
 
   // Springt zum Beginn des nächsten Beispiels, indem die Uhr vorgestellt wird.
   const naechstes = () => {
-    const ziel = NAME_START + (aktuelle + 1) * NAME_SLOT;
+    const ziel = aktuelle + 1 < LANGSAM.length ? BEISPIEL_BEGINN[aktuelle + 1] : NAME_LANGSAM_ENDE;
     versatz.current += Math.max(0, ziel - zeit) + 0.01;
   };
 
