@@ -83,7 +83,9 @@ export function LocationRow({ location, allBrands }: { location: LocationSummary
           defaultValue={location.bundesland ?? ""}
           disabled={pending}
           onChange={(event) =>
-            startTransition(async () => melde(await updateLocationAction(location.id, { bundesland: event.target.value })))
+            startTransition(async () =>
+              melde(await updateLocationAction(location.id, { bundesland: event.target.value })),
+            )
           }
           className="mt-2 block w-full max-w-xs rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal normal-case tracking-normal text-slate-800"
         >

@@ -158,7 +158,7 @@ export function KalenderStandort({
                           art: vorschlag.art,
                           name: vorschlag.name,
                           arbeitsfrei: vorschlag.arbeitsfrei,
-                          locationId: vorschlag.locationId,
+                          locationIds: [vorschlag.locationId],
                         }),
                       ),
                     )

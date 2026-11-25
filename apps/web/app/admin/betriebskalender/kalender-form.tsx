@@ -12,6 +12,7 @@ const initialState: ActionState = { ok: true };
 export function KalenderForm({ standorte, jahr }: { standorte: { id: string; name: string }[]; jahr: number }) {
   const [state, formAction] = useFormState(createBetriebstagAction, initialState);
   const [art, setArt] = useState(BETRIEBSTAG_ARTEN[2].key);
+  const [ganzesHaus, setGanzesHaus] = useState(true);
   const vorbelegt = BETRIEBSTAG_ARTEN.find((eintrag) => eintrag.key === art)!;
 
   return (
@@ -47,16 +48,40 @@ export function KalenderForm({ standorte, jahr }: { standorte: { id: string; nam
         <input name="name" required minLength={2} maxLength={80} className={inputClass} />
       </Field>
 
-      <Field label="Gilt für">
-        <select name="locationId" defaultValue="" className={inputClass}>
-          <option value="">Ganzes Haus</option>
-          {standorte.map((standort) => (
-            <option key={standort.id} value={standort.id}>
-              {standort.name}
-            </option>
-          ))}
-        </select>
-      </Field>
+      <fieldset className="md:col-span-2">
+        <legend className="text-sm font-medium text-slate-700">Gilt für</legend>
+        <label className="mt-2 flex items-start gap-3 text-sm">
+          <input
+            type="checkbox"
+            name="ganzesHaus"
+            checked={ganzesHaus}
+            onChange={(event) => setGanzesHaus(event.target.checked)}
+            className="mt-1 h-4 w-4"
+          />
+          <span>
+            <span className="font-medium text-slate-800">Alle Standorte</span>
+            <span className="block text-xs text-slate-500">
+              Ein Eintrag für das ganze Haus, auch für später angelegte Standorte.
+            </span>
+          </span>
+        </label>
+        {ganzesHaus ? null : (
+          <div className="mt-3">
+            <p className="text-xs text-slate-500">Mehrere Standorte möglich - jeder erhält einen eigenen Eintrag.</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {standorte.map((standort) => (
+                <label
+                  key={standort.id}
+                  className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                >
+                  <input type="checkbox" name="locationIds" value={standort.id} className="h-4 w-4" />
+                  {standort.name}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+      </fieldset>
 
       {/* key: beim Wechsel der Art springt die Vorbelegung mit, bleibt aber änderbar. */}
       <label key={art} className="flex items-start gap-3 text-sm md:col-span-2">

@@ -11,7 +11,8 @@ export default async function BetriebskalenderPage({ searchParams }: { searchPar
   await requirePermission("organisation.manage");
 
   const angefragt = Number(searchParams.jahr);
-  const jahr = Number.isInteger(angefragt) && angefragt >= 2000 && angefragt <= 2100 ? angefragt : new Date().getFullYear();
+  const jahr =
+    Number.isInteger(angefragt) && angefragt >= 2000 && angefragt <= 2100 ? angefragt : new Date().getFullYear();
   const ansicht = await apiGet<BetriebskalenderAnsicht>(`/betriebskalender?jahr=${jahr}`);
 
   const hausweit = ansicht.eintraege.filter((eintrag) => eintrag.locationId === null);

@@ -33,7 +33,9 @@ export default async function UsersAdminPage(props: { searchParams: Promise<{ se
         <UserComposer
           organisation={organisation}
           roles={roles}
-          people={users.filter((user) => user.status === "active").map((user) => ({ id: user.id, displayName: user.displayName }))}
+          people={users
+            .filter((user) => user.status === "active")
+            .map((user) => ({ id: user.id, displayName: user.displayName }))}
         />
       </Section>
 
@@ -78,7 +80,12 @@ export default async function UsersAdminPage(props: { searchParams: Promise<{ se
                     <p className="mt-1 text-xs text-slate-500">{user.email ?? "keine E-Mail hinterlegt"}</p>
                   </div>
 
-                  <UserRowActions userId={user.id} status={user.status} name={user.displayName} hasAccess={user.hasAccess} />
+                  <UserRowActions
+                    userId={user.id}
+                    status={user.status}
+                    name={user.displayName}
+                    hasAccess={user.hasAccess}
+                  />
                 </li>
               ))}
             </ul>

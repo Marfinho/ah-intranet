@@ -117,7 +117,11 @@ export function UserComposer({
 
       <Field
         label={mitZugang ? "Rollen *" : "Rollen"}
-        hint={mitZugang ? "Mehrfachauswahl möglich" : "Ohne Zugang ohne Wirkung - gilt, falls später ein Zugang eingerichtet wird"}
+        hint={
+          mitZugang
+            ? "Mehrfachauswahl möglich"
+            : "Ohne Zugang ohne Wirkung - gilt, falls später ein Zugang eingerichtet wird"
+        }
         wide
       >
         <div className="mt-2 flex flex-wrap gap-3">

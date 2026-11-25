@@ -13,7 +13,8 @@ class TagBodyDto {
   @IsIn(ARTEN) art!: BetriebstagArt;
   @IsString() name!: string;
   @IsOptional() @IsBoolean() arbeitsfrei?: boolean;
-  @IsOptional() @IsString() locationId?: string;
+  /** Leer = ganzes Haus; sonst ein Eintrag je Standort. */
+  @IsOptional() @IsArray() @ArrayUnique() @IsString({ each: true }) locationIds?: string[];
 }
 
 class TagPatchDto {

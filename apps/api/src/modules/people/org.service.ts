@@ -63,7 +63,12 @@ export class OrgService {
 
     const location = await this.prisma.$transaction(async (tx) => {
       const created = await tx.location.create({
-        data: { name: input.name.trim(), code, address: input.address?.trim() || null, bundesland: this.bundesland(input.bundesland) },
+        data: {
+          name: input.name.trim(),
+          code,
+          address: input.address?.trim() || null,
+          bundesland: this.bundesland(input.bundesland),
+        },
       });
       await this.setLocationBrands(tx, created.id, input.brandIds ?? []);
       return created;

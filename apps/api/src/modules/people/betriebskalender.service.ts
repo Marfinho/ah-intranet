@@ -17,7 +17,13 @@ export interface BetriebstagInput {
   art: BetriebstagArt;
   name: string;
   arbeitsfrei?: boolean;
-  locationId?: string | null;
+  /**
+   * Standorte, für die der Eintrag gilt. Leer oder fehlend = das ganze Haus
+   * (ein einziger Eintrag, der auch für später angelegte Standorte gilt).
+   * Mehrere Standorte erzeugen je einen Eintrag - so lässt er sich später
+   * für einen Standort ändern oder streichen, ohne die anderen zu berühren.
+   */
+  locationIds?: string[];
 }
 
 const DATUM = /^\d{4}-\d{2}-\d{2}$/;
@@ -67,7 +73,8 @@ export class BetriebskalenderService {
         // Schon geführt (für diesen Standort oder das ganze Haus), gleich unter welchem Namen:
         // ein zweiter Eintrag für denselben Tag wäre doppelte Pflege.
         const vorhanden = eintraege.some(
-          (eintrag) => eintrag.datum === kandidat.datum && (eintrag.locationId === standort.id || eintrag.locationId === null),
+          (eintrag) =>
+            eintrag.datum === kandidat.datum && (eintrag.locationId === standort.id || eintrag.locationId === null),
         );
         if (!vorhanden) {
           vorschlaege.push({
@@ -119,28 +126,40 @@ export class BetriebskalenderService {
     return this.ansicht(input.jahr);
   }
 
-  async create(actor: RequestUser, input: BetriebstagInput): Promise<BetriebstagEintrag> {
+  async create(actor: RequestUser, input: BetriebstagInput): Promise<BetriebstagEintrag[]> {
     const datum = this.datum(input.datum);
     const name = this.name(input.name);
     const art = this.art(input.art);
-    const locationId = await this.standort(input.locationId);
+    const ziele = await this.standorte(input.locationIds);
 
-    const doppelt = await this.prisma.betriebstag.findFirst({ where: { datum, locationId, name }, select: { id: true } });
-    if (doppelt) {
-      throw new BadRequestException(`Für diesen Tag gibt es bereits einen Eintrag "${name}".`);
+    const doppelt = await this.prisma.betriebstag.findMany({
+      // `in` kennt kein null: "ganzes Haus" ist ein eigener Fall.
+      where: { datum, name, locationId: ziele[0] === null ? null : { in: ziele as string[] } },
+      select: { locationId: true },
+    });
+    if (doppelt.length > 0) {
+      throw new BadRequestException(
+        ziele.length === 1
+          ? `Für diesen Tag gibt es bereits einen Eintrag "${name}".`
+          : `Für ${doppelt.length} der gewählten Standorte gibt es diesen Eintrag bereits. Wählen Sie nur die übrigen.`,
+      );
     }
 
-    const row = await this.prisma.betriebstag.create({
-      data: { datum, art: art.key, name, locationId, arbeitsfrei: input.arbeitsfrei ?? art.arbeitsfreiStandard },
-    });
+    const zeilen = await this.prisma.$transaction(
+      ziele.map((locationId) =>
+        this.prisma.betriebstag.create({
+          data: { datum, art: art.key, name, locationId, arbeitsfrei: input.arbeitsfrei ?? art.arbeitsfreiStandard },
+        }),
+      ),
+    );
     await this.audit.log({
       actor,
       action: "betriebskalender.create",
       entityType: "betriebstag",
-      entityId: row.id,
-      detail: `${art.name} "${name}" am ${input.datum} eingetragen`,
+      entityId: zeilen[0].id,
+      detail: `${art.name} "${name}" am ${input.datum} eingetragen (${ziele[0] === null ? "ganzes Haus" : `${ziele.length} Standort(e)`})`,
     });
-    return this.toEintrag(row);
+    return zeilen.map((row) => this.toEintrag(row));
   }
 
   async update(
@@ -211,21 +230,24 @@ export class BetriebskalenderService {
   private art(key: string) {
     const art = betriebstagArt(key);
     if (!art) {
-      throw new BadRequestException(`Unbekannte Art: ${key}. Möglich: ${BETRIEBSTAG_ARTEN.map((a) => a.key).join(", ")}`);
+      throw new BadRequestException(
+        `Unbekannte Art: ${key}. Möglich: ${BETRIEBSTAG_ARTEN.map((a) => a.key).join(", ")}`,
+      );
     }
     return art;
   }
 
-  /** Leer = ganzes Haus. Ein fremder Standort scheitert schon am Mandantenfilter. */
-  private async standort(locationId?: string | null): Promise<string | null> {
-    if (!locationId) {
-      return null;
+  /** Leer = ganzes Haus (`null`). Ein fremder Standort scheitert schon am Mandantenfilter. */
+  private async standorte(locationIds?: string[]): Promise<(string | null)[]> {
+    const ids = [...new Set((locationIds ?? []).filter(Boolean))];
+    if (ids.length === 0) {
+      return [null];
     }
-    const standort = await this.prisma.location.findFirst({ where: { id: locationId }, select: { id: true } });
-    if (!standort) {
-      throw new BadRequestException("Der Standort existiert in diesem Haus nicht.");
+    const gefunden = await this.prisma.location.findMany({ where: { id: { in: ids } }, select: { id: true } });
+    if (gefunden.length !== ids.length) {
+      throw new BadRequestException("Mindestens ein Standort existiert in diesem Haus nicht.");
     }
-    return standort.id;
+    return ids;
   }
 
   private toEintrag(row: {

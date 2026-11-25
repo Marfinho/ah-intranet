@@ -93,8 +93,9 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
   Kreisprüfung, Baum und Unterstellte. Die Kreisprüfung läuft bei jeder Änderung
   des Vorgesetzten; `alleUnterstellten` trägt später die Erfassung für andere.
 - **Betriebskalender** (`Betriebstag`, `modules/people/betriebskalender.*`):
-  Feiertage, Brückentage, verkaufsoffene Sonntage, Betriebsurlaub - je Standort
-  oder für das ganze Haus. Feiertage rechnet `feiertage.ts` je Bundesland
+  Feiertage, Brückentage, verkaufsoffene Sonntage, Betriebsurlaub - für das ganze
+  Haus (ein Eintrag, gilt auch für später angelegte Standorte) oder für gewählte
+  Standorte (je Standort ein Eintrag, einzeln änderbar). Feiertage rechnet `feiertage.ts` je Bundesland
   (`Location.bundesland`) nur als **Vorschlag**; erst die Übernahme macht sie zu
   Daten des Hauses, die sich ändern und löschen lassen. Ortsabhängige Feiertage
   kennt die Rechnung nicht - das Haus trägt sie nach. Jeder Tag trägt

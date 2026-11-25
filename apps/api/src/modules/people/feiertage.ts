@@ -49,7 +49,7 @@ function wochentag(text: string): number {
 /** Mittwoch vor dem 23. November (Buß- und Bettag). */
 function bussUndBettag(jahr: number): Date {
   const stichtag = new Date(Date.UTC(jahr, 10, 23));
-  const rueckwaerts = ((stichtag.getUTCDay() + 7 - 3) % 7) || 7;
+  const rueckwaerts = (stichtag.getUTCDay() + 7 - 3) % 7 || 7;
   return tage(stichtag, -rueckwaerts);
 }
 
@@ -114,7 +114,11 @@ export function brueckentage(feiertageDesJahres: readonly Feiertag[]): Feiertag[
   for (const feiertag of feiertageDesJahres) {
     const tag = wochentag(feiertag.datum);
     const brueckentag =
-      tag === 4 ? datumText(tage(new Date(`${feiertag.datum}T00:00:00Z`), 1)) : tag === 2 ? datumText(tage(new Date(`${feiertag.datum}T00:00:00Z`), -1)) : null;
+      tag === 4
+        ? datumText(tage(new Date(`${feiertag.datum}T00:00:00Z`), 1))
+        : tag === 2
+          ? datumText(tage(new Date(`${feiertag.datum}T00:00:00Z`), -1))
+          : null;
     if (brueckentag && !belegt.has(brueckentag)) {
       ergebnis.push({ datum: brueckentag, name: `Brückentag (${feiertag.name})` });
     }

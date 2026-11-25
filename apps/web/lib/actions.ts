@@ -758,7 +758,10 @@ export async function grantAccessAction(id: string): Promise<ActionState> {
     revalidatePath("/mitarbeiter");
     return { ok: true, detail: `Zugang eingerichtet. Startpasswort: ${result.initialPassword}` };
   } catch (error) {
-    return { ok: false, message: error instanceof ApiError ? error.message : "Zugang konnte nicht eingerichtet werden." };
+    return {
+      ok: false,
+      message: error instanceof ApiError ? error.message : "Zugang konnte nicht eingerichtet werden.",
+    };
   }
 }
 
@@ -828,11 +831,10 @@ export async function updateLocationAction(
   locationId: string,
   input: { name?: string; code?: string; address?: string | null; bundesland?: string | null; brandIds?: string[] },
 ): Promise<ActionState> {
-  return run(() => apiSend("PATCH", `/standorte/${locationId}`, input), [
-    "/admin/standorte",
-    "/admin/news",
-    "/admin/betriebskalender",
-  ]);
+  return run(
+    () => apiSend("PATCH", `/standorte/${locationId}`, input),
+    ["/admin/standorte", "/admin/news", "/admin/betriebskalender"],
+  );
 }
 
 export async function deleteLocationAction(locationId: string): Promise<ActionState> {
@@ -1075,7 +1077,7 @@ export interface BetriebstagInput {
   art: string;
   name: string;
   arbeitsfrei?: boolean;
-  locationId?: string;
+  locationIds?: string[];
 }
 
 export async function createBetriebstagAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
@@ -1084,7 +1086,8 @@ export async function createBetriebstagAction(_previous: ActionState, formData: 
     art: String(formData.get("art") ?? ""),
     name: String(formData.get("name") ?? ""),
     arbeitsfrei: formData.get("arbeitsfrei") === "on",
-    locationId: String(formData.get("locationId") ?? "") || undefined,
+    // "Ganzes Haus" schickt keine Standorte; die Auswahl gilt nur, wenn es abgewählt ist.
+    locationIds: formData.get("ganzesHaus") === "on" ? [] : formData.getAll("locationIds").map(String),
   };
   return run(() => apiSend("POST", "/betriebskalender", payload), KALENDER, "Eintrag gespeichert.");
 }
@@ -1095,7 +1098,10 @@ export async function uebernimmVorschlagAction(input: BetriebstagInput): Promise
 }
 
 export async function uebernimmFeiertageAction(jahr: number, locationId: string): Promise<ActionState> {
-  return run(() => apiSend("POST", "/betriebskalender/uebernehmen", { jahr, locationId, arten: ["feiertag"] }), KALENDER);
+  return run(
+    () => apiSend("POST", "/betriebskalender/uebernehmen", { jahr, locationId, arten: ["feiertag"] }),
+    KALENDER,
+  );
 }
 
 export async function updateBetriebstagAction(

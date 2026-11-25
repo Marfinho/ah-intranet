@@ -358,7 +358,10 @@ export class PeopleService {
    * jeder Neuanlage - sonst wäre das der Weg an der Lizenz vorbei.
    */
   async zugangEinrichten(actor: RequestUser, id: string): Promise<{ initialPassword: string }> {
-    const user = await this.prisma.user.findUnique({ where: { id }, select: { username: true, loginEnabled: true, status: true } });
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { username: true, loginEnabled: true, status: true },
+    });
     if (!user) {
       throw new NotFoundException("Benutzer nicht gefunden");
     }

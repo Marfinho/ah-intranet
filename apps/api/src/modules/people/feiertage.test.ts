@@ -27,7 +27,24 @@ describe("feiertage", () => {
   });
 
   it("führt in jedem Land die neun bundesweiten Tage", () => {
-    for (const land of ["BW", "BY", "BE", "BB", "HB", "HH", "HE", "MV", "NI", "NW", "RP", "SL", "SN", "ST", "SH", "TH"]) {
+    for (const land of [
+      "BW",
+      "BY",
+      "BE",
+      "BB",
+      "HB",
+      "HH",
+      "HE",
+      "MV",
+      "NI",
+      "NW",
+      "RP",
+      "SL",
+      "SN",
+      "ST",
+      "SH",
+      "TH",
+    ]) {
       expect(namen(2026, land)).toEqual(expect.arrayContaining(["Neujahr", "Karfreitag", "2. Weihnachtstag"]));
     }
   });
