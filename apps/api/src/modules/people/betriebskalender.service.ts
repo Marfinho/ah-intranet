@@ -162,6 +162,64 @@ export class BetriebskalenderService {
     return zeilen.map((row) => this.toEintrag(row));
   }
 
+  /**
+   * Kopiert einen Eintrag auf weitere Standorte.
+   *
+   * Es entstehen eigene Einträge - der Ursprung bleibt unberührt und die Kopien
+   * lassen sich einzeln ändern. Standorte, die den Tag unter demselben Namen
+   * schon führen, werden übersprungen statt doppelt belegt. Ein Eintrag für das
+   * ganze Haus gilt bereits überall und braucht keine Übertragung.
+   */
+  async uebertragen(actor: RequestUser, id: string, locationIds: string[]): Promise<BetriebstagEintrag[]> {
+    const quelle = await this.prisma.betriebstag.findUnique({ where: { id } });
+    if (!quelle) {
+      throw new NotFoundException("Eintrag nicht gefunden");
+    }
+    if (quelle.locationId === null) {
+      throw new BadRequestException("Dieser Eintrag gilt schon für das ganze Haus.");
+    }
+    const ziele = (await this.standorte(locationIds)).filter(
+      (ziel): ziel is string => ziel !== null && ziel !== quelle.locationId,
+    );
+    if (ziele.length === 0) {
+      throw new BadRequestException("Bitte mindestens einen weiteren Standort wählen.");
+    }
+    const vorhanden = new Set(
+      (
+        await this.prisma.betriebstag.findMany({
+          where: { datum: quelle.datum, name: quelle.name, locationId: { in: ziele } },
+          select: { locationId: true },
+        })
+      ).map((row) => row.locationId),
+    );
+    const offen = ziele.filter((ziel) => !vorhanden.has(ziel));
+    if (offen.length === 0) {
+      throw new BadRequestException("Alle gewählten Standorte führen diesen Eintrag bereits.");
+    }
+
+    const zeilen = await this.prisma.$transaction(
+      offen.map((locationId) =>
+        this.prisma.betriebstag.create({
+          data: {
+            datum: quelle.datum,
+            art: quelle.art,
+            name: quelle.name,
+            arbeitsfrei: quelle.arbeitsfrei,
+            locationId,
+          },
+        }),
+      ),
+    );
+    await this.audit.log({
+      actor,
+      action: "betriebskalender.uebertragen",
+      entityType: "betriebstag",
+      entityId: id,
+      detail: `Eintrag "${quelle.name}" auf ${zeilen.length} weitere(n) Standort(e) übertragen`,
+    });
+    return zeilen.map((row) => this.toEintrag(row));
+  }
+
   async update(
     actor: RequestUser,
     id: string,

@@ -41,12 +41,21 @@ export default async function BetriebskalenderPage({ searchParams }: { searchPar
 
         <div className="space-y-4">
           {hausweit.length > 0 ? (
-            <KalenderStandort standort={null} jahr={jahr} eintraege={hausweit} vorschlaege={[]} />
+            <KalenderStandort
+              standort={null}
+              jahr={jahr}
+              eintraege={hausweit}
+              vorschlaege={[]}
+              standorte={ansicht.standorte}
+              alleEintraege={ansicht.eintraege}
+            />
           ) : null}
           {ansicht.standorte.map((standort) => (
             <KalenderStandort
               key={standort.id}
               standort={standort}
+              standorte={ansicht.standorte}
+              alleEintraege={ansicht.eintraege}
               jahr={jahr}
               eintraege={ansicht.eintraege.filter((eintrag) => eintrag.locationId === standort.id)}
               vorschlaege={ansicht.vorschlaege.filter((vorschlag) => vorschlag.locationId === standort.id)}

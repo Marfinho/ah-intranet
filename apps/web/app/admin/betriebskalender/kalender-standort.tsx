@@ -7,6 +7,7 @@ import {
   deleteBetriebstagAction,
   uebernimmFeiertageAction,
   uebernimmVorschlagAction,
+  uebertrageBetriebstagAction,
   updateBetriebstagAction,
 } from "@/lib/actions";
 
@@ -30,9 +31,20 @@ function melde(result: { ok: boolean; message?: string }) {
 const knopf =
   "rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60";
 
-function Eintrag({ eintrag }: { eintrag: BetriebstagEintrag }) {
+type StandortRef = { id: string; name: string };
+
+function Eintrag({
+  eintrag,
+  weitere,
+}: {
+  eintrag: BetriebstagEintrag;
+  /** Standorte, die diesen Tag unter diesem Namen noch nicht führen. */
+  weitere: StandortRef[];
+}) {
   const [pending, startTransition] = useTransition();
   const [name, setName] = useState(eintrag.name);
+  const [offen, setOffen] = useState(false);
+  const [gewaehlt, setGewaehlt] = useState<string[]>([]);
 
   return (
     <li className="flex flex-wrap items-center gap-3 py-2">
@@ -71,6 +83,57 @@ function Eintrag({ eintrag }: { eintrag: BetriebstagEintrag }) {
       >
         Löschen
       </button>
+      {eintrag.locationId && weitere.length > 0 ? (
+        <button type="button" onClick={() => setOffen((wert) => !wert)} className={knopf}>
+          Auf weitere Standorte
+        </button>
+      ) : null}
+      {offen ? (
+        <div className="w-full rounded-xl bg-slate-50 px-3 py-3">
+          <div className="flex flex-wrap gap-2">
+            {weitere.map((standort) => (
+              <label
+                key={standort.id}
+                className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"
+              >
+                <input
+                  type="checkbox"
+                  checked={gewaehlt.includes(standort.id)}
+                  onChange={(event) =>
+                    setGewaehlt((aktuell) =>
+                      event.target.checked ? [...aktuell, standort.id] : aktuell.filter((id) => id !== standort.id),
+                    )
+                  }
+                  className="h-4 w-4"
+                />
+                {standort.name}
+              </label>
+            ))}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" onClick={() => setGewaehlt(weitere.map((standort) => standort.id))} className={knopf}>
+              Alle wählen
+            </button>
+            <button
+              type="button"
+              disabled={pending || gewaehlt.length === 0}
+              onClick={() =>
+                startTransition(async () => {
+                  const result = await uebertrageBetriebstagAction(eintrag.id, gewaehlt);
+                  melde(result);
+                  if (result.ok) {
+                    setOffen(false);
+                    setGewaehlt([]);
+                  }
+                })
+              }
+              className="rounded-xl bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
+            >
+              {gewaehlt.length > 0 ? `Auf ${gewaehlt.length} übertragen` : "Übertragen"}
+            </button>
+          </div>
+        </div>
+      ) : null}
     </li>
   );
 }
@@ -81,7 +144,12 @@ export function KalenderStandort({
   jahr,
   eintraege,
   vorschlaege,
+  standorte,
+  alleEintraege,
 }: {
+  /** Alle Standorte des Hauses und alle Einträge des Jahres - für die Übertragung. */
+  standorte: StandortRef[];
+  alleEintraege: BetriebstagEintrag[];
   /** `null` = Einträge für das ganze Haus */
   standort: { id: string; name: string; bundesland: string | null } | null;
   jahr: number;
@@ -135,7 +203,18 @@ export function KalenderStandort({
       ) : (
         <ul className="mt-3 divide-y divide-slate-100">
           {eintraege.map((eintrag) => (
-            <Eintrag key={eintrag.id} eintrag={eintrag} />
+            <Eintrag
+              key={eintrag.id}
+              eintrag={eintrag}
+              weitere={standorte.filter(
+                (ziel) =>
+                  ziel.id !== eintrag.locationId &&
+                  !alleEintraege.some(
+                    (andere) =>
+                      andere.locationId === ziel.id && andere.datum === eintrag.datum && andere.name === eintrag.name,
+                  ),
+              )}
+            />
           ))}
         </ul>
       )}

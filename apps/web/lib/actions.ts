@@ -1111,6 +1111,10 @@ export async function updateBetriebstagAction(
   return run(() => apiSend("PATCH", `/betriebskalender/${id}`, input), KALENDER);
 }
 
+export async function uebertrageBetriebstagAction(id: string, locationIds: string[]): Promise<ActionState> {
+  return run(() => apiSend("POST", `/betriebskalender/${id}/uebertragen`, { locationIds }), KALENDER);
+}
+
 export async function deleteBetriebstagAction(id: string): Promise<ActionState> {
   return run(() => apiSend("DELETE", `/betriebskalender/${id}`), KALENDER);
 }

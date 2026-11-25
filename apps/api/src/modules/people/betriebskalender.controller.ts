@@ -24,6 +24,10 @@ class TagPatchDto {
   @IsOptional() @IsBoolean() arbeitsfrei?: boolean;
 }
 
+class UebertragungDto {
+  @IsArray() @ArrayUnique() @IsString({ each: true }) locationIds!: string[];
+}
+
 class UebernahmeDto {
   @Type(() => Number) @IsInt() @Min(2000) @Max(2100) jahr!: number;
   @IsOptional() @IsString() locationId?: string;
@@ -62,6 +66,13 @@ export class BetriebskalenderController {
   @Permission("organisation.manage")
   create(@CurrentUser() user: RequestUser, @Body() dto: TagBodyDto) {
     return this.kalender.create(user, dto);
+  }
+
+  @Post(":id/uebertragen")
+  @HttpCode(200)
+  @Permission("organisation.manage")
+  uebertragen(@CurrentUser() user: RequestUser, @Param("id") id: string, @Body() dto: UebertragungDto) {
+    return this.kalender.uebertragen(user, id, dto.locationIds);
   }
 
   @Patch(":id")
