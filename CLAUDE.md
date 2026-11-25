@@ -210,6 +210,17 @@ Schichtarten bis zur Mindest-, dann bis zur Idealbesetzung. Die **Vorschau
 rechnet nur, die Übernahme rechnet neu** - der Client schickt nie
 Zuweisungen. Offene Schichten entstehen nur für die Lücke zur Mindestbesetzung.
 
+Die **Wochenansicht** (`/schichtplan/woche`) legt Schichten auf eine Zeitachse,
+überlappende nebeneinander (`ueberlappungsLayout`). Wer `shifts.manage` hat,
+zieht Blöcke auf einen anderen Tag oder eine andere Uhrzeit und am oberen oder
+unteren Rand für Beginn und Ende, auch per Tastatur; Zeiten rasten auf
+Viertelstunden ein. Die Rechnung (`packages/shared/src/wochenansicht.ts`,
+`zeit.ts`) liegt in `shared`, damit Browser und Server dieselbe Ortszeit rechnen -
+eine Frühschicht bleibt über die Sommerzeitumstellung eine um 8 Uhr. Gespeichert
+wird über `PATCH /schichtplan/:id`; die Doppelbelegung entscheidet der **Server**,
+der Block springt bei Ablehnung zurück. Eine Zeitänderung benachrichtigt die
+eingeteilte Person.
+
 **Entfernt:** Schnittstellen zu Fremdsystemen, Fahrzeugbestand und Fuhrpark –
 samt Oberflächen, API-Modulen, Datenmodellen und Tabellen. AHOI betrachtet den
 Betriebsalltag, nicht das Autogeschäft; dort haben die Häuser bereits Software.

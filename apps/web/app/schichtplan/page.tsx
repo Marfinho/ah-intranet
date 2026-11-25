@@ -53,6 +53,12 @@ export default async function SchichtplanPage(props: { searchParams: Promise<{ m
 
   return (
     <AppShell title="Schichtplan" subtitle="Besetzung der nächsten vier Wochen, mit Diensttausch">
+      <p className="text-sm font-semibold">
+        <Link href="/schichtplan/woche" className="text-brand-700 hover:underline">
+          Wochenansicht
+        </Link>
+      </p>
+
       {darfPflegen ? (
         <p className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold">
           <Link href="/schichtplan/planung" className="text-brand-700 hover:underline">

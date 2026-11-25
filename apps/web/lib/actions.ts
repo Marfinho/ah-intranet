@@ -1012,6 +1012,15 @@ export async function einteilenAction(shiftId: string, assigneeId: string): Prom
   return run(() => apiSend("PATCH", `/schichtplan/${shiftId}`, { assigneeId }), ["/schichtplan", "/"]);
 }
 
+/**
+ * Ändert die Zeiten einer Schicht (Ziehen im Wochenplan). Der Server prüft die
+ * Doppelbelegung der eingeteilten Person; ein Konflikt kommt als Meldung zurück
+ * und der Block springt im Browser zurück.
+ */
+export async function verschiebeSchichtAction(id: string, startsAt: string, endsAt: string): Promise<ActionState> {
+  return run(() => apiSend("PATCH", `/schichtplan/${id}`, { startsAt, endsAt }), ["/schichtplan", "/schichtplan/woche", "/"]);
+}
+
 export async function deleteShiftAction(id: string): Promise<ActionState> {
   return run(() => apiSend("DELETE", `/schichtplan/${id}`), ["/schichtplan"]);
 }

@@ -30,6 +30,9 @@ Erster vollständiger Stand. Lauffähig, aber in keinem Haus im Einsatz.
   Mindest- und Idealbesetzung; Arbeitszeitprofil je Person (Wochenstunden,
   Zeitfenster, Arbeitstage); automatische Planung mit Vorschau; Markierung von
   Verstößen gegen das Arbeitszeitgesetz (markiert nur, sperrt nichts).
+- **Wochenansicht des Schichtplans** mit Zeitachse, nebeneinanderliegenden
+  Überlappungen und Ziehen per Maus, Touch und Tastatur (Verschieben, Beginn und
+  Ende ändern).
 
 ### Sicherheit
 

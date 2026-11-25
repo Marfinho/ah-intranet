@@ -147,6 +147,20 @@ export class ShiftsService {
       await this.benachrichtige(betroffene, `Schichtplan geändert: ${shift.label}`, this.zeitraum(shift));
     }
 
+    // Bleibt die Person gleich, ändert sich aber die Zeit (Ziehen im Wochenplan),
+    // soll sie es trotzdem erfahren - sonst wechselt ihr Dienst lautlos.
+    const zeitGeaendert =
+      shift.startsAt.getTime() !== vorhanden.startsAt.getTime() ||
+      shift.endsAt.getTime() !== vorhanden.endsAt.getTime();
+    if (
+      zeitGeaendert &&
+      shift.assigneeId &&
+      shift.assigneeId === vorhanden.assigneeId &&
+      shift.assigneeId !== user.id
+    ) {
+      await this.benachrichtige([shift.assigneeId], `Schichtzeit geändert: ${shift.label}`, this.zeitraum(shift));
+    }
+
     return this.toItem(shift, user);
   }
 

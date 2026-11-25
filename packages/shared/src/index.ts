@@ -5,3 +5,5 @@ export * from "./retention";
 export * from "./kalender";
 export * from "./schluessel";
 export * from "./schichtplan";
+export * from "./zeit";
+export * from "./wochenansicht";
