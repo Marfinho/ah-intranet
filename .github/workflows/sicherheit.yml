@@ -1,0 +1,79 @@
+name: Sicherheit
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  # Neue Schwachstellen erscheinen auch, wenn niemand etwas ändert.
+  schedule:
+    - cron: "17 4 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  abhaengigkeiten:
+    name: Abhängigkeiten auf bekannte Schwachstellen prüfen
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Nur, was im Betrieb läuft: Werkzeuge der Entwicklung (Vite, Vitest)
+      # erreichen nie einen Server. Ab "high" bricht der Lauf ab - darunter
+      # steht die Meldung im Protokoll, ohne jede Änderung zu blockieren.
+      - name: pnpm audit (Betrieb, ab high)
+        run: pnpm audit --prod --audit-level high
+
+  statische-analyse:
+    name: CodeQL
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+      - uses: github/codeql-action/analyze@v3
+
+  geheimnisse:
+    name: Geheimnisse im Verlauf suchen
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  sbom:
+    name: Stückliste (SBOM)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # CycloneDX ist das Austauschformat, das Auditoren und Kunden lesen.
+      - name: SBOM erzeugen
+        run: npx --yes @cyclonedx/cdxgen@11 -r -t js --no-babel -o sbom.cdx.json .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.cdx.json
+          retention-days: 90

@@ -1,10 +1,11 @@
 import { Body, Controller, Get, HttpCode, Post, Res } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
-import { IsNotEmpty, IsOptional, IsString, MinLength } from "class-validator";
+import { IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
 import type { Response } from "express";
 import { AuthService } from "./auth.service";
+import { MfaService } from "./mfa.service";
 import { PasswortService } from "./passwort.service";
-import { CurrentUser, Public } from "../../core/decorators";
+import { CurrentUser, MfaEinrichtung, Public } from "../../core/decorators";
 import { SESSION_COOKIE } from "../../core/guards";
 import type { RequestUser } from "../../core/request-user";
 
@@ -25,6 +26,36 @@ class LoginDto {
   @IsOptional()
   @IsString()
   tenant?: string;
+}
+
+class MfaLoginDto {
+  @IsString()
+  @IsNotEmpty()
+  mfaToken!: string;
+
+  /** Sechsstelliger Code der App oder ein Wiederherstellungscode. */
+  @IsString()
+  @IsNotEmpty({ message: "Bitte den Code eingeben" })
+  @MaxLength(20)
+  code!: string;
+}
+
+class MfaCodeDto {
+  @IsString()
+  @IsNotEmpty({ message: "Bitte den Code eingeben" })
+  @MaxLength(20)
+  code!: string;
+}
+
+class MfaBestaetigungDto {
+  @IsString()
+  @IsNotEmpty()
+  password!: string;
+
+  @IsString()
+  @IsNotEmpty({ message: "Bitte den Code eingeben" })
+  @MaxLength(20)
+  code!: string;
 }
 
 class ChangePasswordDto {
@@ -65,6 +96,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly passwort: PasswortService,
+    private readonly mfa: MfaService,
   ) {}
 
   /**
@@ -102,8 +134,74 @@ export class AuthController {
   @Post("login")
   @HttpCode(200)
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) response: Response) {
-    const { token, user } = await this.authService.login(dto.username, dto.password);
+    const ergebnis = await this.authService.login(dto.username, dto.password);
+    if ("mfaErforderlich" in ergebnis) {
+      // Noch keine Sitzung: das Frontend fragt den Code ab und löst das Token ein.
+      return ergebnis;
+    }
+    this.sitzungSetzen(response, ergebnis.token);
+    return { user: ergebnis.user };
+  }
 
+  /** Zweiter Schritt der Anmeldung mit dem Code der App oder einem Wiederherstellungscode. */
+  @Public()
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @Post("login/mfa")
+  @HttpCode(200)
+  async loginMitFaktor(@Body() dto: MfaLoginDto, @Res({ passthrough: true }) response: Response) {
+    const { token, user } = await this.authService.anmeldenMitFaktor(dto.mfaToken, dto.code);
+    this.sitzungSetzen(response, token);
+    return { user };
+  }
+
+  /** Beginnt die Einrichtung des zweiten Faktors: liefert Geheimnis und Adresse für den QR-Code. */
+  @MfaEinrichtung()
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @Post("mfa/einrichten")
+  @HttpCode(200)
+  mfaEinrichten(@CurrentUser() user: RequestUser) {
+    return this.mfa.einrichten(user);
+  }
+
+  /** Schließt die Einrichtung ab. Die Sitzung wird dabei erneuert, die alten enden. */
+  @MfaEinrichtung()
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @Post("mfa/bestaetigen")
+  @HttpCode(200)
+  async mfaBestaetigen(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: MfaCodeDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const { wiederherstellungscodes } = await this.mfa.bestaetigen(user, dto.code);
+    const sitzung = await this.authService.sitzungFuer(user.id);
+    this.sitzungSetzen(response, sitzung.token);
+    return { user: sitzung.user, wiederherstellungscodes };
+  }
+
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Post("mfa/wiederherstellungscodes")
+  @HttpCode(200)
+  mfaNeueCodes(@CurrentUser() user: RequestUser, @Body() dto: MfaBestaetigungDto) {
+    return this.mfa.neueCodes(user, dto.password, dto.code);
+  }
+
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Post("mfa/deaktivieren")
+  @HttpCode(200)
+  async mfaDeaktivieren(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: MfaBestaetigungDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    await this.mfa.deaktivieren(user, dto.password, dto.code);
+    // Die Sitzungen enden mit dem Abschalten; diese hier nicht - die Person hat sich gerade ausgewiesen.
+    const sitzung = await this.authService.sitzungFuer(user.id);
+    this.sitzungSetzen(response, sitzung.token);
+    return { user: sitzung.user };
+  }
+
+  private sitzungSetzen(response: Response, token: string) {
     response.cookie(SESSION_COOKIE, token, {
       httpOnly: true,
       sameSite: "lax",
@@ -111,10 +209,9 @@ export class AuthController {
       maxAge: TWELVE_HOURS_MS,
       path: "/",
     });
-
-    return { user };
   }
 
+  @MfaEinrichtung()
   @Post("logout")
   @HttpCode(200)
   async logout(@CurrentUser() user: RequestUser, @Res({ passthrough: true }) response: Response) {
@@ -123,6 +220,7 @@ export class AuthController {
     return { ok: true };
   }
 
+  @MfaEinrichtung()
   @Get("me")
   me(@CurrentUser() user: RequestUser) {
     return this.authService.me(user);

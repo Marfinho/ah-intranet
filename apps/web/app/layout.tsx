@@ -1,5 +1,14 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import type { ReactNode } from "react";
+// Hausschrift laut docs/ci.md, mit der Anwendung ausgeliefert statt von Google
+// geladen: ein Abruf bei Google überträgt die IP-Adresse jeder Mitarbeiterin an
+// einen Dritten, und die Content-Security-Policy kann dann bei "self" bleiben.
+import "@fontsource/archivo/600.css";
+import "@fontsource/archivo/700.css";
+import "@fontsource/archivo/800.css";
+import "@fontsource/source-sans-3/400.css";
+import "@fontsource/source-sans-3/600.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -7,19 +16,16 @@ export const metadata: Metadata = {
   description: "Autohaus Organisation & Information – Aushänge, Bestellungen, Freigaben und Anträge an einer Stelle",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  // Die Content-Security-Policy trägt je Anfrage eine neue Einmalkennung
+  // (Middleware). Next setzt sie nur auf Seiten, die pro Anfrage gerendert
+  // werden - eine vorab erzeugte statische Seite hätte Skripte ohne Kennung,
+  // und der Browser verwürfe sie. Der Aufruf macht alle Seiten dynamisch.
+  await headers();
+
   return (
     <html lang="de">
       <head>
-        {/* Hausschrift laut docs/ci.md. Bewusst als Verweis und nicht über
-            next/font: der Bau der Anwendung soll nicht von einem Download
-            abhängen. Die Ersatzschriften stehen in der Tailwind-Konfiguration. */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Sans+3:wght@400;600&display=swap"
-        />
         <link rel="icon" href="/ahoi-signet.svg" type="image/svg+xml" />
       </head>
       <body>{children}</body>

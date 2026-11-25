@@ -155,6 +155,10 @@ model Tenant {
   /// Höchstzahl Standorte. `null` heißt unbegrenzt - dieselbe Logik wie
   /// `licensedSeats`, nur für Filialen statt Konten.
   locationLimit Int?
+  /// Alle Konten dieses Hauses brauchen einen zweiten Faktor. Aus ist der
+  /// Normalfall: ein Haus soll ohne IT-Termin starten können. Konten der
+  /// Plattformverwaltung brauchen ihn unabhängig davon immer.
+  mfaPflicht Boolean @default(false)
   notes     String?
   /// Eigenes Logo des Hauses (Weißmarke) - ersetzt das AHOI-Zeichen in
   /// Kopfzeile und Anmeldeseite dieses Mandanten. In der Datenbank statt auf
@@ -407,6 +411,16 @@ model User {
   failedLoginCount   Int        @default(0)
   /// Gesetzt, solange das Konto nach zu vielen Fehlversuchen gesperrt ist.
   lockedUntil        DateTime?
+  /// Geheimnis des zweiten Faktors (TOTP), verschlüsselt mit `SECRET_KEY`.
+  /// Gesetzt ab dem Einrichten, wirksam erst mit `totpEnabledAt`.
+  totpSecret         String?
+  /// Zeitpunkt der Bestätigung des ersten Codes. Ohne ihn gilt der Faktor als
+  /// nicht eingerichtet - ein abgebrochener Einrichtungsversuch sperrt nichts.
+  totpEnabledAt      DateTime?
+  /// Zuletzt verbrauchter Zeitschritt: derselbe Code gilt nur einmal.
+  totpLastStep       Int?
+  /// SHA-256 der Wiederherstellungscodes. Verbrauchte werden entfernt.
+  totpRecoveryHashes String[]   @default([])
   locationId         String?
   departmentId       String?
   specialtyAreaId    String?

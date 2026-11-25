@@ -16,7 +16,8 @@ interface Vorschau {
   entfernt: number;
 }
 
-export default async function DatenschutzPage({ searchParams }: { searchParams: { search?: string } }) {
+export default async function DatenschutzPage(props: { searchParams: Promise<{ search?: string }> }) {
+  const searchParams = await props.searchParams;
   await requirePermission("privacy.manage");
 
   const query = new URLSearchParams();

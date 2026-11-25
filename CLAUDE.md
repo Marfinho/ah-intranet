@@ -193,6 +193,17 @@ Erfolg des Restores.
   im Anmeldeformular eine Lüge. Der Schalter weist das mit Begründung ab.
 - Geheimnisse verschlüsselt (`core/geheimnis.ts`, AES-256-GCM, `SECRET_KEY`).
   Ohne Schlüssel wird nichts gespeichert – lieber eine Absage als Klartext.
+- **Zweiter Faktor (TOTP)** in `modules/auth/mfa.service.ts`, Rechnung in
+  `core/totp.ts` (selbst geschrieben, gegen die RFC-6238-Vektoren getestet).
+  Zweistufige Anmeldung: Passwort → Zwischentoken (anderer Schlüssel als die
+  Sitzung, fünf Minuten) → Code. Der Fehlversuchszähler wird erst mit dem
+  Code zurückgesetzt, sonst ließen sich Codes mit bekanntem Passwort unbegrenzt
+  raten. Ein Zeitschritt gilt einmal (atomar fortgeschrieben).
+  `Tenant.mfaPflicht` schreibt ihn für ein Haus vor, `isPlatformAdmin` immer.
+  Ohne Faktor lässt der `JwtAuthGuard` nur Routen mit `@MfaEinrichtung()` zu –
+  die Pflicht kommt aus der Datenbank, nicht aus dem Token, und wirkt damit auf
+  laufende Sitzungen. Verlorene Telefone setzt `users.manage` zurück.
+  Ohne `SECRET_KEY` lässt sich nichts einrichten.
 - **Kerberos/SPNEGO bleibt draußen:** nur auf domänenbeigetretenen Rechnern,
   kein zweiter Faktor, je Haus eigene Einrichtung.
 
@@ -221,6 +232,9 @@ Erfolg des Restores.
 - Vorlagen für Auftragsverarbeitung und Betriebsvereinbarung:
   [`docs/vorlagen/`](docs/vorlagen/).
 - Einzelheiten und die Mitbestimmung nach § 87 BetrVG: [`docs/datenschutz.md`](docs/datenschutz.md).
+- **Sicherheitsmaßnahmen, offene Punkte und Vorbereitung des Penetrationstests:**
+  [`docs/sicherheit.md`](docs/sicherheit.md). Der Maßstab ist OWASP ASVS Level 2 –
+  eine Orientierung, keine Bescheinigung.
 
 ## Bekannte Lücken
 

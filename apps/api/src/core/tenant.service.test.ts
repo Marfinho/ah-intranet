@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { slugFromHost } from "./tenant.service";
+import { slugFromHost, slugUnterBasis } from "./tenant.service";
 
 describe("slugFromHost", () => {
   it("liest die Kennung aus einer echten Subdomain", () => {
@@ -29,5 +29,32 @@ describe("slugFromHost", () => {
 
   it("liefert nichts ohne Host", () => {
     expect(slugFromHost(undefined)).toBeNull();
+  });
+});
+
+describe("slugUnterBasis", () => {
+  it("liest die Kennung einer direkten Unterdomain der Basisadresse", () => {
+    expect(slugUnterBasis("haus1.ahoi.de", "ahoi.de")).toBe("haus1");
+    expect(slugUnterBasis("Haus1.AHOI.de:443", "ahoi.de")).toBe("haus1");
+  });
+
+  it("weist eine fremde Domain ab, auch wenn ihr erstes Label eine Kennung wäre", () => {
+    expect(slugUnterBasis("haus1.attacker.example", "ahoi.de")).toBeNull();
+    expect(slugUnterBasis("haus1.ahoi.de.attacker.example", "ahoi.de")).toBeNull();
+    expect(slugUnterBasis("haus1ahoi.de", "ahoi.de")).toBeNull();
+  });
+
+  it("weist tiefere Unterdomains ab", () => {
+    expect(slugUnterBasis("a.haus1.ahoi.de", "ahoi.de")).toBeNull();
+  });
+
+  it("weist die Basisadresse selbst und leere Eingaben ab", () => {
+    expect(slugUnterBasis("ahoi.de", "ahoi.de")).toBeNull();
+    expect(slugUnterBasis("", "ahoi.de")).toBeNull();
+  });
+
+  it("liefert ohne Basisadresse nie eine Kennung", () => {
+    expect(slugUnterBasis("haus1.ahoi.de", undefined)).toBeNull();
+    expect(slugUnterBasis("haus1.ahoi.de", "")).toBeNull();
   });
 });

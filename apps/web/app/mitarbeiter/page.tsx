@@ -17,11 +17,10 @@ const PRESENCE_STYLES: Record<string, string> = {
   abwesend: "bg-slate-200 text-slate-700",
 };
 
-export default async function DirectoryPage({
-  searchParams,
-}: {
-  searchParams: { search?: string; location?: string; department?: string };
+export default async function DirectoryPage(props: {
+  searchParams: Promise<{ search?: string; location?: string; department?: string }>;
 }) {
+  const searchParams = await props.searchParams;
   await requireModule("directory");
 
   const query = new URLSearchParams();

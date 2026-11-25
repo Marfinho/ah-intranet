@@ -11,7 +11,7 @@ import { JwtService } from "@nestjs/jwt";
 import type { Request } from "express";
 import type { AppRole } from "@ah-intranet/shared";
 import { getModule, permissionName } from "@ah-intranet/shared";
-import { FEATURE_KEY, PERMISSION_KEY, PLATFORM_ADMIN_KEY, PUBLIC_KEY } from "./decorators";
+import { FEATURE_KEY, MFA_EINRICHTUNG_KEY, PERMISSION_KEY, PLATFORM_ADMIN_KEY, PUBLIC_KEY } from "./decorators";
 import { ModuleRegistryService } from "./module-registry.service";
 import { PrismaService } from "./prisma.service";
 import type { RequestUser } from "./request-user";
@@ -87,7 +87,7 @@ export class JwtAuthGuard implements CanActivate {
     // Passwortwechsel müssen sofort wirken, nicht erst nach Ablauf der Laufzeit.
     const account = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { status: true, tokenVersion: true },
+      select: { status: true, tokenVersion: true, totpEnabledAt: true, tenant: { select: { mfaPflicht: true } } },
     });
 
     if (!account || account.status !== "active") {
@@ -95,6 +95,23 @@ export class JwtAuthGuard implements CanActivate {
     }
     if (account.tokenVersion !== payload.tokenVersion) {
       throw new UnauthorizedException("Die Sitzung wurde beendet. Bitte melden Sie sich erneut an.");
+    }
+
+    // Die Pflicht kommt aus der Datenbank, nicht aus dem Token: schaltet ein Haus
+    // sie ein, gilt sie für laufende Sitzungen sofort, nicht erst nach der
+    // nächsten Anmeldung. Die Plattformverwaltung braucht den Faktor immer.
+    const pflicht = account.tenant.mfaPflicht || payload.isPlatformAdmin === true;
+    const einrichtungOffen = pflicht && !account.totpEnabledAt;
+    if (einrichtungOffen) {
+      const erlaubt = this.reflector.getAllAndOverride<boolean>(MFA_EINRICHTUNG_KEY, [
+        context.getHandler(),
+        context.getClass(),
+      ]);
+      if (!erlaubt) {
+        throw new ForbiddenException(
+          "Für dieses Konto ist ein zweiter Faktor vorgeschrieben. Bitte richten Sie ihn zuerst ein.",
+        );
+      }
     }
 
     (request as Request & { user: RequestUser }).user = payloadToUser(payload);

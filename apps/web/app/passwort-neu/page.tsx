@@ -5,7 +5,8 @@ import { PasswortNeuForm } from "./form";
 
 export const metadata: Metadata = { title: "Neues Passwort" };
 
-export default function PasswortNeuPage({ searchParams }: { searchParams: { token?: string } }) {
+export default async function PasswortNeuPage(props: { searchParams: Promise<{ token?: string }> }) {
+  const searchParams = await props.searchParams;
   const token = searchParams.token ?? "";
 
   return (

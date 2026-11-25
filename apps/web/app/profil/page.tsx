@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { InfoList, Section, Tag } from "@/components/ui";
 import { ProfileForm } from "./profile-form";
@@ -62,6 +63,21 @@ export default async function ProfilePage() {
             responsibilities: (me?.responsibilities ?? []).join(", "),
           }}
         />
+      </Section>
+
+      <Section
+        title="Zweiter Faktor"
+        subtitle={session.mfa.aktiv ? "Eingerichtet – Anmeldung mit Authenticator-App" : "Noch nicht eingerichtet"}
+      >
+        <p className="text-sm text-slate-600">
+          Ein Code aus einer Authenticator-App schützt Ihr Konto, auch wenn jemand Ihr Passwort kennt.
+        </p>
+        <Link
+          href="/profil/mfa"
+          className="mt-4 inline-block rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+        >
+          {session.mfa.aktiv ? "Zweiten Faktor verwalten" : "Zweiten Faktor einrichten"}
+        </Link>
       </Section>
 
       <Section

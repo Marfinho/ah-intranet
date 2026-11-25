@@ -23,6 +23,9 @@ export class BrandingController {
     }
     response.setHeader("Content-Type", logo.mime);
     response.setHeader("Cache-Control", "no-store");
+    // Falls doch einmal etwas anderes als ein Bild darin liegt: wird die Adresse
+    // direkt geöffnet, darf der Browser nichts ausführen.
+    response.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
     return logo.data;
   }
 

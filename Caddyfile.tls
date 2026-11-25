@@ -1,0 +1,48 @@
+# Reverse Proxy mit HTTPS für den Betrieb mit eigener Domain.
+#
+# Auswahl über `CADDYFILE=./Caddyfile.tls` in der .env (docker-compose.prod.yml).
+# Voraussetzungen: BASE_DOMAIN und ein DNS-Eintrag `*.BASE_DOMAIN` auf diesen
+# Server, Port 80 und 443 offen, FRONTEND_URL mit https:// - ohne das setzt die
+# Anwendung keine Sitzungscookies mit `Secure`.
+#
+# Statt eines Wildcard-Zertifikats (bräuchte eine DNS-Anbindung beim
+# Domainanbieter) holt Caddy je Haus beim ersten Aufruf ein eigenes bei
+# Let's Encrypt. Die API entscheidet über `ask`, für welche Namen das geschehen
+# darf: nur für Häuser, die es gibt, nie für beliebige Anfragen.
+{
+	email {$ACME_EMAIL}
+	on_demand_tls {
+		ask http://api:3001/api/tls/erlaubt
+	}
+}
+
+# Alles auf HTTP geht auf HTTPS. Die Zertifikatsprüfung von Let's Encrypt
+# beantwortet Caddy selbst, bevor diese Weiterleitung greift.
+:80 {
+	redir https://{host}{uri} permanent
+}
+
+# Jeder Hostname, für den die API ein Zertifikat erlaubt.
+https:// {
+	tls {
+		on_demand
+	}
+
+	@landingpage host {$BASE_DOMAIN}
+	handle @landingpage {
+		root * /srv/landing
+		file_server
+	}
+
+	handle {
+		# Ohne header_up ersetzt Caddy den Host-Kopf durch `web:3000`; die API
+		# erkennt das Haus aber gerade am Host, den der Browser gerufen hat.
+		reverse_proxy web:3000 {
+			header_up Host {http.request.host}
+		}
+	}
+}
+
+localhub.{$BASE_DOMAIN} {
+	reverse_proxy localhub:3000
+}

@@ -13,11 +13,10 @@ interface Organisation {
   locations: { id: string; name: string }[];
 }
 
-export default async function VerwahrungPage({
-  searchParams,
-}: {
-  searchParams: { kind?: string; status?: string; search?: string };
+export default async function VerwahrungPage(props: {
+  searchParams: Promise<{ kind?: string; status?: string; search?: string }>;
 }) {
+  const searchParams = await props.searchParams;
   const session = await requireModule("custody");
   const darfBuchen = can(session, "custody.manage");
 
