@@ -140,9 +140,9 @@ Mehrere Autohäuser teilen sich eine Installation, ohne einander zu sehen.
   über alle Häuser zu laufen.
 - **Zuordnung:** eigene Domain (`intranet.autohaus-x.de`) oder Subdomain, sonst
   die Kennung im Anmeldeformular. Läuft nur ein Haus, entfällt die Angabe.
-- **Plattformverwaltung:** unter **Administration → Autohäuser** legt der
-  Betreiber Häuser an und sperrt sie. Das Recht dazu hängt an
-  `isPlatformAdmin`, nicht an der Rolle `admin` – die gilt im eigenen Haus.
+- **Verwaltung des Betreibers:** Häuser und Interessenten legt der Betreiber in
+  der eigenen Anwendung `apps/verwaltung` an (siehe `docs/verwaltung.md`), nicht
+  mehr in der Kunden-Anwendung.
 - Ein neues Haus entsteht samt Rollen, Rechten, Standort und erstem
   Administrationskonto in einem Schritt und ist sofort benutzbar.
 - Gesperrt wird, nicht gelöscht: Anmeldungen scheitern sofort, die Daten bleiben

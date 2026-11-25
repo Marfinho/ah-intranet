@@ -1,5 +1,5 @@
-import { Body, Controller, Get, NotFoundException, Param, Patch, Post, Put } from "@nestjs/common";
-import { IsBoolean, IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, Min, MinLength } from "class-validator";
+import { Body, Controller, Get, NotFoundException, Param, Patch, Put } from "@nestjs/common";
+import { IsBoolean, IsInt, IsOptional, Min } from "class-validator";
 import { Type } from "class-transformer";
 import { AuditService } from "../../core/audit.service";
 import { CurrentUser, PlatformAdmin } from "../../core/decorators";
@@ -7,56 +7,6 @@ import { ModuleRegistryService } from "../../core/module-registry.service";
 import type { RequestUser } from "../../core/request-user";
 import { TenantService } from "../../core/tenant.service";
 import { runWithTenant } from "../../core/tenant-context";
-
-class CreateTenantDto {
-  @IsString()
-  @IsNotEmpty({ message: "Kennung ist erforderlich" })
-  slug!: string;
-
-  @IsString()
-  @IsNotEmpty({ message: "Name ist erforderlich" })
-  name!: string;
-
-  @IsOptional()
-  @IsString()
-  domain?: string;
-
-  @IsOptional()
-  @IsString()
-  notes?: string;
-
-  @IsString()
-  @IsNotEmpty({ message: "Benutzername des ersten Kontos ist erforderlich" })
-  adminUsername!: string;
-
-  @IsString()
-  @MinLength(10, { message: "Das Startpasswort muss mindestens 10 Zeichen lang sein" })
-  adminPassword!: string;
-
-  @IsOptional()
-  @IsString()
-  adminFirstName?: string;
-
-  @IsOptional()
-  @IsString()
-  adminLastName?: string;
-
-  @IsOptional()
-  @IsEmail({}, { message: "Bitte eine gültige E-Mail-Adresse angeben" })
-  adminEmail?: string;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  licensedSeats?: number;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  locationLimit?: number;
-}
 
 class SetActiveDto {
   @IsBoolean()
@@ -109,21 +59,6 @@ export class TenantsController {
   @Get(":id/kennzahlen")
   stats(@Param("id") id: string) {
     return this.tenants.stats(id);
-  }
-
-  @Post()
-  async create(@Body() dto: CreateTenantDto, @CurrentUser() user: RequestUser) {
-    const tenant = await this.tenants.create(dto);
-
-    await this.audit.log({
-      actor: user,
-      action: "tenant.create",
-      entityType: "tenant",
-      entityId: tenant.id,
-      detail: `Mandant "${tenant.name}" (${tenant.slug}) angelegt`,
-    });
-
-    return tenant;
   }
 
   /**

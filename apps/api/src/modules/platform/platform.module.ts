@@ -6,7 +6,7 @@ import { AuthProvidersController } from "./auth-providers.controller";
 import { AuthProvidersService } from "./auth-providers.service";
 import { BrandingController } from "./branding.controller";
 import { BrandingService } from "./branding.service";
-import { LeadsController, PitchController } from "./leads.controller";
+import { PitchController } from "./leads.controller";
 import { LeadsService } from "./leads.service";
 import { PlatformService } from "./platform.service";
 import { ContentModule } from "../content/content.module";
@@ -26,7 +26,6 @@ import { PeopleModule } from "../people/people.module";
     TenantsController,
     AuthProvidersController,
     BrandingController,
-    LeadsController,
     PitchController,
   ],
   providers: [PlatformService, AuthProvidersService, BrandingService, LeadsService],

@@ -1,11 +1,11 @@
 # Vertrieb: Interessenten, Pitch-Seite, Preisliste
 
 Wie aus einem Interessenten eine Pitch-Seite mit Preisrechner wird. Nur für die
-Plattformverwaltung (`@PlatformAdmin()`), nicht für ein Haus.
+Verwaltung des Betreibers (`apps/verwaltung`, siehe [`verwaltung.md`](verwaltung.md)), nicht für ein Haus. **Interessenten anlegen und Haus anlegen geschehen dort**; in der Kunden-Anwendung lebt nur die öffentliche Pitch-Seite.
 
 ## Ablauf
 
-1. **Interessent anlegen** unter _Plattformverwaltung → Interessenten_. Dazu die
+1. **Interessent anlegen** unter _Verwaltung → Interessenten → Neuer Interessent_. Dazu die
    Häuser als Textzeilen: `Name | Straße | PLZ Ort | Marken | Leistungen |
 Öffnungszeiten | Verbund | eigener Text`. Häuser mit gleichem **Verbund** (z. B.
    dieselbe Straße) schlagen gemeinsame Raumbuchung und Kalender vor.

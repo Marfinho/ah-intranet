@@ -10,6 +10,20 @@ hochzählt, steht in [`docs/entwicklung.md`](docs/entwicklung.md).
 
 Erster vollständiger Stand. Lauffähig, aber in keinem Haus im Einsatz.
 
+### Verwaltung des Betreibers
+
+- **Eigener Dienst** (`apps/verwaltung`) für Kunden, Interessenten, Statistiken
+  und Systemwerte, mit eigenen Konten, eigenem Schlüssel und immer verlangtem
+  zweiten Faktor. Sieht über alle Häuser nur Zahlen: die Datenbankrolle
+  (`scripts/verwaltung-rolle.sql`) lässt Spalten mit Personenbezug nicht zu, die
+  CI prüft das. **Interessenten und Hausanlage** sind in die Verwaltung gezogen
+  und aus der Kunden-Anwendung entfernt; ein Haus legt eine Datenbankfunktion an,
+  die nur neue Mandanten erzeugen kann. Siehe `docs/verwaltung.md`.
+
+- **Aktualisierung aus der Verwaltung:** der Betreiber sieht, was auf `main` neu ist, und
+  spielt es mit einem Klick ein (nur bei grüner Prüfpipeline, mit Sicherung vorher
+  und Rückweg bei Fehlern).
+
 ### Sicherheit
 
 - **Zweiter Faktor** per Authenticator-App (TOTP nach RFC 6238, gegen die

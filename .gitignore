@@ -17,3 +17,4 @@ backups/
 
 # Von `prisma generate` erzeugt (Prisma 7: Ausgabe im Quellbaum)
 apps/api/src/generated/
+apps/verwaltung/src/generated/

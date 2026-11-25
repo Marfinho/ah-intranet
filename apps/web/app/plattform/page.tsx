@@ -5,7 +5,6 @@ import { EmptyState, Section } from "@/components/ui";
 import { apiGet } from "@/lib/api";
 import { requirePlatformSession } from "@/lib/session";
 import { formatDateTime } from "@/lib/utils";
-import { TenantComposer } from "./tenant-composer";
 import { TenantRowActions } from "./tenant-row-actions";
 
 export default async function PlattformUebersichtPage() {
@@ -14,10 +13,16 @@ export default async function PlattformUebersichtPage() {
   const aktiv = tenants.filter((tenant) => tenant.isActive).length;
 
   return (
-    <PlatformShell title="Autohäuser" subtitle="Mandanten der Plattform anlegen, freischalten und sperren">
+    <PlatformShell
+      title="Autohäuser"
+      subtitle="Bestand der Häuser. Anlegen, Interessenten und Statistik: Verwaltung des Betreibers"
+    >
       <Section title={`${aktiv} von ${tenants.length} Häusern freigeschaltet`} subtitle="Bestand">
         {tenants.length === 0 ? (
-          <EmptyState title="Noch kein Haus angelegt" detail="Legen Sie unten das erste Autohaus an." />
+          <EmptyState
+            title="Noch kein Haus angelegt"
+            detail="Neue Häuser legt die Verwaltung des Betreibers an (apps/verwaltung)."
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -72,13 +77,6 @@ export default async function PlattformUebersichtPage() {
             </table>
           </div>
         )}
-      </Section>
-
-      <Section
-        title="Neues Haus einrichten"
-        subtitle="Mandant, Rollen und erstes Administrationskonto in einem Schritt"
-      >
-        <TenantComposer />
       </Section>
     </PlatformShell>
   );

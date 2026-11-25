@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { parseStandortText, type PitchStandortEingabe } from "@ah-intranet/shared";
+import { type PitchStandortEingabe } from "@ah-intranet/shared";
 import QRCode from "qrcode";
 import {
   ApiError,
@@ -370,30 +370,6 @@ export async function personLoeschenAction(userId: string, anlass: string): Prom
 }
 
 /* --------------------------------------------------------- Mandanten */
-
-export async function createTenantAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
-  const payload = {
-    slug: String(formData.get("slug") ?? ""),
-    name: String(formData.get("name") ?? ""),
-    domain: String(formData.get("domain") ?? "") || undefined,
-    notes: String(formData.get("notes") ?? "") || undefined,
-    adminUsername: String(formData.get("adminUsername") ?? ""),
-    adminPassword: String(formData.get("adminPassword") ?? ""),
-    adminFirstName: String(formData.get("adminFirstName") ?? "") || undefined,
-    adminLastName: String(formData.get("adminLastName") ?? "") || undefined,
-    adminEmail: String(formData.get("adminEmail") ?? "") || undefined,
-    licensedSeats: (() => {
-      const wert = String(formData.get("licensedSeats") ?? "").trim();
-      return wert ? Number(wert) : undefined;
-    })(),
-    locationLimit: (() => {
-      const wert = String(formData.get("locationLimit") ?? "").trim();
-      return wert ? Number(wert) : undefined;
-    })(),
-  };
-
-  return run(() => apiSend("POST", "/tenants", payload), ["/plattform"], `Haus "${payload.name}" eingerichtet.`);
-}
 
 export async function setTenantActiveAction(id: string, isActive: boolean): Promise<ActionState> {
   return run(() => apiSend("PATCH", `/tenants/${id}/aktiv`, { isActive }), ["/plattform"]);
@@ -1067,105 +1043,4 @@ export async function pitchAnfrageAction(token: string, konfiguration: PitchKonf
     [],
     "Danke, Ihre Anfrage ist bei uns angekommen. Wir melden uns bei Ihnen.",
   );
-}
-
-/* ------------------------------------------------------------ Interessenten */
-
-/** Adresse der Pitch-Seite, so wie der Betreiber sie gerade aufgerufen hat. */
-async function pitchLink(token: string): Promise<string> {
-  const eingang = await headers();
-  const host = eingang.get("x-forwarded-host") ?? eingang.get("host") ?? "localhost";
-  const protokoll = eingang.get("x-forwarded-proto") ?? "http";
-  return `${protokoll}://${host}/angebot/${token}`;
-}
-
-function leadPayload(formData: FormData) {
-  const zahl = (name: string) => {
-    const wert = String(formData.get(name) ?? "").trim();
-    return wert ? Number(wert) : undefined;
-  };
-  return {
-    name: String(formData.get("name") ?? ""),
-    ansprechperson: String(formData.get("ansprechperson") ?? ""),
-    notiz: String(formData.get("notiz") ?? ""),
-    standorte: parseStandortText(String(formData.get("standorte") ?? "")),
-    nutzer: zahl("nutzer"),
-    linkTage: zahl("linkTage"),
-  };
-}
-
-export async function createLeadAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
-  const payload = leadPayload(formData);
-  try {
-    const ergebnis = await apiSend<{ lead: { id: string }; token: string }>("POST", "/leads", payload);
-    revalidatePath("/plattform/interessenten");
-    return {
-      ok: true,
-      message: ergebnis.lead.id,
-      detail: `Interessent angelegt. Link zur Pitch-Seite (wird nur jetzt angezeigt): ${await pitchLink(ergebnis.token)}`,
-    };
-  } catch (error) {
-    return { ok: false, message: error instanceof ApiError ? error.message : "Unerwarteter Fehler." };
-  }
-}
-
-export async function updateLeadAction(id: string, _previous: ActionState, formData: FormData): Promise<ActionState> {
-  const { name, ansprechperson, notiz, standorte } = leadPayload(formData);
-  return run(
-    () => apiSend("PUT", `/leads/${id}`, { name, ansprechperson, notiz, standorte }),
-    ["/plattform/interessenten", `/plattform/interessenten/${id}`],
-    "Gespeichert.",
-  );
-}
-
-export async function setLeadStatusAction(id: string, status: string): Promise<ActionState> {
-  return run(
-    () => apiSend("PATCH", `/leads/${id}/status`, { status }),
-    ["/plattform/interessenten", `/plattform/interessenten/${id}`],
-  );
-}
-
-export async function neuerLeadLinkAction(id: string): Promise<ActionState> {
-  try {
-    const ergebnis = await apiSend<{ token: string }>("POST", `/leads/${id}/link`, {});
-    revalidatePath(`/plattform/interessenten/${id}`);
-    return { ok: true, detail: `Neuer Link (wird nur jetzt angezeigt): ${await pitchLink(ergebnis.token)}` };
-  } catch (error) {
-    return { ok: false, message: error instanceof ApiError ? error.message : "Unerwarteter Fehler." };
-  }
-}
-
-export async function widerrufeLeadLinkAction(id: string): Promise<ActionState> {
-  return run(() => apiSend("POST", `/leads/${id}/widerrufen`, {}), [`/plattform/interessenten/${id}`]);
-}
-
-export async function deleteLeadAction(id: string): Promise<ActionState> {
-  const ergebnis = await run(() => apiSend("DELETE", `/leads/${id}`), ["/plattform/interessenten"]);
-  if (ergebnis.ok) {
-    redirect("/plattform/interessenten");
-  }
-  return ergebnis;
-}
-
-export async function hausAusLeadAction(id: string, _previous: ActionState, formData: FormData): Promise<ActionState> {
-  const text = (name: string) => String(formData.get(name) ?? "").trim() || undefined;
-  const payload = {
-    slug: String(formData.get("slug") ?? ""),
-    domain: text("domain"),
-    adminUsername: String(formData.get("adminUsername") ?? ""),
-    adminPassword: String(formData.get("adminPassword") ?? ""),
-    adminFirstName: text("adminFirstName"),
-    adminLastName: text("adminLastName"),
-    adminEmail: text("adminEmail"),
-  };
-
-  let tenantId: string;
-  try {
-    tenantId = (await apiSend<{ tenantId: string }>("POST", `/leads/${id}/haus`, payload)).tenantId;
-  } catch (error) {
-    return { ok: false, message: error instanceof ApiError ? error.message : "Unerwarteter Fehler." };
-  }
-  revalidatePath("/plattform");
-  revalidatePath(`/plattform/interessenten/${id}`);
-  redirect(`/plattform/mandanten/${tenantId}`);
 }

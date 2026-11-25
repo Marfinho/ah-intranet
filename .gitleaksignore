@@ -7,3 +7,10 @@
 # Merge-Commit übernommen werden, nicht als Squash: ein Squash erzeugte einen
 # neuen Hash, und der Fund käme zurück.
 353cd809bfd2a77d51c3be652b681b9720240337:Caddyfile.tls:generic-api-key:15
+
+# Bekannter Fehlalarm: Wegwerf-Passwort der Rollenprüfung (apps/verwaltung/src/scripts/
+# pruefung-rolle.ts, Zeilen 83 und 98 im Commit unten). Es war ein Testwert für ein Haus in der
+# Wegwerf-Datenbank der CI, kein Geheimnis; der Wert steht nicht mehr im Quelltext, sondern wird
+# zur Laufzeit erzeugt. Die Fingerprints benennen genau diese zwei Funde in diesem Commit.
+38eab793daa407c4ad5bd5ff5950710242b57cb2:apps/verwaltung/src/scripts/pruefung-rolle.ts:generic-api-key:83
+38eab793daa407c4ad5bd5ff5950710242b57cb2:apps/verwaltung/src/scripts/pruefung-rolle.ts:generic-api-key:98

@@ -10,7 +10,8 @@ Bestellungen, Freigaben, Anträge, Serviceanfragen, Einarbeitung. **Nicht** das
 Autogeschäft – dafür haben die Häuser ihr DMS.
 
 pnpm-Monorepo: NestJS-API (`apps/api`), Next.js-Frontend (`apps/web`),
-gemeinsame Typen und Registries (`packages/shared`).
+**Verwaltung des Betreibers (`apps/verwaltung`, eigener Dienst)**, gemeinsame
+Typen und Registries (`packages/shared`).
 
 Erscheinungsbild, Farben, Schrift und Zeichen: [`docs/ci.md`](docs/ci.md). Wer
 dort etwas ändert, ändert es in Anwendung und Präsentation zugleich.
@@ -86,9 +87,34 @@ liegt **nicht** in der Disziplin des Fachcodes, sondern eine Ebene tiefer:
 - Ein neues Haus entsteht samt Rollen, Rechten und erstem Administrationskonto
   in einer Transaktion – ein halb eingerichteter Mandant wäre nicht benutzbar.
 
+## Verwaltung des Betreibers
+
+- **Eigener Dienst, nicht Teil der Kunden-Anwendung** (`apps/verwaltung`, Port
+  3002, Adresse `betrieb.<domain>`): eigene Konten (Tabelle `Betreiber` im Schema
+  `verwaltung`), eigener Sitzungsschlüssel, zweiter Faktor immer. Kunden,
+  Interessenten, Statistiken und Systemwerte sehen die Betreiber dort, nicht in
+  der Kunden-Anwendung. Einzelheiten: [`docs/verwaltung.md`](docs/verwaltung.md).
+- **Nur Zahlen, durchgesetzt von der Datenbank:** die Verwaltung liest die
+  Häuser über die Rolle `ahoi_verwaltung` (`scripts/verwaltung-rolle.sql`), die
+  nur Spalten ohne Personenbezug sehen darf. Jede neue Abfrage braucht dort eine
+  ausdrückliche Freigabe; `pnpm --filter verwaltung pruefung:rolle` hält das in
+  der CI fest. Rohes SQL ist hier gewollt - der Mandantenfilter der API ist für
+  Summen über alle Häuser ungeeignet.
+- **Interessenten und Hausanlage gehören der Verwaltung.** Ein Haus entsteht
+  dort über die Datenbankfunktion `verwaltung_haus_anlegen` (nur neue Mandanten,
+  kein `INSERT` auf Konten oder Rollen für die Rolle). In der Kunden-Anwendung
+  bleibt nur die öffentliche Pitch-Seite.
+- **Aktualisierung von GitHub:** die Verwaltung legt nur einen Auftrag an, ein
+  Skript auf dem Server (`scripts/aktualisierer.sh`, cron) führt ihn aus - nie die
+  Verwaltung selbst, die keinen Zugriff auf Docker hat. Installiert wird nur ein
+  neuerer Stand auf `main` mit grüner Pipeline; bei Fehlern Rückweg. Einzelheiten
+  und Grenzen: `docs/verwaltung.md`.
+- **Übergang:** die alten Seiten unter `/plattform` (Häuserliste, Module,
+  Kennzahlen, Status) laufen noch und sind durch die Verwaltung ersetzt.
+
 ## Vertrieb
 
-- **Interessenten wohnen im Plattform-Mandanten**, nicht bei einem Kunden und nicht
+- **Interessenten wohnen im Plattform-Mandanten** (angelegt und verwaltet von `apps/verwaltung`), nicht bei einem Kunden und nicht
   in einer Tabelle ohne Mandant. Die öffentliche Pitch-Seite (`/angebot/<token>`)
   löst ihren Mandanten wie jede Anfrage über den Host auf und braucht deshalb
   weder `runUnscoped` noch eine Ausnahme in der Trennung.

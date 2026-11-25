@@ -1,0 +1,566 @@
+/* Erscheinungsbild nach docs/ci.md: kühle Grautöne, ein Akzent, Zustände mit Wort. */
+:root {
+  --grund: #f1f3f5;
+  --flaeche: #fff;
+  --schrift: #0f1417;
+  --gedaempft: #4c575e;
+  --leise: #78848b;
+  --linie: #d3d9dd;
+  --akzent: #dc3a14;
+  --akzent-text: #a2270c;
+  --akzent-zart: #fbe3d9;
+  --gut: #1a7f37;
+  --gut-zart: #dcf3e3;
+  --warn: #8a5a00;
+  --warn-zart: #fdf0cf;
+  --schlecht: #a1253a;
+  --schlecht-zart: #fbe1e6;
+  --balken: #3c4a52;
+  --schatten: 0 1px 2px rgb(15 20 23 / 6%);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --grund: #0e1113;
+    --flaeche: #181c1f;
+    --schrift: #e6eaec;
+    --gedaempft: #a3afb5;
+    --leise: #7b878e;
+    --linie: #2a3338;
+    --akzent: #ff6b41;
+    --akzent-text: #ff8a66;
+    --akzent-zart: #3a1a0f;
+    --gut: #5fd07e;
+    --gut-zart: #123221;
+    --warn: #f2c14e;
+    --warn-zart: #3a2c0a;
+    --schlecht: #ff8fa3;
+    --schlecht-zart: #3c1520;
+    --balken: #8fa1ab;
+    color-scheme: dark;
+  }
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--grund);
+  color: var(--schrift);
+  font:
+    400 15px/1.55 "Source Sans 3",
+    system-ui,
+    sans-serif;
+}
+h1,
+h2,
+h3,
+.zahl,
+.etikett,
+nav a {
+  font-family: Archivo, system-ui, sans-serif;
+}
+h1 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.6rem;
+}
+h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.4rem;
+}
+a {
+  color: var(--akzent-text);
+}
+.etikett {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--leise);
+}
+.leise {
+  color: var(--leise);
+}
+.gedaempft {
+  color: var(--gedaempft);
+}
+header.kopf {
+  background: #0f1417;
+  color: #fff;
+}
+.kopf-innen {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0.8rem 1.25rem;
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.marke {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font:
+    800 1.05rem Archivo,
+    sans-serif;
+  letter-spacing: 0.08em;
+}
+.marke img {
+  width: 24px;
+  height: 24px;
+}
+.marke small {
+  font: 600 0.68rem Archivo;
+  letter-spacing: 0.14em;
+  color: #9aa7ae;
+  text-transform: uppercase;
+}
+nav {
+  display: flex;
+  gap: 0.15rem;
+  flex: 1;
+  flex-wrap: wrap;
+}
+nav a {
+  color: #c5ced3;
+  text-decoration: none;
+  padding: 0.45rem 0.8rem;
+  border-radius: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+nav a:hover {
+  background: #1d2429;
+  color: #fff;
+}
+nav a[aria-current="page"] {
+  background: #232c32;
+  color: #fff;
+  box-shadow: inset 0 -2px 0 var(--akzent);
+}
+.konto {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #c5ced3;
+}
+main {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+  display: grid;
+  gap: 1.25rem;
+}
+.seitenkopf {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.seitenkopf p {
+  margin: 0.2rem 0 0;
+  color: var(--gedaempft);
+}
+.karte {
+  background: var(--flaeche);
+  border: 1px solid var(--linie);
+  border-radius: 0.9rem;
+  padding: 1.1rem 1.2rem;
+  box-shadow: var(--schatten);
+  min-width: 0;
+}
+.raster {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+.raster-2 {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+}
+.kachel .zahl {
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-top: 0.25rem;
+}
+.kachel .zahl small {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--leise);
+}
+.kachel .hilfe {
+  font-size: 0.82rem;
+  color: var(--gedaempft);
+  margin-top: 0.15rem;
+}
+.delta {
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+button,
+.knopf {
+  font:
+    600 0.85rem "Source Sans 3",
+    sans-serif;
+  border-radius: 0.55rem;
+  border: 1px solid var(--linie);
+  background: var(--flaeche);
+  color: var(--schrift);
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+}
+button:hover {
+  border-color: var(--leise);
+}
+button.primaer {
+  background: var(--akzent);
+  border-color: var(--akzent);
+  color: #fff;
+}
+button.gefahr {
+  color: var(--schlecht);
+  border-color: var(--schlecht);
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--akzent);
+  outline-offset: 2px;
+}
+input,
+select,
+textarea {
+  font: inherit;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--linie);
+  border-radius: 0.55rem;
+  background: var(--flaeche);
+  color: var(--schrift);
+  max-width: 100%;
+}
+label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.leiste {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.tabelle-huelle {
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+th {
+  text-align: left;
+  font:
+    600 0.7rem Archivo,
+    sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--leise);
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid var(--linie);
+  white-space: nowrap;
+}
+th.sort {
+  cursor: pointer;
+}
+th.sort:hover {
+  color: var(--schrift);
+}
+td {
+  padding: 0.6rem 0.7rem;
+  border-bottom: 1px solid var(--linie);
+  vertical-align: middle;
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+tbody tr.klick {
+  cursor: pointer;
+}
+tbody tr.klick:hover {
+  background: color-mix(in srgb, var(--akzent) 5%, transparent);
+}
+td.zahl,
+th.zahl {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.marke-zustand {
+  display: inline-block;
+  font:
+    600 0.72rem Archivo,
+    sans-serif;
+  padding: 0.12rem 0.55rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.z-gut {
+  background: var(--gut-zart);
+  color: var(--gut);
+}
+.z-warn {
+  background: var(--warn-zart);
+  color: var(--warn);
+}
+.z-schlecht {
+  background: var(--schlecht-zart);
+  color: var(--schlecht);
+}
+.z-neutral {
+  background: var(--grund);
+  color: var(--gedaempft);
+  border: 1px solid var(--linie);
+}
+/* Balken: Wert als Länge, dünn, mit abgerundetem Ende am Grundstrich. */
+.balkenliste {
+  display: grid;
+  gap: 0.55rem;
+}
+.balkenzeile {
+  display: grid;
+  grid-template-columns: minmax(90px, 32%) 1fr auto;
+  gap: 0.7rem;
+  align-items: center;
+  font-size: 0.88rem;
+}
+.balkenzeile .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.balkenspur {
+  height: 10px;
+  background: var(--grund);
+  border-radius: 0 5px 5px 0;
+}
+.balken {
+  height: 100%;
+  background: var(--balken);
+  border-radius: 0 5px 5px 0;
+  min-width: 2px;
+  transition: width 0.3s;
+}
+.balken.akzent {
+  background: var(--akzent);
+}
+.balken.warn {
+  background: var(--warn);
+}
+.balken.schlecht {
+  background: var(--schlecht);
+}
+.wert {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  min-width: 3ch;
+  text-align: right;
+}
+svg.diagramm {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+svg.diagramm text {
+  font:
+    400 11px "Source Sans 3",
+    sans-serif;
+  fill: var(--leise);
+}
+svg.diagramm .gitter {
+  stroke: var(--linie);
+  stroke-width: 1;
+}
+svg.diagramm .saeule {
+  fill: var(--balken);
+}
+svg.diagramm .saeule.akzent {
+  fill: var(--akzent);
+}
+svg.diagramm .saeule:hover,
+svg.diagramm .treffer:hover + .saeule {
+  opacity: 0.75;
+}
+svg.diagramm .linie {
+  fill: none;
+  stroke: var(--akzent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+svg.diagramm .flaeche {
+  fill: var(--akzent-zart);
+}
+svg.diagramm .punkt {
+  fill: var(--akzent);
+  stroke: var(--flaeche);
+  stroke-width: 2;
+}
+.tip {
+  position: fixed;
+  z-index: 20;
+  pointer-events: none;
+  background: var(--schrift);
+  color: var(--flaeche);
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.45rem;
+  font-size: 0.8rem;
+  white-space: pre;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 25%);
+}
+.hinweis {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--linie);
+}
+.hinweis:last-child {
+  border: 0;
+}
+.hinweis a {
+  font-weight: 600;
+}
+.schluessel {
+  display: grid;
+  grid-template-columns: minmax(140px, 40%) 1fr;
+  gap: 0.35rem 0.9rem;
+  font-size: 0.9rem;
+  margin: 0;
+}
+.schluessel dt {
+  color: var(--gedaempft);
+}
+.schluessel dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.modulgruppe {
+  margin-top: 0.9rem;
+}
+.modul {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--linie);
+}
+.schalter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+.leer {
+  color: var(--leise);
+  padding: 1rem 0;
+  text-align: center;
+}
+.login {
+  max-width: 400px;
+  margin: 10vh auto;
+  display: grid;
+  gap: 1rem;
+  padding: 0 1rem;
+}
+.login form {
+  display: grid;
+  gap: 0.9rem;
+}
+.fehler {
+  color: var(--schlecht);
+  background: var(--schlecht-zart);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.88rem;
+}
+.erfolg {
+  color: var(--gut);
+  background: var(--gut-zart);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.88rem;
+}
+code,
+.code {
+  font-family: ui-monospace, monospace;
+  background: var(--grund);
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.3rem;
+  font-size: 0.85em;
+  overflow-wrap: anywhere;
+}
+.codes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.3rem 1rem;
+  font-family: ui-monospace, monospace;
+}
+@media (max-width: 640px) {
+  .balkenzeile {
+    grid-template-columns: 1fr auto;
+  }
+  .balkenspur {
+    grid-column: 1 / -1;
+  }
+  .schluessel {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .balken {
+    transition: none;
+  }
+}
+
+pre.protokoll {
+  background: var(--grund);
+  border: 1px solid var(--linie);
+  border-radius: 0.55rem;
+  padding: 0.7rem 0.9rem;
+  margin: 0;
+  max-height: 360px;
+  overflow: auto;
+  font:
+    0.8rem/1.5 ui-monospace,
+    monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+ul {
+  padding-left: 1.2rem;
+  margin: 0.3rem 0 0.8rem;
+}

@@ -1,5 +1,5 @@
-import { MODULE_DEFINITIONS } from "@ah-intranet/shared";
-import { pruefeKennung } from "../../core/kennung";
+import { MODULE_DEFINITIONS } from "./modules";
+import { pruefeKennung } from "./kennung";
 
 /**
  * Was aus den Angaben eines Interessenten beim Anlegen des Hauses wird.
