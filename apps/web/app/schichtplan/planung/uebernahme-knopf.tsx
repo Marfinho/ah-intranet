@@ -4,7 +4,17 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { uebernehmePlanAction } from "@/lib/actions";
 
-export function UebernahmeKnopf({ von, bis, schichtartIds, anzahl }: { von: string; bis: string; schichtartIds: string[]; anzahl: number }) {
+export function UebernahmeKnopf({
+  von,
+  bis,
+  schichtartIds,
+  anzahl,
+}: {
+  von: string;
+  bis: string;
+  schichtartIds: string[];
+  anzahl: number;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [meldung, setMeldung] = useState<string | null>(null);
@@ -28,7 +38,9 @@ export function UebernahmeKnopf({ von, bis, schichtartIds, anzahl }: { von: stri
       >
         {pending ? "Übernimmt …" : `${anzahl} Schicht(en) übernehmen`}
       </button>
-      <p className="text-xs text-slate-500">Die Planung wird bei der Übernahme neu gerechnet; eingeteilte Personen werden benachrichtigt.</p>
+      <p className="text-xs text-slate-500">
+        Die Planung wird bei der Übernahme neu gerechnet; eingeteilte Personen werden benachrichtigt.
+      </p>
       {meldung ? <p className="w-full rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-900">{meldung}</p> : null}
     </div>
   );

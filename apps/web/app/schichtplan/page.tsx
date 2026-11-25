@@ -3,6 +3,7 @@ import type { ArbeitszeitBefund, EmployeeDirectoryEntry, ShiftItem, ShiftSwapIte
 import { SHIFT_SWAP_LABELS } from "@ah-intranet/shared";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, Section, Tag } from "@/components/ui";
+import { Einteilen } from "./einteilen";
 import { ShiftComposer } from "./shift-composer";
 import { SwapActions, SwapComposer } from "./swap-actions";
 import { apiGet } from "@/lib/api";
@@ -136,7 +137,10 @@ export default async function SchichtplanPage(props: { searchParams: Promise<{ m
       ) : null}
 
       {darfPflegen ? (
-        <Section title="Schicht anlegen" subtitle="Doppelbelegungen werden beim Speichern abgewiesen">
+        <Section
+          title="Schicht anlegen"
+          subtitle="Doppelbelegungen werden abgewiesen; mehr Stunden als vereinbart sind möglich und erscheinen als Hinweis"
+        >
           <ShiftComposer
             organisation={organisation}
             people={directory.items.map((person) => ({ id: person.id, name: person.displayName }))}
@@ -190,6 +194,13 @@ export default async function SchichtplanPage(props: { searchParams: Promise<{ m
                         )}
                         {shift.openSwap ? (
                           <span className="badge bg-slate-100 text-slate-600">Tausch läuft</span>
+                        ) : null}
+                        {darfPflegen ? (
+                          <Einteilen
+                            shiftId={shift.id}
+                            assigneeId={shift.assigneeId ?? null}
+                            people={directory.items.map((person) => ({ id: person.id, name: person.displayName }))}
+                          />
                         ) : null}
                       </div>
                     </div>

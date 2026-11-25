@@ -200,7 +200,9 @@ Die **Autoplanung** (`modules/alltag/schichtplanung.ts`, reine Funktionen,
 deterministisch, Ortszeit fest Europe/Berlin) plant aus **Schichtarten**
 (Zeitblock, Pause, Mindest- und Idealbesetzung als Pflicht, je Standort,
 Abteilung und/oder Team) und dem **Arbeitszeitprofil** je Person
-(`User.wochenstunden`, `zeitfensterVon/Bis`, `arbeitstage`). Hart sind Bereich,
+(`User.wochenstunden`, `zeitfensterVon/Bis`, `arbeitstage`). Die Obergrenze der Wochenstunden gilt **nur für die Autoplanung**: von Hand
+lässt sich jede Person länger einteilen (nur Überschneidungen sind gesperrt),
+die Mehrarbeit erscheint als Hinweis. Hart sind Bereich,
 Arbeitstage, Zeitfenster, genehmigte Abwesenheit, Betriebskalender, keine
 Überschneidung, Wochenstunden als Obergrenze, zehn Stunden je Tag und elf
 Stunden Ruhezeit; Lücken meldet sie, statt Regeln zu biegen. Je Tag erst alle

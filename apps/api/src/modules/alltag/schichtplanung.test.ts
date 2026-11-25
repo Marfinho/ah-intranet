@@ -397,6 +397,13 @@ describe("pruefeArbeitszeit", () => {
     expect(befunde[0].text).toContain("vereinbart");
   });
 
+  it("behandelt Mehrarbeit über die vereinbarten Stunden als Hinweis, nie als Verstoß", () => {
+    // Per Hand eingeteilt: 5 x 7,5 Stunden = 37,5 bei vereinbarten 20.
+    const woche = ["05", "06", "07", "08", "09"].map((tag) => schicht("t", `2026-01-${tag}`, "08:00", "16:00", 30));
+    const befunde = pruefeArbeitszeit(woche, new Map([["t", 20]]));
+    expect(befunde.map((b) => `${b.art}:${b.schwere}`)).toEqual(["wochenstunden:hinweis"]);
+  });
+
   it("prüft jede Person für sich", () => {
     const befunde = pruefeArbeitszeit([
       schicht("a", "2026-01-05", "14:00", "22:00"),

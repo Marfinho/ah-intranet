@@ -37,9 +37,9 @@ export default async function PlanungPage(props: {
   const standard = standardZeitraum();
   const von = searchParams.von && DATUM.test(searchParams.von) ? searchParams.von : standard.von;
   const bis = searchParams.bis && DATUM.test(searchParams.bis) ? searchParams.bis : standard.bis;
-  const gewaehlt = (Array.isArray(searchParams.arten) ? searchParams.arten : searchParams.arten ? [searchParams.arten] : []).filter(
-    (id) => arten.some((art) => art.id === id),
-  );
+  const gewaehlt = (
+    Array.isArray(searchParams.arten) ? searchParams.arten : searchParams.arten ? [searchParams.arten] : []
+  ).filter((id) => arten.some((art) => art.id === id));
   const rechnen = Boolean(searchParams.von && searchParams.bis);
 
   let vorschau: PlanVorschau | null = null;
@@ -71,36 +71,60 @@ export default async function PlanungPage(props: {
         </Link>
       </p>
 
-      <Section title="Zeitraum und Schichtarten" subtitle="Die Vorschau rechnet nur - geschrieben wird erst bei der Übernahme">
+      <Section
+        title="Zeitraum und Schichtarten"
+        subtitle="Die Vorschau rechnet nur - geschrieben wird erst bei der Übernahme"
+      >
         {arten.length === 0 ? (
-          <EmptyState
-            title="Keine aktive Schichtart"
-            detail="Legen Sie zuerst unter „Schichtarten“ eine an."
-          />
+          <EmptyState title="Keine aktive Schichtart" detail="Legen Sie zuerst unter „Schichtarten“ eine an." />
         ) : (
           <form method="get" className="grid gap-4 md:grid-cols-2">
             <label className="text-sm font-medium text-slate-700">
               Von
-              <input name="von" type="date" required defaultValue={von} className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm" />
+              <input
+                name="von"
+                type="date"
+                required
+                defaultValue={von}
+                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+              />
             </label>
             <label className="text-sm font-medium text-slate-700">
               Bis
-              <input name="bis" type="date" required defaultValue={bis} className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm" />
+              <input
+                name="bis"
+                type="date"
+                required
+                defaultValue={bis}
+                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+              />
             </label>
             <fieldset className="md:col-span-2">
               <legend className="text-sm font-medium text-slate-700">Schichtarten</legend>
               <p className="text-xs text-slate-500">Keine Auswahl heißt: alle aktiven</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {arten.map((art) => (
-                  <label key={art.id} className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                    <input type="checkbox" name="arten" value={art.id} defaultChecked={gewaehlt.includes(art.id)} className="h-4 w-4" />
+                  <label
+                    key={art.id}
+                    className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      name="arten"
+                      value={art.id}
+                      defaultChecked={gewaehlt.includes(art.id)}
+                      className="h-4 w-4"
+                    />
                     {art.name} <span className="text-xs text-slate-500">{art.bereich}</span>
                   </label>
                 ))}
               </div>
             </fieldset>
             <div className="md:col-span-2">
-              <button type="submit" className="rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-700">
+              <button
+                type="submit"
+                className="rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-700"
+              >
                 Vorschau berechnen
               </button>
             </div>
@@ -128,7 +152,10 @@ export default async function PlanungPage(props: {
           ) : null}
 
           {tage.length === 0 ? (
-            <EmptyState title="Nichts zu planen" detail="Alles ist besetzt, oder an diesen Tagen wird nicht gearbeitet." />
+            <EmptyState
+              title="Nichts zu planen"
+              detail="Alles ist besetzt, oder an diesen Tagen wird nicht gearbeitet."
+            />
           ) : (
             <div className="space-y-5">
               {tage.map((datum) => (
@@ -138,7 +165,10 @@ export default async function PlanungPage(props: {
                     {vorschau!.zuweisungen
                       .filter((z) => z.datum === datum)
                       .map((z) => (
-                        <li key={`${z.schichtartId}${z.userId}`} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 p-3 text-sm">
+                        <li
+                          key={`${z.schichtartId}${z.userId}`}
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 p-3 text-sm"
+                        >
                           <span className="font-medium text-slate-900">{z.schichtart}</span>
                           <span className="text-slate-600">
                             {z.start}–{z.ende} Uhr
@@ -159,7 +189,9 @@ export default async function PlanungPage(props: {
                           <span className="text-slate-700">
                             {l.besetzt} von {l.soll} besetzt (mindestens {l.mindest})
                           </span>
-                          <span className={`badge ${l.unterMindest ? "bg-rose-100 text-rose-800" : "bg-amber-100 text-amber-800"}`}>
+                          <span
+                            className={`badge ${l.unterMindest ? "bg-rose-100 text-rose-800" : "bg-amber-100 text-amber-800"}`}
+                          >
                             {l.unterMindest ? "unter Mindestbesetzung" : "unter Ideal"}
                           </span>
                         </li>
@@ -172,7 +204,12 @@ export default async function PlanungPage(props: {
 
           {vorschau.zuweisungen.length + unterMindest > 0 ? (
             <div className="mt-6 border-t border-slate-100 pt-5">
-              <UebernahmeKnopf von={vorschau.von} bis={vorschau.bis} schichtartIds={gewaehlt} anzahl={vorschau.zuweisungen.length} />
+              <UebernahmeKnopf
+                von={vorschau.von}
+                bis={vorschau.bis}
+                schichtartIds={gewaehlt}
+                anzahl={vorschau.zuweisungen.length}
+              />
             </div>
           ) : null}
         </Section>

@@ -1003,6 +1003,15 @@ export async function createShiftAction(_previous: ActionState, formData: FormDa
   return run(() => apiSend("POST", "/schichtplan", payload), ["/schichtplan", "/"], "Schicht angelegt.");
 }
 
+/**
+ * Teilt eine Schicht von Hand ein oder gibt sie wieder frei. Bewusst ohne Prüfung der
+ * Wochenstunden: Mehrarbeit ist Entscheidung der Führungskraft und erscheint danach
+ * als Hinweis. Gesperrt sind nur Überschneidungen.
+ */
+export async function einteilenAction(shiftId: string, assigneeId: string): Promise<ActionState> {
+  return run(() => apiSend("PATCH", `/schichtplan/${shiftId}`, { assigneeId }), ["/schichtplan", "/"]);
+}
+
 export async function deleteShiftAction(id: string): Promise<ActionState> {
   return run(() => apiSend("DELETE", `/schichtplan/${id}`), ["/schichtplan"]);
 }
@@ -1209,7 +1218,12 @@ export async function deleteSchichtartAction(id: string): Promise<ActionState> {
 
 export async function setzeArbeitszeitProfilAction(
   userId: string,
-  profil: { wochenstunden: number | null; zeitfensterVon: string | null; zeitfensterBis: string | null; arbeitstage: number[] },
+  profil: {
+    wochenstunden: number | null;
+    zeitfensterVon: string | null;
+    zeitfensterBis: string | null;
+    arbeitstage: number[];
+  },
 ): Promise<ActionState> {
   return run(() => apiSend("PATCH", `/schichtplanung/personal/${userId}`, profil), PLANUNG, "Gespeichert.");
 }

@@ -79,13 +79,18 @@ export function ProfilZeile({ profil }: { profil: ArbeitszeitProfil }) {
         <legend className="text-sm font-medium text-slate-700">Arbeitstage</legend>
         <div className="mt-2 flex flex-wrap gap-2">
           {WOCHENTAGE.map((tag) => (
-            <label key={tag.nummer} className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm">
+            <label
+              key={tag.nummer}
+              className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            >
               <input
                 type="checkbox"
                 checked={tage.includes(tag.nummer)}
                 onChange={(event) =>
                   setTage((aktuell) =>
-                    event.target.checked ? [...aktuell, tag.nummer].sort() : aktuell.filter((nummer) => nummer !== tag.nummer),
+                    event.target.checked
+                      ? [...aktuell, tag.nummer].sort()
+                      : aktuell.filter((nummer) => nummer !== tag.nummer),
                   )
                 }
                 className="h-4 w-4"

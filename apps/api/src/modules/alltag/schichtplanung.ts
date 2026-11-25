@@ -552,7 +552,7 @@ export function pruefeArbeitszeit(
           schwere: "hinweis",
           userId,
           datum: woche,
-          text: `${stunden(summe)} in der Woche ab ${woche}, vereinbart sind ${stunden(vereinbart * 60)}.`,
+          text: `Mehrarbeit: ${stunden(summe)} in der Woche ab ${woche} bei vereinbarten ${stunden(vereinbart * 60)}. Per Hand möglich - zur Kenntnis, kein Verstoß.`,
         });
       }
     }

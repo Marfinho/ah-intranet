@@ -51,9 +51,15 @@ export default async function SchichtartenPage() {
         <SchichtartFormular standorte={standorte} abteilungen={abteilungen} teams={teams} />
       </Section>
 
-      <Section title={`${arten.length} Schichtarten`} subtitle="Die Hinweise nach Arbeitszeitgesetz markieren nur, sie sperren nichts">
+      <Section
+        title={`${arten.length} Schichtarten`}
+        subtitle="Die Hinweise nach Arbeitszeitgesetz markieren nur, sie sperren nichts"
+      >
         {arten.length === 0 ? (
-          <EmptyState title="Noch keine Schichtarten" detail="Legen Sie oben die erste an, z. B. eine Frühschicht von 8 bis 15 Uhr." />
+          <EmptyState
+            title="Noch keine Schichtarten"
+            detail="Legen Sie oben die erste an, z. B. eine Frühschicht von 8 bis 15 Uhr."
+          />
         ) : (
           <ul className="space-y-3">
             {arten.map((art) => (

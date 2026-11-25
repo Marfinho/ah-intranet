@@ -31,7 +31,8 @@ export function SchichtartZeile({
             {!art.aktiv ? <span className="badge bg-slate-200 text-slate-600">inaktiv</span> : null}
           </div>
           <p className="mt-1 text-sm text-slate-600">
-            {art.bereich} · mindestens {art.mindestBesetzung}, ideal {art.idealBesetzung} · Pause {art.pauseMinuten} Min.
+            {art.bereich} · mindestens {art.mindestBesetzung}, ideal {art.idealBesetzung} · Pause {art.pauseMinuten}{" "}
+            Min.
           </p>
           <p className="mt-1 text-xs text-slate-500">
             {WOCHENTAGE.filter((tag) => art.tage.includes(tag.nummer))

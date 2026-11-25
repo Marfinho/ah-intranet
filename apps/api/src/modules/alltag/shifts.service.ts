@@ -486,6 +486,7 @@ export class ShiftsService {
       location: shift.location?.name ?? null,
       department: shift.department?.name ?? null,
       assignee: shift.assignee ? displayName(shift.assignee) : null,
+      assigneeId: shift.assigneeId,
       assigneeUsername: shift.assignee?.username ?? null,
       note: shift.note,
       mine: shift.assigneeId === user.id,

@@ -691,6 +691,7 @@ export interface ShiftItem {
   location?: string | null;
   department?: string | null;
   assignee?: string | null;
+  assigneeId?: string | null;
   assigneeUsername?: string | null;
   note?: string | null;
   /** Ob die angemeldete Person selbst eingeteilt ist. */
