@@ -17,12 +17,19 @@ Erster vollständiger Stand. Lauffähig, aber in keinem Haus im Einsatz.
   ihn für alle Konten vorschreiben; Konten der Plattformverwaltung brauchen ihn
   immer. Wer ihn noch nicht hat, meldet sich an, kommt aber nur zur Einrichtung.
 - **Next.js 15.5 und React 19** statt Next 14.2.21, das kritische Schwachstellen
-  trug. Transitive Pakete mit bekannten Lücken sind angehoben; im Betriebsbaum
-  bleibt eine mittlere Meldung zu `@nestjs/core`, die erst mit Nest 11 fällt.
+  trug. Transitive Pakete mit bekannten Lücken sind angehoben.
 - **Content-Security-Policy mit Einmalkennung** und weitere Sicherheitsheader im
   Frontend. Die Hausschrift wird mit der Anwendung ausgeliefert statt von Google.
 - **HTTPS im Betrieb:** `Caddyfile.tls` holt je Haus ein Zertifikat; die API
   entscheidet, für welche Namen.
+- **TypeScript 6.** Nest 12 wird nur noch als ES-Modul ausgeliefert; die API
+  bleibt CommonJS und lädt es per `require()`. Das setzt **Node ≥ 22.12** voraus
+  (`engines`), Images und CI laufen auf 26. Die Modulauflösung steht auf
+  `nodenext`, der Logo-Upload nutzt den eigenen Typ `LogoFile` statt des globalen
+  `Express.Multer.File`.
+- **NestJS 12** (Express 5) statt 10: `@nestjs/core` trug die letzte offene
+  Meldung im Betriebsbaum, jetzt meldet `pnpm audit --prod` nichts mehr. Die
+  Middleware hängt an `{*splat}`, Express 5 verlangt benannte Platzhalter.
 - **Node 26 (LTS)** in CI, Images und Typen; Node 20 ist seit April 2026 und
   22 ab April 2027 nicht mehr unterstützt.
 - **CI:** Abhängigkeits-Audit ab „high“, CodeQL, Geheimnissuche, SBOM,
