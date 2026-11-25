@@ -129,6 +129,8 @@ export interface PlanEntwurfKopf {
 
 export interface PlanEntwurf extends PlanEntwurfKopf {
   items: PlanEntwurfItem[];
+  /** Prüfung des Endzustands beim Laden; fehlt in der Antwort auf „Anlegen". */
+  pruefung?: EntwurfPruefung;
 }
 
 export interface EntwurfKonflikt {

@@ -206,25 +206,39 @@ die Mehrarbeit erscheint als Hinweis. Hart sind Bereich,
 Arbeitstage, Zeitfenster, genehmigte Abwesenheit, Betriebskalender, keine
 Überschneidung, Wochenstunden als Obergrenze, zehn Stunden je Tag und elf
 Stunden Ruhezeit; Lücken meldet sie, statt Regeln zu biegen. Je Tag erst alle
-Schichtarten bis zur Mindest-, dann bis zur Idealbesetzung. Die **Vorschau
-rechnet nur, die Übernahme rechnet neu** - der Client schickt nie
-Zuweisungen. Offene Schichten entstehen nur für die Lücke zur Mindestbesetzung.
+Schichtarten bis zur Mindest-, dann bis zur Idealbesetzung. Offene Schichten
+entstehen nur für die Lücke zur Mindestbesetzung.
 
-Die **Wochenansicht** (`/schichtplan/woche`) legt Schichten auf eine Zeitachse,
-überlappende nebeneinander (`ueberlappungsLayout`). Wer `shifts.manage` hat,
-zieht Blöcke auf einen anderen Tag oder eine andere Uhrzeit und am oberen oder
-unteren Rand für Beginn und Ende, auch per Tastatur; Zeiten rasten auf
-Viertelstunden ein. Die Rechnung (`packages/shared/src/wochenansicht.ts`,
-`zeit.ts`) liegt in `shared`, damit Browser und Server dieselbe Ortszeit rechnen -
-eine Frühschicht bleibt über die Sommerzeitumstellung eine um 8 Uhr. Alles Gezogene
-ist ein **Entwurf** (gestrichelt, Leiste mit „Speichern"/„Verwerfen"): bis zum
-Speichern geht nichts an den Server und niemand wird benachrichtigt. Gespeichert
-wird als Stapel über `POST /schichtplan/zeiten`; der Server prüft den
-**Endzustand** des ganzen Entwurfs (`findeUeberschneidung`, alles oder nichts)
-und schickt jeder betroffenen Person **eine** Meldung, nicht eine je Schicht.
-Bei Ablehnung bleibt der Entwurf stehen. Bewegung und Loslassen hängen am
-Fenster, nicht am Block: React baut den Block beim Spaltenwechsel neu auf und
-eine Erfassung am Element ginge verloren (der Block klebte am Zeiger).
+**Der Plan ändert sich nie ohne „Speichern" - und nur über einen Entwurf.**
+Die Teamleitung (`shifts.manage`) beginnt in der Wochenansicht
+(`/schichtplan/woche`) mit einem **leeren Blatt** oder einer Kopie des Bestands
+(`Planentwurf`, `EntwurfService`). Der Entwurf liegt serverseitig, ist vom echten
+Plan getrennt, wird nach kurzer Pause **automatisch gesichert** und löst **nie**
+eine Meldung aus. Darin: Schichtarten oder eigene Schichten einfügen, ziehen
+(Maus, Touch, Tastatur), einteilen, entfernen und wiederherstellen und die
+**Autoplanung** laufen lassen (`POST …/entwuerfe/vorschlag`: rechnet auf dem
+übergebenen Entwurfsstand, speichert nichts, lässt sich rückgängig machen). Die
+Autoplanung ersetzt offene Elemente der geplanten Schichtarten, statt Lücken zu
+verdoppeln.
+
+Erst **„Plan speichern und melden"** (`POST …/veroeffentlichen`) wendet den
+Entwurf an: in **einer Transaktion** anlegen, ändern, entfernen; alles oder nichts.
+Geprüft wird vorher der **Endzustand** (Überschneidungen derselben Person
+verhindern das Speichern; Arbeitszeithinweise markieren nur) und ob jemand eine
+vom Entwurf angefasste echte Schicht inzwischen geändert hat (`liveStand` gegen
+`updatedAt`) - dann bleibt der Entwurf stehen. **Jede betroffene Person erfährt es
+einmal** (`meldungenJePerson`: neu, entfällt, geändert mit alter Zeit), nicht eine
+Meldung je Schicht. Der Entwurf trägt eine `version`: wer einen veralteten Stand
+speichert, wird abgewiesen statt eine andere Fassung zu überschreiben. Die reine
+Logik steht in `plananwendung.ts` (mit Tests), die Zeitrechnung in
+`packages/shared` (`zeit.ts`, `wochenansicht.ts`), damit Browser und Server
+dieselbe Ortszeit rechnen - eine Frühschicht bleibt über die Sommerzeit eine um 8
+Uhr. Bewegung und Loslassen beim Ziehen hängen am Fenster, nicht am Block:
+React baut den Block beim Spaltenwechsel neu auf, und eine Erfassung am Element
+ginge verloren. Es gibt bewusst **keinen** Sofort-Weg mehr (kein Übernehmen der
+Planung, kein Stapel-Speichern der Zeiten). Einzelne direkte Aufrufe
+(`PATCH /schichtplan/:id`, „Einteilen" in der Liste) bleiben ausdrückliche
+Einzelaktionen. Nicht gebaut: automatisches Aufräumen alter Entwürfe.
 
 **Entfernt:** Schnittstellen zu Fremdsystemen, Fahrzeugbestand und Fuhrpark –
 samt Oberflächen, API-Modulen, Datenmodellen und Tabellen. AHOI betrachtet den
@@ -371,6 +385,8 @@ Offen vor dem Produktivbetrieb:
   der Datenbank, nicht auf einem Dateisystem – ein einzelnes kleines Bild je
   Haus braucht keinen eigenen Speicherort und läuft so in derselben Sicherung
   wie der Rest der Daten mit.
+- **Plan-Entwürfe** bleiben, bis jemand sie speichert oder verwirft; eine
+  automatische Aufräumfrist gibt es noch nicht.
 - **Arbeitszeitgrenzen im Schichtplan:** markiert, nicht gesperrt; Sonn- und
   Feiertagsarbeit, Jugendarbeitsschutz und Sechsmonatsdurchschnitt fehlen (siehe
   Datenschutz).

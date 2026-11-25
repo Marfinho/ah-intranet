@@ -194,12 +194,17 @@ Abs. 1 DSGVO, für die ein Verarbeitungsverbot mit Erlaubnisvorbehalt gilt.
 - **Autoplanung und Arbeitszeitprofile:** Wochenarbeitszeit, Zeitfenster und
   Arbeitstage je Person sind Arbeitszeitdaten; sie sind mit der Autoplanung
   zusammen mitbestimmungspflichtig (§ 87 Abs. 1 Nr. 2 und 3, ggf. Nr. 6).
-  Die Planung liefert einen **Vorschlag**; erst die Übernahme durch eine Person
-  mit `shifts.manage` schreibt Schichten. Es gibt keine rein automatisierte
+  Die Planung arbeitet im **Entwurf** und liefert einen **Vorschlag**; erst „Plan
+  speichern und melden" durch eine Person mit `shifts.manage` schreibt Schichten
+  in den echten Plan. Es gibt keine rein automatisierte
   Entscheidung im Sinne von Art. 22 DSGVO. Die Berechnung ist deterministisch
   und ohne Zufall, damit ein Betriebsrat sie nachvollziehen kann: erst
   Mindest-, dann Idealbesetzung; unter den Geeigneten kommt zuerst, wer in der
   Woche am wenigsten ausgelastet ist.
+- **Entwürfe:** Ein Plan-Entwurf enthält Einsatzplanung mit Namen und liegt bis zum
+  Speichern oder Verwerfen in der Datenbank - sichtbar für alle mit `shifts.manage`.
+  Eine automatische Aufräumfrist für liegengebliebene Entwürfe gibt es noch nicht;
+  bis dahin gehört das Verwerfen zur Pflege des Plans.
 - **Frist:** 2 Jahre, in Anlehnung an § 16 Abs. 2 ArbZG. Der Plan ist kein
   Arbeitszeitnachweis; wer einen führen muss (§ 17 MiLoG, und nach dem
   BAG-Beschluss vom 13.09.2022 zur Erfassungspflicht ohnehin), führt ihn

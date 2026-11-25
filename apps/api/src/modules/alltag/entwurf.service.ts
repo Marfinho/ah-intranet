@@ -134,7 +134,9 @@ export class EntwurfService {
     if (!row) {
       throw new NotFoundException("Entwurf nicht gefunden");
     }
-    return { ...this.toKopf(row), items: this.items(row.daten) };
+    const items = this.items(row.daten);
+    const kopf = this.toKopf(row);
+    return { ...kopf, items, pruefung: await this.pruefe(kopf.von, kopf.bis, items) };
   }
 
   /**

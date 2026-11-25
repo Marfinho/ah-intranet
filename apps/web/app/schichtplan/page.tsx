@@ -61,8 +61,8 @@ export default async function SchichtplanPage(props: { searchParams: Promise<{ m
 
       {darfPflegen ? (
         <p className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold">
-          <Link href="/schichtplan/planung" className="text-brand-700 hover:underline">
-            Automatisch planen
+          <Link href="/schichtplan/woche" className="text-brand-700 hover:underline">
+            Planen (Entwurf in der Wochenansicht)
           </Link>
           <Link href="/schichtplan/arten" className="text-brand-700 hover:underline">
             Schichtarten

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import QRCode from "qrcode";
+import type { EntwurfSpeicherung, EntwurfVorschlag, PlanEntwurfItem, Veroeffentlichung } from "@ah-intranet/shared";
 import {
   ApiError,
   SESSION_COOKIE,
@@ -1012,38 +1013,6 @@ export async function einteilenAction(shiftId: string, assigneeId: string): Prom
   return run(() => apiSend("PATCH", `/schichtplan/${shiftId}`, { assigneeId }), ["/schichtplan", "/"]);
 }
 
-/**
- * Ändert die Zeiten einer Schicht (Ziehen im Wochenplan). Der Server prüft die
- * Doppelbelegung der eingeteilten Person; ein Konflikt kommt als Meldung zurück
- * und der Block springt im Browser zurück.
- */
-export async function verschiebeSchichtAction(id: string, startsAt: string, endsAt: string): Promise<ActionState> {
-  return run(
-    () => apiSend("PATCH", `/schichtplan/${id}`, { startsAt, endsAt }),
-    ["/schichtplan", "/schichtplan/woche", "/"],
-  );
-}
-
-/**
- * Speichert den Entwurf des Wochenplans in einem Zug. Erst hier erfahren die
- * betroffenen Personen von der Änderung - eine Meldung je Person.
- */
-export async function speichereZeitenAction(
-  aenderungen: { id: string; startsAt: string; endsAt: string }[],
-): Promise<ActionState & { benachrichtigt?: number }> {
-  try {
-    const ergebnis = await apiSend<{ geaendert: number; benachrichtigt: number }>("POST", "/schichtplan/zeiten", {
-      aenderungen,
-    });
-    for (const pfad of ["/schichtplan", "/schichtplan/woche", "/"]) {
-      revalidatePath(pfad);
-    }
-    return { ok: true, benachrichtigt: ergebnis.benachrichtigt };
-  } catch (error) {
-    return { ok: false, message: error instanceof ApiError ? error.message : "Speichern fehlgeschlagen." };
-  }
-}
-
 export async function deleteShiftAction(id: string): Promise<ActionState> {
   return run(() => apiSend("DELETE", `/schichtplan/${id}`), ["/schichtplan"]);
 }
@@ -1205,7 +1174,7 @@ export async function setzeVertretungsMeldungAction(vertretungsMeldung: string):
 
 /* ------------------------------------- Schichtarten, Profile, Planung */
 
-const PLANUNG = ["/schichtplan", "/schichtplan/arten", "/schichtplan/personal", "/schichtplan/planung"];
+const PLANUNG = ["/schichtplan", "/schichtplan/arten", "/schichtplan/personal", "/schichtplan/woche"];
 
 function schichtartAusFormular(formData: FormData) {
   return {
@@ -1260,21 +1229,71 @@ export async function setzeArbeitszeitProfilAction(
   return run(() => apiSend("PATCH", `/schichtplanung/personal/${userId}`, profil), PLANUNG, "Gespeichert.");
 }
 
-export async function uebernehmePlanAction(von: string, bis: string, schichtartIds: string[]): Promise<ActionState> {
+/* --------------------------------------------------------- Plan-Entwürfe */
+
+/** Antwort einer Aktion mit Nutzdaten: bei Misserfolg `ok: false` und die Meldung, bei Versionskonflikt `konflikt`. */
+export type Ergebnis<T> = ({ ok: true } & T) | { ok: false; message: string; konflikt?: boolean };
+
+async function entwurfAufruf<T>(operation: () => Promise<T>, fallback: string): Promise<Ergebnis<T>> {
   try {
-    const ergebnis = await apiSend<{ geplant: number; offen: number }>("POST", "/schichtplanung/uebernehmen", {
-      von,
-      bis,
-      schichtartIds: schichtartIds.length > 0 ? schichtartIds : undefined,
-    });
-    for (const pfad of PLANUNG) {
+    return { ok: true, ...(await operation()) } as Ergebnis<T>;
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return { ok: false, message: error.message, konflikt: error.status === 409 };
+    }
+    return { ok: false, message: fallback };
+  }
+}
+
+export async function erstelleEntwurfAction(eingabe: {
+  von: string;
+  bis: string;
+  basis: "leer" | "bestand";
+  name?: string;
+}) {
+  return entwurfAufruf(
+    () => apiSend<{ id: string }>("POST", "/schichtplanung/entwuerfe", eingabe),
+    "Entwurf konnte nicht angelegt werden.",
+  );
+}
+
+export async function speichereEntwurfAction(id: string, version: number, name: string, items: PlanEntwurfItem[]) {
+  return entwurfAufruf(
+    () => apiSend<EntwurfSpeicherung>("PUT", `/schichtplanung/entwuerfe/${id}`, { version, name, items }),
+    "Entwurf konnte nicht gespeichert werden.",
+  );
+}
+
+export async function loescheEntwurfAction(id: string): Promise<ActionState> {
+  return run(() => apiSend("DELETE", `/schichtplanung/entwuerfe/${id}`), ["/schichtplan/woche"]);
+}
+
+export async function entwurfVorschlagAction(eingabe: {
+  von: string;
+  bis: string;
+  schichtartIds: string[];
+  items: PlanEntwurfItem[];
+}) {
+  return entwurfAufruf(
+    () =>
+      apiSend<EntwurfVorschlag>("POST", "/schichtplanung/entwuerfe/vorschlag", {
+        ...eingabe,
+        schichtartIds: eingabe.schichtartIds.length > 0 ? eingabe.schichtartIds : undefined,
+      }),
+    "Die Planung konnte nicht berechnet werden.",
+  );
+}
+
+/** „Plan speichern": die einzige Aktion, die den echten Plan ändert und Meldungen auslöst. */
+export async function veroeffentlicheEntwurfAction(id: string, version: number) {
+  const ergebnis = await entwurfAufruf(
+    () => apiSend<Veroeffentlichung>("POST", `/schichtplanung/entwuerfe/${id}/veroeffentlichen`, { version }),
+    "Der Plan konnte nicht gespeichert werden.",
+  );
+  if (ergebnis.ok) {
+    for (const pfad of ["/schichtplan", "/schichtplan/woche", "/"]) {
       revalidatePath(pfad);
     }
-    return {
-      ok: true,
-      detail: `${ergebnis.geplant} Schicht(en) besetzt${ergebnis.offen > 0 ? `, ${ergebnis.offen} offen` : ""}.`,
-    };
-  } catch (error) {
-    return { ok: false, message: error instanceof ApiError ? error.message : "Planung fehlgeschlagen." };
   }
+  return ergebnis;
 }

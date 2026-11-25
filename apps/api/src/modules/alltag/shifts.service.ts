@@ -492,6 +492,11 @@ export class ShiftsService {
       endsAt: Date;
       note: string | null;
       assigneeId: string | null;
+      pauseMinuten: number;
+      schichtartId: string | null;
+      locationId: string | null;
+      departmentId: string | null;
+      updatedAt: Date;
       location: { name: string } | null;
       department: { name: string } | null;
       assignee: { firstName: string; lastName: string; username: string } | null;
@@ -508,6 +513,11 @@ export class ShiftsService {
       department: shift.department?.name ?? null,
       assignee: shift.assignee ? displayName(shift.assignee) : null,
       assigneeId: shift.assigneeId,
+      pauseMinuten: shift.pauseMinuten,
+      schichtartId: shift.schichtartId,
+      locationId: shift.locationId,
+      departmentId: shift.departmentId,
+      updatedAt: toIso(shift.updatedAt)!,
       assigneeUsername: shift.assignee?.username ?? null,
       note: shift.note,
       mine: shift.assigneeId === user.id,

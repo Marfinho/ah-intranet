@@ -692,6 +692,13 @@ export interface ShiftItem {
   department?: string | null;
   assignee?: string | null;
   assigneeId?: string | null;
+  /** Unbezahlte Pause in Minuten. */
+  pauseMinuten?: number;
+  schichtartId?: string | null;
+  locationId?: string | null;
+  departmentId?: string | null;
+  /** Letzte Änderung - der Entwurf erkennt daran, ob die Schicht seither anderswo geändert wurde. */
+  updatedAt?: string;
   assigneeUsername?: string | null;
   note?: string | null;
   /** Ob die angemeldete Person selbst eingeteilt ist. */

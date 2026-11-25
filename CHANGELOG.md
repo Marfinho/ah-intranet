@@ -31,9 +31,10 @@ Erster vollständiger Stand. Lauffähig, aber in keinem Haus im Einsatz.
   Zeitfenster, Arbeitstage); automatische Planung mit Vorschau; Markierung von
   Verstößen gegen das Arbeitszeitgesetz (markiert nur, sperrt nichts).
 - **Wochenansicht des Schichtplans** mit Zeitachse, nebeneinanderliegenden
-  Überlappungen und Ziehen per Maus, Touch und Tastatur (Verschieben, Beginn und
-  Ende ändern). Änderungen sind ein Entwurf; erst „Speichern" speichert und
-  benachrichtigt, eine Meldung je Person.
+  Überlappungen und Ziehen per Maus, Touch und Tastatur. Geplant wird in einem
+  **Entwurf** (leeres Blatt oder Kopie des Bestands, automatisch gesichert,
+  Autoplanung darin): der Plan ändert sich und Meldungen gehen erst mit „Plan
+  speichern und melden", eine Meldung je Person.
 
 ### Sicherheit
 
