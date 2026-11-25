@@ -176,7 +176,7 @@ const BEISPIELE = [...LANGSAM, ...SCHNELL];
 /**
  * Ablauf in Sekunden.
  *
- * Die ersten drei fliegen ein und stehen nach Textlänge, mindestens fünf Sekunden.
+ * Die ersten drei fliegen ein und stehen drei, fünf und vier Sekunden.
  * Die übrigen erscheinen oben in der Mitte, bleiben kurz stehen und fliegen dann
  * los. Verweildauer, Flugzeit und Abstand schrumpfen von Karte zu Karte: Nr. 4 bis
  * 8 lassen sich noch lesen, danach wird es ein Strom.
@@ -185,7 +185,8 @@ const NAME_START = 0.3;
 const NAME_FLUG = 0.9;
 const NAME_AUFLOESEN = 1.5;
 const NAME_AUFLOESEN_SCHNELL = 0.9;
-const lesezeit = (text: string) => Math.max(5, 2.5 + text.length * 0.075);
+/** Wie lange die ersten drei Beispiele stehen, in Sekunden. */
+const LESEZEIT = [3, 5, 4];
 const SCHNELL_VERWEILEN = [1.3, 1.1, 0.95, 0.8, 0.7, 0.5, 0.4, 0.3, 0.25];
 const SCHNELL_FLUG = [1.0, 0.9, 0.8, 0.7, 0.65, 0.55, 0.5, 0.45, 0.4];
 const SCHNELL_ABSTAND = [2.0, 1.7, 1.45, 1.25, 1.05, 0.8, 0.65, 0.5, 0.4];
@@ -196,10 +197,10 @@ const BEISPIEL_LOS: number[] = [];
 const BEISPIEL_AUFLOESUNG: number[] = [];
 const BEISPIEL_DAUER: number[] = [];
 let laufzeit = NAME_START;
-LANGSAM.forEach((beispiel, k) => {
+LANGSAM.forEach((_, k) => {
   BEISPIEL_BEGINN[k] = laufzeit;
   BEISPIEL_LOS[k] = laufzeit + NAME_FLUG;
-  BEISPIEL_AUFLOESUNG[k] = laufzeit + NAME_FLUG + lesezeit(beispiel.text);
+  BEISPIEL_AUFLOESUNG[k] = laufzeit + NAME_FLUG + LESEZEIT[k];
   BEISPIEL_DAUER[k] = NAME_AUFLOESEN;
   laufzeit = BEISPIEL_AUFLOESUNG[k];
 });
