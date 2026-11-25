@@ -6,6 +6,7 @@ import {
   FIGUR_ARTEN,
   MODUL_NUTZEN,
   MODUL_SZENEN,
+  PITCH_FAELLE,
   MODULE_STAGES,
   PERMISSION_KEYS,
   ROLE_DEFINITIONS,
@@ -233,6 +234,60 @@ describe("Modul-Szenen", () => {
           expect(neu.x, `${key}/${id}`).toBeLessThanOrEqual(760);
           expect(neu.y, `${key}/${id}`).toBeGreaterThanOrEqual(60);
           expect(neu.y, `${key}/${id}`).toBeLessThanOrEqual(270);
+        }
+      }
+    }
+  });
+});
+
+describe("Pitch-Fälle", () => {
+  it("sind sechs mit eindeutigem Schlüssel", () => {
+    expect(PITCH_FAELLE).toHaveLength(6);
+    expect(new Set(PITCH_FAELLE.map((fall) => fall.key)).size).toBe(6);
+  });
+
+  it("nennen nur Module, die es gibt, und kein Kernmodul", () => {
+    for (const fall of PITCH_FAELLE) {
+      for (const key of fall.module) {
+        expect(isModuleKey(key), `${fall.key}/${key}`).toBe(true);
+        expect(MODULE_DEFINITIONS.find((modul) => modul.key === key)?.core, `${fall.key}/${key}`).toBe(false);
+      }
+    }
+  });
+
+  it("haben drei bis vier Schritte mit Titel und kurzem Text", () => {
+    for (const fall of PITCH_FAELLE) {
+      expect(fall.szene.schritte.length, fall.key).toBeGreaterThanOrEqual(3);
+      expect(fall.szene.schritte.length, fall.key).toBeLessThanOrEqual(4);
+      for (const schritt of fall.szene.schritte) {
+        expect(schritt.titel.length, fall.key).toBeGreaterThan(2);
+        expect(schritt.text.length, fall.key).toBeGreaterThan(20);
+        expect(schritt.text.length, fall.key).toBeLessThan(180);
+      }
+    }
+  });
+
+  it("verwenden nur bekannte Figuren, platzieren jede im ersten Schritt und bleiben auf der Bühne", () => {
+    for (const fall of PITCH_FAELLE) {
+      const ids = fall.szene.figuren.map((figur) => figur.id);
+      expect(new Set(ids).size, fall.key).toBe(ids.length);
+      for (const figur of fall.szene.figuren) {
+        expect(FIGUR_ARTEN, `${fall.key}/${figur.id}`).toContain(figur.art);
+        const erster = fall.szene.schritte[0].zustand[figur.id];
+        expect(erster?.x, `${fall.key}/${figur.id} x`).toBeTypeOf("number");
+        expect(erster?.y, `${fall.key}/${figur.id} y`).toBeTypeOf("number");
+      }
+      const stand = new Map<string, { x: number; y: number }>();
+      for (const schritt of fall.szene.schritte) {
+        for (const [id, zustand] of Object.entries(schritt.zustand)) {
+          expect(ids.includes(id), `${fall.key}: ${id}`).toBe(true);
+          const alt = stand.get(id) ?? { x: 0, y: 0 };
+          const neu = { x: zustand.x ?? alt.x, y: zustand.y ?? alt.y };
+          stand.set(id, neu);
+          expect(neu.x, `${fall.key}/${id}`).toBeGreaterThanOrEqual(40);
+          expect(neu.x, `${fall.key}/${id}`).toBeLessThanOrEqual(760);
+          expect(neu.y, `${fall.key}/${id}`).toBeGreaterThanOrEqual(60);
+          expect(neu.y, `${fall.key}/${id}`).toBeLessThanOrEqual(270);
         }
       }
     }

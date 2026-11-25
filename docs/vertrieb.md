@@ -14,7 +14,9 @@ Plattformverwaltung (`@PlatformAdmin()`), nicht für ein Haus.
    und Ablauf (60 Tage, höchstens 365) antworten von außen gleich wie ein
    Link, den es nie gab.
 3. **Pitch-Seite** (`/angebot/<token>`) ohne Anmeldung: Häuser, Funktionsübersicht,
-   Preisrechner und ein Schlussbild. Der Interessent stellt Häuser, Nutzer,
+   Preisrechner und eine Schlussseite („Ihr Alltag“): zu den ersten sechs Fragen der
+   Eröffnungsseite läuft je eine kurze Ablaufanimation, dazu steht, ob die dafür
+   nötigen Module in der gewählten Auswahl stecken. Der Interessent stellt Häuser, Nutzer,
    Key-User, Paket oder Einzelmodule ein. Die Seite beginnt mit einer Animation,
    die zeigt, wie der Name AHOI entsteht, und lässt sich überspringen.
    **Die Häuser kann er verändern**: umbenennen, Werkstatt, Teiledienst und
@@ -22,7 +24,7 @@ Plattformverwaltung (`@PlatformAdmin()`), nicht für ein Haus.
    Standort setzen, Häuser hinzufügen oder entfernen. Der Vorschlag je Haus rechnet
    sofort mit (dieselben Regeln wie auf dem Server, aus `pitch-vorschlag.ts`), und
    die Änderungen fließen in das Angebot (Zahl der Häuser, Einrichtung), in die
-   Funktionsübersicht und in das Schlussbild. Alles wird gespeichert; "Zurücksetzen"
+   Funktionsübersicht. Alles wird gespeichert; "Zurücksetzen"
    führt auf die Angaben des Betreibers zurück.
 4. **Anfrage** setzt den Status auf _angefragt_, hält das vom Server gerechnete
    Angebot samt Version der Preisliste fest und benachrichtigt alle Konten der

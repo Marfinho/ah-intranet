@@ -7,3 +7,4 @@ export * from "./leads";
 export * from "./pitch-inhalte";
 export * from "./pitch-szenen";
 export * from "./pitch-vorschlag";
+export * from "./pitch-faelle";

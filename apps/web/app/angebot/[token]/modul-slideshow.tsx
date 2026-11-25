@@ -278,7 +278,7 @@ function Marke({ art }: { art: NonNullable<SzenenAbzeichen> }) {
   );
 }
 
-function Buehne({ szene, schritt, titel }: { szene: Szene; schritt: number; titel: string }) {
+export function Buehne({ szene, schritt, titel }: { szene: Szene; schritt: number; titel: string }) {
   const stand = standNach(szene, schritt);
   return (
     <svg

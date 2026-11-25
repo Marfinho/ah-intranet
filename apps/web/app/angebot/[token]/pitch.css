@@ -493,187 +493,6 @@
   margin-top: 12px;
 }
 
-/* Skyline */
-.pitch .nacht {
-  margin-top: 24px;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid #1b2631;
-}
-.pitch .nacht svg {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-.pitch .sk-wand {
-  fill: #2a3846;
-  cursor: pointer;
-  outline: none;
-}
-.pitch .sk-dach {
-  fill: #3a4b5c;
-  pointer-events: none;
-}
-.pitch .sk-haus {
-  transition: opacity 0.2s;
-}
-.pitch .sk-haus.dim {
-  opacity: 0.3;
-}
-.pitch .sk-haus.fokus .sk-wand,
-.pitch .sk-wand:focus-visible {
-  fill: #34465a;
-}
-.pitch .sk-fenster {
-  cursor: pointer;
-  outline: none;
-  transition:
-    opacity 0.2s,
-    fill 0.2s;
-}
-.pitch .sk-fenster.an {
-  fill: #f0b35e;
-}
-.pitch .sk-fenster.kern {
-  fill: #8fa3b5;
-}
-.pitch .sk-fenster.beta {
-  fill: #f0b35e;
-  opacity: 0.5;
-}
-.pitch .sk-fenster.offen {
-  fill: #1a2531;
-  stroke: #4a5d70;
-  stroke-width: 1.5;
-  stroke-dasharray: 3 3;
-}
-.pitch .sk-fenster.dim {
-  opacity: 0.22;
-}
-.pitch .sk-fenster.fokus {
-  fill: #fff;
-  stroke: #e8834a;
-  stroke-width: 3;
-  stroke-dasharray: none;
-  opacity: 1;
-}
-.pitch .sk-fenster:hover,
-.pitch .sk-fenster:focus-visible {
-  stroke: #fff;
-  stroke-width: 2.5;
-  stroke-dasharray: none;
-}
-.pitch .sk-tor {
-  fill: #17212b;
-}
-.pitch .sk-tor-linie {
-  stroke: #3a4b5c;
-  stroke-width: 1.5;
-}
-.pitch .sk-name {
-  font: 700 15px var(--head);
-  fill: #c9d3dc;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  pointer-events: none;
-}
-.pitch .sk-platt {
-  font: 600 13px var(--head);
-  fill: #8fa3b5;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  pointer-events: none;
-}
-.pitch .sk-zahl {
-  font: 800 84px var(--head);
-  fill: #f2e3c6;
-  pointer-events: none;
-}
-.pitch .sk-zahl-text {
-  font: 600 18px var(--head);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  fill: #8fa3b5;
-  pointer-events: none;
-}
-.pitch .sk-bahn {
-  fill: none;
-  stroke: #e8834a;
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-dasharray: 1;
-  animation: pitch-zeichne 0.8s cubic-bezier(0.3, 0.7, 0.2, 1) both;
-  pointer-events: none;
-  filter: drop-shadow(0 0 6px rgba(232, 131, 74, 0.7));
-}
-@keyframes pitch-zeichne {
-  from {
-    stroke-dashoffset: 1;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .pitch .sk-bahn {
-    animation: none;
-  }
-}
-.pitch .legende {
-  list-style: none;
-  padding: 0;
-  margin: 16px 0 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 20px;
-  font-size: 14px;
-  color: var(--muted);
-}
-.pitch .legende li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.pitch .legende i {
-  display: inline-block;
-  flex: none;
-}
-.pitch .l-fenster {
-  width: 14px;
-  height: 16px;
-  border-radius: 2px;
-}
-.pitch .l-fenster.an {
-  background: #f0b35e;
-}
-.pitch .l-fenster.kern {
-  background: #8fa3b5;
-}
-.pitch .l-fenster.offen {
-  background: #1a2531;
-  border: 1.5px dashed #4a5d70;
-}
-.pitch .l-tor {
-  width: 14px;
-  height: 14px;
-  background: #17212b;
-  border: 1px solid #3a4b5c;
-}
-.pitch .l-platte {
-  width: 22px;
-  height: 5px;
-  background: #324355;
-}
-.pitch .nutzen {
-  margin: 8px 0 0;
-  padding-left: 20px;
-  color: var(--muted);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 16px;
-}
-
 /* Modul-Slideshow */
 .pitch .slide-hintergrund {
   position: fixed;
@@ -1080,4 +899,59 @@
   border-radius: 4px;
   background: var(--bg);
   color: var(--fg);
+}
+
+/* Ihr Alltag */
+.pitch .fall-wahl {
+  margin-bottom: 8px;
+}
+.pitch .fall-karte {
+  margin: 8px auto 0;
+  max-width: 620px;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 22px;
+  font: 600 24px/1.25 var(--head);
+  text-transform: none;
+  animation: fall-ein 0.5s cubic-bezier(0.3, 0.7, 0.2, 1) both;
+}
+@keyframes fall-ein {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pitch .fall-karte {
+    animation: none;
+  }
+}
+.pitch .fall-auswahl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+}
+.pitch .fall-schluss {
+  margin-top: 20px;
+  padding: 16px 20px;
+  border-radius: 8px;
+  background: var(--ok-soft);
+  color: var(--fg);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+.pitch .fall-schluss p {
+  margin: 0;
+  font-weight: 600;
 }

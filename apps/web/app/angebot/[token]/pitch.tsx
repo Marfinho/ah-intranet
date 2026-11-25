@@ -4,9 +4,8 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   HAEUSER_MAX,
   MODULE_DEFINITIONS,
-  MODULE_GROUPS,
   MODULE_GROUP_LABELS,
-  MODUL_NUTZEN,
+  PITCH_FAELLE,
   NUTZER_MAX,
   TIERS,
   berechneAngebot,
@@ -26,9 +25,9 @@ import {
   type TierKey,
 } from "@ah-intranet/shared";
 import { pitchAnfrageAction, pitchSpeichernAction, type PitchKonfiguration } from "@/lib/actions";
-import { ModulSlideshow } from "./modul-slideshow";
+import { Buehne, ModulSlideshow } from "./modul-slideshow";
 
-const STATIONEN = ["AHOI", "Start", "Ihre Häuser", "Funktionen", "Ihr Angebot", "Ihr Intranet"] as const;
+const STATIONEN = ["AHOI", "Start", "Ihre Häuser", "Funktionen", "Ihr Angebot", "Ihr Alltag"] as const;
 
 const label = (key: string) => getModule(key)?.label ?? key;
 const istBeta = (key: string) => getModule(key)?.stage === "beta";
@@ -118,21 +117,19 @@ export function Pitch({ token, ansicht }: { token: string; ansicht: PitchAnsicht
         {station === 4 ? (
           <Angebot token={token} ansicht={ansicht} konf={konf} setKonf={setKonf} nutzlast={nutzlast} stand={stand} />
         ) : null}
-        {station === 5 ? <Intranet ansicht={live} konf={konf} onAngebot={() => gehe(4)} /> : null}
+        {station === 5 ? <Alltag konf={konf} onAngebot={() => gehe(4)} /> : null}
 
-        <div className="pager">
-          <button type="button" className="btn" disabled={station === 0} onClick={() => gehe(station - 1)}>
-            Zurück
-          </button>
-          <button
-            type="button"
-            className="btn primary"
-            disabled={station === STATIONEN.length - 1}
-            onClick={() => gehe(station + 1)}
-          >
-            Weiter
-          </button>
-        </div>
+        {/* Auf der letzten Seite hat der Ablauf eigene Knöpfe; ein zweites Paar darunter wäre verwirrend. */}
+        {station < STATIONEN.length - 1 ? (
+          <div className="pager">
+            <button type="button" className="btn" disabled={station === 0} onClick={() => gehe(station - 1)}>
+              Zurück
+            </button>
+            <button type="button" className="btn primary" onClick={() => gehe(station + 1)}>
+              Weiter
+            </button>
+          </div>
+        ) : null}
       </main>
     </div>
   );
@@ -1471,35 +1468,18 @@ function Angebot({
   );
 }
 
-/* --------------------------------------------------------------- Skyline */
-
-const BREITE = 122;
-const LUECKE = 20;
-const GRUPPEN_LUECKE = 70;
-const BODEN = 400;
-
-type Fokus = { art: "modul" | "haus"; key: string } | null;
+/* ------------------------------------------------------------------- Alltag */
 
 /**
- * Ihr Intranet als Skyline.
+ * Schlussseite: wie AHOI die Fälle von der Eröffnungsseite löst.
  *
- * Jedes Haus ist ein Gebäude, jedes Fenster ein Modul, das dort im Alltag Sinn
- * ergibt. Erleuchtet ist, was zur Auswahl gehört, dunkel bleibt der Rest, wie
- * im AHOI-Zeichen. Wer ein Modul wählt, sieht es in allen Häusern aufleuchten,
- * durch Bahnen verbunden. Die Höhe eines Hauses hängt nicht an der Auswahl,
- * sondern an dem, was dort möglich wäre: ein größeres Paket macht Fenster hell,
- * lässt kein Haus wachsen. Die Zuordnung ist ein Vorschlag aus den Angaben zu den
- * Häusern, keine Messung.
+ * Zu den ersten sechs Fragen läuft je eine kurze Ablaufanimation, nacheinander
+ * und von selbst; Weiter, Zurück und die Auswahl der Fälle greifen jederzeit ein.
+ * Dazu steht, ob die Module, die ein Fall braucht, in der gewählten Auswahl
+ * stecken: so sieht der Interessent, was seine Wahl im Alltag bringt und was
+ * fehlt. Gerechnet wird mit derselben Auswahl wie im Angebot.
  */
-export function Intranet({
-  ansicht,
-  konf,
-  onAngebot,
-}: {
-  ansicht: PitchAnsicht;
-  konf: LeadKonfiguration;
-  onAngebot: () => void;
-}) {
+function Alltag({ konf, onAngebot }: { konf: LeadKonfiguration; onAngebot: () => void }) {
   const angebot = berechneAngebot({
     haeuser: konf.haeuser,
     nutzer: konf.nutzer,
@@ -1508,404 +1488,150 @@ export function Intranet({
     module: konf.module,
   });
   const gewaehlt = new Set(angebot.module);
+  const [fall, setFall] = useState(0);
+  const [schritt, setSchritt] = useState(0);
+  const [spielt, setSpielt] = useState(true);
 
-  const module = useMemo(
-    () =>
-      [...(MODULE_DEFINITIONS as readonly ModuleDefinition[])].sort(
-        (a, b) => MODULE_GROUPS.indexOf(a.group) - MODULE_GROUPS.indexOf(b.group),
-      ),
-    [],
-  );
-  const haeuser = ansicht.standorte;
-  const hatWerkstatt = (haus: PitchAnsicht["standorte"][number]) =>
-    haus.leistungen.some((leistung) => /service|werkstatt/i.test(leistung));
+  const aktuell = PITCH_FAELLE[fall];
+  const letzterSchritt = aktuell.szene.schritte.length - 1;
+  const letzterFall = PITCH_FAELLE.length - 1;
+  const ende = fall === letzterFall && schritt === letzterSchritt;
+  const fehlend = (f: (typeof PITCH_FAELLE)[number]) => f.module.filter((key) => !gewaehlt.has(key));
+  const abgedeckt = PITCH_FAELLE.filter((f) => fehlend(f).length === 0).length;
 
-  // Häuser eines gemeinsamen Standorts stehen nebeneinander, getrennt von den übrigen.
-  const reihenfolge = [...haeuser.map((haus, index) => ({ haus, index }))].sort((a, b) =>
-    (a.haus.campus ?? `~${a.index}`).localeCompare(b.haus.campus ?? `~${b.index}`, "de"),
-  );
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) setSpielt(false);
+  }, []);
 
-  let x = 40;
-  const gebaeude = reihenfolge.map(({ haus, index }, position) => {
-    const vorher = reihenfolge[position - 1];
-    if (position > 0) x += vorher.haus.campus && vorher.haus.campus === haus.campus ? LUECKE : GRUPPEN_LUECKE;
-    const fenster = module.filter((modul) => modul.core || haus.vorschlagModule.includes(modul.key));
-    const zeilen = Math.ceil(fenster.length / 3);
-    const eintrag = { haus, index, x, fenster, hoehe: zeilen * 40 + 56 };
-    x += BREITE;
-    return eintrag;
-  });
-  const gesamt = x + 40;
-  const oberkante = Math.max(0, Math.round(BODEN - Math.max(...gebaeude.map((g) => g.hoehe)) - 110));
-
-  const plattformen: { von: number; bis: number; name: string }[] = [];
-  for (const g of gebaeude) {
-    if (!g.haus.campus) continue;
-    const letzte = plattformen[plattformen.length - 1];
-    if (letzte && letzte.name === g.haus.campus) letzte.bis = g.x + BREITE;
-    else plattformen.push({ von: g.x, bis: g.x + BREITE, name: g.haus.campus });
-  }
-
-  const [angeheftet, setAngeheftet] = useState<Fokus>(null);
-  const [schwebe, setSchwebe] = useState<Fokus>(null);
-  const zeige = angeheftet ?? schwebe;
-  const heftAn = (fokus: NonNullable<Fokus>) =>
-    setAngeheftet((alt) => (alt?.art === fokus.art && alt.key === fokus.key ? null : fokus));
-  const nachTaste = (fokus: NonNullable<Fokus>) => (e: { key: string }) => {
-    if (e.key === "Enter" || e.key === " ") heftAn(fokus);
+  const weiter = () => {
+    if (schritt < letzterSchritt) setSchritt(schritt + 1);
+    else if (fall < letzterFall) {
+      setFall(fall + 1);
+      setSchritt(0);
+    }
+  };
+  const zurueck = () => {
+    if (schritt > 0) setSchritt(schritt - 1);
+    else if (fall > 0) {
+      setFall(fall - 1);
+      setSchritt(PITCH_FAELLE[fall - 1].szene.schritte.length - 1);
+    }
   };
 
-  const fensterPunkt = (g: (typeof gebaeude)[number], nummer: number) => ({
-    x: g.x + 16 + (nummer % 3) * 34 + 13,
-    y: BODEN - g.hoehe + 18 + Math.floor(nummer / 3) * 40 + 14,
-  });
+  // Läuft von selbst: kurz je Schritt, etwas länger beim Wechsel zum nächsten Fall.
+  useEffect(() => {
+    if (!spielt) return;
+    if (ende) {
+      setSpielt(false);
+      return;
+    }
+    const timer = window.setTimeout(weiter, schritt === letzterSchritt ? 3400 : 3000);
+    return () => window.clearTimeout(timer);
+  }, [spielt, fall, schritt]);
 
-  // Bahnen verbinden das gewählte Modul von Haus zu Haus, von links nach rechts.
-  const bahnPunkte =
-    zeige?.art === "modul"
-      ? gebaeude
-          .map((g) => ({ g, nummer: g.fenster.findIndex((modul) => modul.key === zeige.key) }))
-          .filter((eintrag) => eintrag.nummer >= 0)
-          .map((eintrag) => fensterPunkt(eintrag.g, eintrag.nummer))
-          .sort((a, b) => a.x - b.x)
-      : [];
-
-  const nichtKern = module.filter((modul) => !modul.core && gewaehlt.has(modul.key));
-  const offen = module.filter((modul) => !modul.core && !gewaehlt.has(modul.key));
-  const aktivesHaus = zeige?.art === "haus" ? zeige.key : null;
+  const fehlt = fehlend(aktuell);
 
   return (
     <section className="station">
-      <div className="eyebrow">Ihr Intranet</div>
-      <h2 style={{ marginTop: 10 }}>So sieht Ihre Auswahl aus</h2>
+      <div className="eyebrow">Ihr Alltag mit AHOI</div>
+      <h2 style={{ marginTop: 10 }}>So lösen Sie das</h2>
       <p className="lead">
-        Jedes Haus ein Gebäude, jedes Fenster ein Modul. Hell ist, was zu Ihrer Auswahl gehört, dunkel bleibt der Rest,
-        wie im AHOI-Zeichen. Tippen Sie ein Haus oder ein Fenster an und sehen Sie, was Sie damit tun können.
+        Die Fälle vom Anfang, jetzt mit Lösung. Mit Ihrer Auswahl gehen{" "}
+        <b>
+          {abgedeckt} von {PITCH_FAELLE.length}
+        </b>{" "}
+        ganz auf.
       </p>
 
-      <div className="nacht">
-        <svg
-          viewBox={`0 ${oberkante} ${gesamt} ${470 - oberkante}`}
-          role="group"
-          aria-label="Ihre Häuser als Skyline, jedes Fenster ein Modul"
-        >
-          <defs>
-            <linearGradient id="pitch-himmel" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#0B121A" />
-              <stop offset="1" stopColor="#223142" />
-            </linearGradient>
-          </defs>
-          <rect y={oberkante} width={gesamt} height={470 - oberkante} fill="url(#pitch-himmel)" />
-          {Array.from({ length: 34 }, (_, i) => (
-            <circle
-              key={i}
-              cx={(i * 211) % gesamt}
-              cy={oberkante + 14 + ((i * 97) % 80)}
-              r={i % 5 === 0 ? 1.8 : 1}
-              fill="#fff"
-              opacity={0.25 + (i % 4) * 0.12}
-            />
-          ))}
-          <text className="sk-zahl" x="46" y={oberkante + 92}>
-            {gewaehlt.size}
-          </text>
-          <text className="sk-zahl-text" x="48" y={oberkante + 122}>
-            von {MODULE_DEFINITIONS.length} Modulen
-          </text>
-
-          <rect x="0" y={BODEN} width={gesamt} height="70" fill="#101820" />
-          {plattformen.map((platte) => (
-            <g key={platte.name}>
-              <rect x={platte.von - 12} y={BODEN} width={platte.bis - platte.von + 24} height="10" fill="#324355" />
-              <text x={(platte.von + platte.bis) / 2} y={BODEN + 36} textAnchor="middle" className="sk-platt">
-                {platte.name}
-              </text>
-            </g>
-          ))}
-
-          {gebaeude.map((g) => {
-            const oben = BODEN - g.hoehe;
-            const gedimmt = aktivesHaus !== null && aktivesHaus !== g.haus.name;
-            return (
-              <g
-                key={`${g.haus.name}-${g.index}`}
-                className={`sk-haus ${gedimmt ? "dim" : ""} ${aktivesHaus === g.haus.name ? "fokus" : ""}`}
-              >
-                <rect
-                  x={g.x}
-                  y={oben}
-                  width={BREITE}
-                  height={g.hoehe}
-                  rx="3"
-                  className="sk-wand"
-                  tabIndex={0}
-                  role="button"
-                  aria-label={g.haus.name}
-                  onMouseEnter={() => setSchwebe({ art: "haus", key: g.haus.name })}
-                  onMouseLeave={() => setSchwebe(null)}
-                  onFocus={() => setSchwebe({ art: "haus", key: g.haus.name })}
-                  onBlur={() => setSchwebe(null)}
-                  onClick={() => heftAn({ art: "haus", key: g.haus.name })}
-                  onKeyDown={nachTaste({ art: "haus", key: g.haus.name })}
-                />
-                <rect x={g.x - 5} y={oben - 8} width={BREITE + 10} height="8" rx="2" className="sk-dach" />
-                {g.fenster.map((modul, nummer) => {
-                  const an = gewaehlt.has(modul.key);
-                  const p = fensterPunkt(g, nummer);
-                  const gedimmtFenster = zeige?.art === "modul" && zeige.key !== modul.key;
-                  const klasse = [
-                    "sk-fenster",
-                    an ? (modul.core ? "kern" : modul.stage === "beta" ? "beta" : "an") : "offen",
-                    gedimmtFenster ? "dim" : "",
-                    zeige?.art === "modul" && zeige.key === modul.key ? "fokus" : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ");
-                  return (
-                    <rect
-                      key={modul.key}
-                      x={p.x - 13}
-                      y={p.y - 14}
-                      width="26"
-                      height="28"
-                      rx="2"
-                      className={klasse}
-                      tabIndex={0}
-                      role="button"
-                      aria-label={`${g.haus.name}: ${modul.label}, ${an ? "in Ihrer Auswahl" : "nicht in Ihrer Auswahl"}`}
-                      onMouseEnter={() => setSchwebe({ art: "modul", key: modul.key })}
-                      onMouseLeave={() => setSchwebe(null)}
-                      onFocus={() => setSchwebe({ art: "modul", key: modul.key })}
-                      onBlur={() => setSchwebe(null)}
-                      onClick={() => heftAn({ art: "modul", key: modul.key })}
-                      onKeyDown={nachTaste({ art: "modul", key: modul.key })}
-                    />
-                  );
-                })}
-                {hatWerkstatt(g.haus) ? (
-                  <g aria-hidden="true">
-                    <rect x={g.x + BREITE - 34} y={BODEN - 24} width="26" height="24" className="sk-tor" />
-                    {[0, 1, 2, 3].map((linie) => (
-                      <line
-                        key={linie}
-                        x1={g.x + BREITE - 34}
-                        x2={g.x + BREITE - 8}
-                        y1={BODEN - 20 + linie * 6}
-                        y2={BODEN - 20 + linie * 6}
-                        className="sk-tor-linie"
-                      />
-                    ))}
-                  </g>
-                ) : null}
-                <text x={g.x + BREITE / 2} y={BODEN + 20} textAnchor="middle" className="sk-name">
-                  {g.haus.name
-                    .replace(/^(Autopark|Autohaus|Gebrauchtwagenzentrum) /, "")
-                    .replace("CUPRA GARAGE ", "")
-                    .replace(" Hannover", "")}
-                </text>
-              </g>
-            );
-          })}
-
-          {bahnPunkte.slice(1).map((nach, i) => {
-            const von = bahnPunkte[i];
-            const bogen = Math.min(von.y, nach.y) - 40 - Math.abs(nach.x - von.x) * 0.18;
-            return (
-              <path
-                key={`${von.x}-${nach.x}`}
-                className="sk-bahn"
-                d={`M${von.x} ${von.y} Q${(von.x + nach.x) / 2} ${bogen} ${nach.x} ${nach.y}`}
-                pathLength={1}
-              />
-            );
-          })}
-        </svg>
-      </div>
-
-      <ul className="legende" aria-label="Legende">
-        <li>
-          <i className="l-fenster an" /> in Ihrer Auswahl
-        </li>
-        <li>
-          <i className="l-fenster offen" /> nicht in Ihrer Auswahl
-        </li>
-        <li>
-          <i className="l-fenster kern" /> Kernmodul, immer dabei
-        </li>
-        <li>
-          <i className="l-tor" /> Haus mit Werkstatt
-        </li>
-        <li>
-          <i className="l-platte" /> gemeinsamer Standort
-        </li>
-      </ul>
-
-      <p className="hint" style={{ marginTop: 12 }}>
-        Welches Haus welches Modul nutzt, ist unser Vorschlag aus den Angaben zu Ihren Häusern (Werkstatt,
-        Öffnungszeiten, gemeinsamer Standort). Gemessen wird nichts. Im Betrieb schalten Sie Module für das ganze Haus
-        ein, wer was sieht, steuern die Zielgruppen je Standort.
-      </p>
-
-      <aside className="panel detail graf-detail" aria-live="polite" style={{ marginTop: 16 }}>
-        {!zeige ? (
-          <>
-            <span className="eyebrow">Ihre Auswahl</span>
-            <h3>
-              {gewaehlt.size} Module für {haeuser.length} Häuser
-            </h3>
-            <p style={{ margin: 0, color: "var(--muted)" }}>
-              Drei Kernmodule sind immer dabei, dazu {nichtKern.length} gewählte.
-              {offen.length > 0 ? ` ${offen.length} weitere gibt es dazu, sie bleiben dunkel.` : ""} Fahren Sie über ein
-              Haus oder ein Fenster. Ein gewähltes Modul zieht Bahnen zu allen Häusern, die es nutzen.
-            </p>
-          </>
-        ) : zeige.art === "modul" ? (
-          <ModulDetail
-            schluessel={zeige.key}
-            gewaehlt={gewaehlt.has(zeige.key)}
-            haeuser={gebaeude
-              .filter((g) => g.fenster.some((modul) => modul.key === zeige.key) && !getModule(zeige.key)?.core)
-              .map((g) => g.haus.name)}
-            onAngebot={onAngebot}
-          />
-        ) : (
-          <HausDetail
-            haus={haeuser.find((haus) => haus.name === zeige.key)!}
-            gewaehlt={gewaehlt}
-            onModul={(key) => setAngeheftet({ art: "modul", key })}
-          />
-        )}
-      </aside>
-
-      <div className="chips" role="group" aria-label="Haus wählen" style={{ marginTop: 28 }}>
-        {haeuser.map((haus, index) => (
+      <div className="chips fall-wahl" role="group" aria-label="Fall wählen">
+        {PITCH_FAELLE.map((f, index) => (
           <button
-            key={`${haus.name}-${index}`}
+            key={f.key}
             type="button"
             className="chip"
-            aria-pressed={zeige?.art === "haus" && zeige.key === haus.name}
-            onClick={() => heftAn({ art: "haus", key: haus.name })}
+            aria-pressed={index === fall}
+            onClick={() => {
+              setFall(index);
+              setSchritt(0);
+            }}
           >
-            {haus.name}
+            {index + 1} · {f.kurz}
+            {fehlend(f).length === 0 ? " ✓" : ""}
           </button>
         ))}
       </div>
-      <div className="chips" role="group" aria-label="Modul wählen" style={{ marginTop: 0 }}>
-        {nichtKern.map((modul) => (
-          <button
-            key={modul.key}
-            type="button"
-            className="chip"
-            aria-pressed={zeige?.art === "modul" && zeige.key === modul.key}
-            onClick={() => heftAn({ art: "modul", key: modul.key })}
-          >
-            {modul.label}
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
 
-export function ModulDetail({
-  schluessel,
-  gewaehlt,
-  haeuser,
-  onAngebot,
-}: {
-  schluessel: string;
-  gewaehlt: boolean;
-  haeuser: string[];
-  onAngebot: () => void;
-}) {
-  const [ablauf, setAblauf] = useState(false);
-  const modul = getModule(schluessel);
-  if (!modul) return null;
-  return (
-    <>
-      <div className="row">
-        <span className="pill p-mute">{MODULE_GROUP_LABELS[modul.group]}</span>
-        {modul.core ? <span className="pill p-mute">Kern</span> : null}
-        {modul.stage === "beta" ? <span className="pill p-acc">Beta</span> : null}
-        <span className={`pill ${gewaehlt ? "p-ok" : "p-wait"}`}>
-          {gewaehlt ? "In Ihrer Auswahl" : "Nicht in Ihrer Auswahl"}
-        </span>
+      <div className="fall-karte" key={fall}>
+        {aktuell.frage}
       </div>
-      <h3>{modul.label}</h3>
-      <p style={{ margin: 0, color: "var(--muted)" }}>{modul.description}</p>
-      <div className="fit">
-        <span className="eyebrow">Was Sie damit tun können</span>
-        <ul className="nutzen">
-          {(MODUL_NUTZEN[schluessel] ?? []).map((satz) => (
-            <li key={satz}>{satz}</li>
-          ))}
-        </ul>
+
+      <div className="buehne" style={{ marginTop: 14 }}>
+        <Buehne szene={aktuell.szene} schritt={schritt} titel={aktuell.frage} />
       </div>
-      {haeuser.length > 0 ? (
-        <div className="fit">
-          <span className="eyebrow">Besonders nah dran</span>
-          <div className="row" style={{ marginTop: 8 }}>
-            {haeuser.map((name) => (
-              <span key={name} className="pill p-acc">
-                {name}
-              </span>
-            ))}
-          </div>
-        </div>
-      ) : null}
-      <div className="row" style={{ marginTop: 16 }}>
-        <button type="button" className="btn primary" onClick={() => setAblauf(true)}>
-          Ablauf ansehen
-        </button>
-        {!gewaehlt ? (
+
+      <div className="untertitel" aria-live="polite">
+        <h3>{aktuell.szene.schritte[schritt].titel}</h3>
+        <p>{aktuell.szene.schritte[schritt].text}</p>
+      </div>
+
+      <div className="fall-auswahl" aria-live="polite">
+        {aktuell.module.map((key) => (
+          <span key={key} className={`pill ${gewaehlt.has(key) ? "p-ok" : "p-wait"}`}>
+            {label(key)}: {gewaehlt.has(key) ? "in Ihrer Auswahl" : "nicht in Ihrer Auswahl"}
+          </span>
+        ))}
+        {fehlt.length > 0 ? (
           <button type="button" className="btn" onClick={onAngebot}>
             Im Angebot ändern
           </button>
         ) : null}
       </div>
-      {ablauf ? <ModulSlideshow schluessel={schluessel} onClose={() => setAblauf(false)} /> : null}
-    </>
-  );
-}
 
-export function HausDetail({
-  haus,
-  gewaehlt,
-  onModul,
-}: {
-  haus: PitchAnsicht["standorte"][number];
-  gewaehlt: Set<string>;
-  onModul: (key: string) => void;
-}) {
-  return (
-    <>
-      <div className="row">
-        {haus.leistungen.map((leistung) => (
-          <span key={leistung} className="pill p-mute">
-            {leistung}
-          </span>
-        ))}
-        {haus.campus ? <span className="pill p-acc">Verbund {haus.campus}</span> : null}
-      </div>
-      <h3>{haus.name}</h3>
-      {haus.adresse ? <p style={{ margin: 0, color: "var(--quiet)", fontSize: 15 }}>{haus.adresse}</p> : null}
-      <p style={{ margin: "12px 0 0", color: "var(--muted)" }}>{haus.vorschlagText}</p>
-      <div className="fit">
-        <span className="eyebrow">Module dieses Hauses</span>
-        <div className="row" style={{ marginTop: 8 }}>
-          {haus.vorschlagModule.map((key) =>
-            gewaehlt.has(key) ? (
-              <button key={key} type="button" className="pill p-acc" style={{ border: 0 }} onClick={() => onModul(key)}>
-                {getModule(key)?.label}
-              </button>
-            ) : (
-              <span key={key} className="pill p-mute" title="Nicht in Ihrer Auswahl">
-                {getModule(key)?.label}
-              </span>
-            ),
-          )}
+      <div className="steuerung">
+        <button type="button" className="btn" disabled={fall === 0 && schritt === 0} onClick={zurueck}>
+          Zurück
+        </button>
+        <div className="punkte" role="group" aria-label="Schritte">
+          {aktuell.szene.schritte.map((s, index) => (
+            <button
+              key={s.titel}
+              type="button"
+              className={`punkt ${index === schritt ? "an" : index < schritt ? "vorbei" : ""}`}
+              aria-label={`Schritt ${index + 1}: ${s.titel}`}
+              aria-current={index === schritt}
+              onClick={() => setSchritt(index)}
+            />
+          ))}
         </div>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => {
+            if (!spielt && ende) {
+              setFall(0);
+              setSchritt(0);
+            }
+            setSpielt(!spielt);
+          }}
+        >
+          {spielt ? "Pause" : ende ? "Nochmal" : "Abspielen"}
+        </button>
+        <button type="button" className="btn primary" disabled={ende} onClick={weiter}>
+          Weiter
+        </button>
       </div>
-    </>
+
+      {ende ? (
+        <div className="fall-schluss">
+          <p>
+            Mit Ihrer Auswahl gehen {abgedeckt} von {PITCH_FAELLE.length} Fällen ganz auf.
+            {abgedeckt < PITCH_FAELLE.length ? " Was fehlt, lässt sich im Angebot ergänzen." : ""}
+          </p>
+          <button type="button" className="btn primary" onClick={onAngebot}>
+            Zum Angebot
+          </button>
+        </div>
+      ) : null}
+    </section>
   );
 }
