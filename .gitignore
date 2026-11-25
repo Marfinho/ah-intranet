@@ -14,3 +14,6 @@ prisma/dev.db
 
 # Lokale Sicherungen gehören nicht ins Repository
 backups/
+
+# Von `prisma generate` erzeugt (Prisma 7: Ausgabe im Quellbaum)
+apps/api/src/generated/

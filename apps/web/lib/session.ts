@@ -36,10 +36,16 @@ export const getUnreadCount = cache(async (): Promise<number> => {
 });
 
 /** Für Seiten, die zwingend eine Anmeldung brauchen. */
-export async function requireSession(): Promise<SessionUser> {
+export async function requireSession(options: { mfaEinrichtung?: boolean } = {}): Promise<SessionUser> {
   const session = await getSession();
   if (!session) {
     redirect("/login");
+  }
+  // Ist der zweite Faktor vorgeschrieben und fehlt noch, gibt es nur die
+  // Einrichtung. Die API erzwingt das ohnehin (403); hier landet die Person
+  // gleich am richtigen Ort statt auf einer Fehlerseite.
+  if (session.mfa.einrichtungOffen && !options.mfaEinrichtung) {
+    redirect("/profil/mfa");
   }
   return session;
 }

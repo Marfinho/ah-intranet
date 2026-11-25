@@ -40,7 +40,7 @@ cp apps/web/.env.example apps/web/.env.local
 
 pnpm --filter @ah-intranet/shared build
 pnpm --filter api prisma:generate
-pnpm --filter api prisma:migrate deploy   # oder: prisma:migrate dev
+pnpm --filter api prisma:migrate deploy   # oder: prisma:migrate dev (danach prisma:generate)
 pnpm --filter api prisma:seed
 
 pnpm dev
@@ -226,7 +226,10 @@ Browser-Richtlinie.
 - Passwörter als bcrypt-Hash (Kostenfaktor 12); der Vergleich läuft auch bei
   unbekanntem Benutzernamen gegen einen Dummy-Hash, damit die Antwortzeit keine
   Konten verrät.
+- Zweiter Faktor per Authenticator-App, je Haus vorschreibbar (siehe `CLAUDE.md`).
 - JWT im httpOnly-Cookie, `sameSite=lax`, `secure` in Produktion.
+- Content-Security-Policy mit Einmalkennung, HSTS und weitere Header im
+  Frontend (`apps/web/middleware.ts`, `next.config.mjs`).
 - Global aktive Guards: Authentifizierung → Recht → Modulaktivierung.
 - CORS strikt auf `FRONTEND_URL` beschränkt, Cookies nur dorthin.
 - Eingaben werden serverseitig validiert (`class-validator`,

@@ -13,11 +13,8 @@ interface DocumentsResponse {
 
 const FILE_LABELS: Record<string, string> = { pdf: "PDF", docx: "Word", xlsx: "Excel", link: "Link" };
 
-export default async function DocumentsPage({
-  searchParams,
-}: {
-  searchParams: { search?: string; category?: string };
-}) {
+export default async function DocumentsPage(props: { searchParams: Promise<{ search?: string; category?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireModule("documents");
 
   const query = new URLSearchParams();

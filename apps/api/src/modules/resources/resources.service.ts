@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma, type CalendarCategory } from "@prisma/client";
+import { Prisma, type CalendarCategory } from "../../generated/prisma/client";
 import type { CalendarEvent, Room, RoomBooking } from "@ah-intranet/shared";
 import { PrismaService } from "../../core/prisma.service";
 import { AuditService } from "../../core/audit.service";

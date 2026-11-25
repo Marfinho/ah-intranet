@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../../generated/prisma/client";
 import * as bcrypt from "bcryptjs";
 import {
   PERMISSION_DEFINITIONS,
@@ -17,7 +17,7 @@ import type {
   RoleSummary,
   UserAccountStatus,
 } from "@ah-intranet/shared";
-import { PrismaService } from "../../core/prisma.service";
+import { PrismaService, type TransaktionsClient } from "../../core/prisma.service";
 import { AuditService } from "../../core/audit.service";
 import { PRESENCE_LABELS, PRESENCE_VALUES, displayName, resolveUserScopes, sortiereRollen } from "../../core/mappers";
 import type { RequestUser } from "../../core/request-user";
@@ -609,7 +609,7 @@ export class PeopleService {
    * trägt, sondern ob ein **aktives Konto** es über eine ihrer Rollen hat -
    * ein Recht in einer leeren Rolle rettet niemanden.
    */
-  private async assertVerwaltungErreichbar(tx: Prisma.TransactionClient): Promise<void> {
+  private async assertVerwaltungErreichbar(tx: TransaktionsClient): Promise<void> {
     for (const recht of UNVERZICHTBARE_RECHTE) {
       const traeger = await tx.userRole.count({
         where: {
@@ -633,7 +633,7 @@ export class PeopleService {
    * Token in bis zu zwölf Stunden abläuft. Ein entzogenes Recht, das noch einen
    * halben Tag wirkt, ist kein entzogenes Recht.
    */
-  private async beendeSitzungen(tx: Prisma.TransactionClient, roleId: string): Promise<number> {
+  private async beendeSitzungen(tx: TransaktionsClient, roleId: string): Promise<number> {
     const betroffene = await tx.userRole.findMany({ where: { roleId }, select: { userId: true } });
     if (betroffene.length === 0) {
       return 0;

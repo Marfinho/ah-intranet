@@ -1,0 +1,9 @@
+# Bekannter Fehlalarm: Caddys `ask`-Adresse in Caddyfile.tls (Zeile 15). Die Regel
+# generic-api-key hält den internen Dienstnamen mit Port (`api:3001`) für einen
+# Schlüssel; es steht dort kein Geheimnis. Der Fingerprint benennt genau diesen
+# einen Fund, echte Funde in derselben Datei schlagen weiter an.
+#
+# Er enthält den Commit-Hash. Deshalb muss der Pull Request mit einem
+# Merge-Commit übernommen werden, nicht als Squash: ein Squash erzeugte einen
+# neuen Hash, und der Fund käme zurück.
+353cd809bfd2a77d51c3be652b681b9720240337:Caddyfile.tls:generic-api-key:15

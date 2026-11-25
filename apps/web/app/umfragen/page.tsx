@@ -11,7 +11,8 @@ interface PollsResponse {
   canManage: boolean;
 }
 
-export default async function PollsPage({ searchParams }: { searchParams: { all?: string } }) {
+export default async function PollsPage(props: { searchParams: Promise<{ all?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireModule("polls");
 
   const showAll = searchParams.all === "true";

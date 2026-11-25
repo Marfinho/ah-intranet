@@ -15,7 +15,7 @@ import {
   MinLength,
   ValidateNested,
 } from "class-validator";
-import type { OrderStatus, OrderType } from "@prisma/client";
+import type { OrderStatus, OrderType } from "../../generated/prisma/client";
 import { OrdersService } from "./orders.service";
 import { CurrentUser, Feature, Permission } from "../../core/decorators";
 import type { RequestUser } from "../../core/request-user";

@@ -1,17 +1,17 @@
-FROM node:20-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
-# `corepack enable` allein lädt pnpm nicht herunter - das passiert erst beim
-# ersten Aufruf und fragt dabei interaktiv nach Bestätigung. Ohne Terminal
-# (wie in diesem Build und im Container zur Laufzeit) hängt das für immer,
-# deshalb hier explizit und nicht-interaktiv vorbereiten.
-RUN corepack enable && corepack prepare pnpm@10.18.3 --activate
+# pnpm global statt über Corepack - Begründung in apps/api/Dockerfile.
+RUN npm install -g pnpm@10.18.3
 COPY . .
-RUN pnpm install --frozen-lockfile=false
+RUN pnpm install --frozen-lockfile
 RUN pnpm --filter web build
 
-FROM node:20-alpine
+FROM node:26-alpine
 WORKDIR /app
-RUN corepack enable && corepack prepare pnpm@10.18.3 --activate
-COPY --from=build /app .
+RUN npm install -g pnpm@10.18.3
+COPY --from=build --chown=node:node /app .
+# Kein root im Betrieb. Next schreibt zur Laufzeit in `.next/cache`; das gehört
+# durch --chown dem Nutzer `node`.
+USER node
 EXPOSE 3000
 CMD ["pnpm", "--filter", "web", "start"]

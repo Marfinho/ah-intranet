@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma, type OrderStatus, type OrderType } from "@prisma/client";
+import { Prisma, type OrderStatus, type OrderType } from "../../generated/prisma/client";
 import { permissionName } from "@ah-intranet/shared";
 import type {
   ApprovalTask,

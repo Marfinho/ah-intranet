@@ -54,7 +54,7 @@ export function LocationRow({ location, allBrands }: { location: LocationSummary
                   src={brand.logoUrl!}
                   alt={`Logo ${brand.name}`}
                   title={brand.name}
-                  className="h-4 w-4 shrink-0 rounded-sm object-contain grayscale"
+                  className="h-4 w-4 shrink-0 rounded-xs object-contain grayscale"
                 />
               ))}
           </div>

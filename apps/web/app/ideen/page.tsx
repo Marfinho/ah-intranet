@@ -12,7 +12,8 @@ interface IdeasResponse {
   canManage: boolean;
 }
 
-export default async function IdeasPage({ searchParams }: { searchParams: { status?: string; search?: string } }) {
+export default async function IdeasPage(props: { searchParams: Promise<{ status?: string; search?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireModule("ideas");
 
   const query = new URLSearchParams();

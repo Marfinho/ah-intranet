@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { grantAccessAction, resetUserPasswordAction, revokeAccessAction, updateUserStatusAction } from "@/lib/actions";
+import {
+  grantAccessAction,
+  resetUserMfaAction,
+  resetUserPasswordAction,
+  revokeAccessAction,
+  updateUserStatusAction,
+} from "@/lib/actions";
 
 const buttonClass =
   "rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60";
@@ -64,6 +70,25 @@ export function UserRowActions({
         >
           {hasAccess ? "Zugang entziehen" : "Zugang einrichten"}
         </button>
+
+        {hasAccess ? (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              if (!window.confirm(`Zweiten Faktor von ${name} zurücksetzen? Die Person richtet ihn neu ein.`)) {
+                return;
+              }
+              startTransition(async () => {
+                const result = await resetUserMfaAction(userId);
+                window.alert(result.ok ? (result.detail ?? "Zurückgesetzt.") : (result.message ?? "Fehlgeschlagen"));
+              });
+            }}
+            className={buttonClass}
+          >
+            2. Faktor zurücksetzen
+          </button>
+        ) : null}
 
         <button
           type="button"

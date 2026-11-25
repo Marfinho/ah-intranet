@@ -1,25 +1,19 @@
-import { PrismaClient, type Prisma } from "@prisma/client";
+import { neuerClient } from "../src/core/datenbank";
+import type { Prisma } from "../src/generated/prisma/client";
 import * as bcrypt from "bcryptjs";
 import { MODULE_DEFINITIONS, PERMISSION_DEFINITIONS, ROLE_DEFINITIONS } from "@ah-intranet/shared";
-import { applyTenantScope, isGlobalModel } from "../src/core/tenant-isolation";
+import { mandantenTrennung } from "../src/core/mandanten-erweiterung";
 
 /** Ungefilterter Client für Aufräumen und Mandantenanlage. */
-const root = new PrismaClient();
+const root = neuerClient();
 
 /**
  * Client, der alle Schreib- und Lesevorgänge auf einen Mandanten festlegt -
  * mit derselben Logik wie zur Laufzeit. So entstehen im Seed garantiert
  * dieselben Daten, die die Anwendung später auch findet.
  */
-function tenantClient(tenantId: string): PrismaClient {
-  const client = new PrismaClient();
-  client.$use(async (params, next) => {
-    if (!isGlobalModel(params.model)) {
-      params.args = applyTenantScope(params, tenantId);
-    }
-    return next(params);
-  });
-  return client;
+function tenantClient(tenantId: string) {
+  return neuerClient().$extends(mandantenTrennung(() => ({ mandant: tenantId })));
 }
 
 const DEMO_PASSWORD = process.env.SEED_PASSWORD ?? "Intranet2026!";

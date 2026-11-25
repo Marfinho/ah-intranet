@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OrderStatus } from "@prisma/client";
+import type { OrderStatus } from "../../generated/prisma/client";
 import { ALLOWED_TRANSITIONS, STATUS_LABELS } from "./orders.service";
 
 /**

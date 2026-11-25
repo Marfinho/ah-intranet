@@ -11,7 +11,7 @@ import { apiBaseUrl, tenantHostHeader } from "@/lib/api";
  */
 export async function GET() {
   const response = await fetch(`${apiBaseUrl()}/branding/logo`, {
-    headers: tenantHostHeader(),
+    headers: await tenantHostHeader(),
     cache: "no-store",
   });
 

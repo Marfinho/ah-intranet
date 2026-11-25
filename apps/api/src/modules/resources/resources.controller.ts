@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query } from "@nestjs/common";
 import { IsArray, IsIn, IsOptional, IsString, MinLength } from "class-validator";
-import type { CalendarCategory } from "@prisma/client";
+import type { CalendarCategory } from "../../generated/prisma/client";
 import { ResourcesService } from "./resources.service";
 import { CurrentUser, Feature, Permission } from "../../core/decorators";
 import type { RequestUser } from "../../core/request-user";

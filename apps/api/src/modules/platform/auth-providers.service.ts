@@ -5,6 +5,7 @@ import { PrismaService } from "../../core/prisma.service";
 import { AuditService } from "../../core/audit.service";
 import { istVerschluesselungMoeglich, verschluessele } from "../../core/geheimnis";
 import { toIso } from "../../core/mappers";
+import { requireTenantId } from "../../core/tenant-context";
 import type { RequestUser } from "../../core/request-user";
 
 export interface AuthProviderInput {
@@ -29,6 +30,34 @@ export class AuthProvidersService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
   ) {}
+
+  async mfaPflicht(): Promise<{ pflicht: boolean; eingerichtet: number; konten: number }> {
+    const [tenant, eingerichtet, konten] = await Promise.all([
+      this.prisma.tenant.findUniqueOrThrow({ where: { id: requireTenantId() }, select: { mfaPflicht: true } }),
+      this.prisma.user.count({ where: { status: "active", totpEnabledAt: { not: null } } }),
+      this.prisma.user.count({ where: { status: "active" } }),
+    ]);
+    return { pflicht: tenant.mfaPflicht, eingerichtet, konten };
+  }
+
+  /**
+   * Schreibt allen Konten des Hauses den zweiten Faktor vor.
+   *
+   * Wer ihn noch nicht hat, meldet sich weiterhin an, kommt aber nur zur
+   * Einrichtung - ein Schalter, der alle sofort aussperrte, wäre eine
+   * Selbstsabotage des Hauses am Montagmorgen.
+   */
+  async setMfaPflicht(actor: RequestUser, pflicht: boolean): Promise<{ pflicht: boolean }> {
+    await this.prisma.tenant.update({ where: { id: requireTenantId() }, data: { mfaPflicht: pflicht } });
+    await this.audit.log({
+      actor,
+      action: pflicht ? "auth.mfa_required_on" : "auth.mfa_required_off",
+      entityType: "tenant",
+      entityId: actor.tenantId,
+      detail: pflicht ? "Zweiter Faktor für alle Konten vorgeschrieben" : "Zweiter Faktor nicht mehr vorgeschrieben",
+    });
+    return { pflicht };
+  }
 
   async list(): Promise<AuthProviderSummary[]> {
     const rows = await this.prisma.tenantAuthProvider.findMany({ orderBy: { kind: "asc" } });

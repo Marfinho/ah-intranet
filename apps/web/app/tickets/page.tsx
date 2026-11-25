@@ -19,11 +19,10 @@ const CATEGORIES = [
   { value: "marketing", label: "Marketing" },
 ];
 
-export default async function TicketsPage({
-  searchParams,
-}: {
-  searchParams: { scope?: string; status?: string; category?: string; search?: string; von?: string };
+export default async function TicketsPage(props: {
+  searchParams: Promise<{ scope?: string; status?: string; category?: string; search?: string; von?: string }>;
 }) {
+  const searchParams = await props.searchParams;
   const session = await requireModule("tickets");
 
   const query = new URLSearchParams();

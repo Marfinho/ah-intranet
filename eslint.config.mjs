@@ -12,7 +12,14 @@ import prettier from "eslint-config-prettier";
  */
 export default tseslint.config(
   {
-    ignores: ["**/dist/**", "**/.next/**", "**/node_modules/**", "**/*.d.ts", "apps/api/prisma/migrations/**"],
+    ignores: [
+      "**/dist/**",
+      "**/.next/**",
+      "**/node_modules/**",
+      "**/*.d.ts",
+      "apps/api/prisma/migrations/**",
+      "apps/api/src/generated/**",
+    ],
   },
 
   js.configs.recommended,

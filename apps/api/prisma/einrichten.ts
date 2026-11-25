@@ -1,7 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import { neuerClient } from "../src/core/datenbank";
 import * as bcrypt from "bcryptjs";
 import { PERMISSION_DEFINITIONS, ROLE_DEFINITIONS, MODULE_DEFINITIONS } from "@ah-intranet/shared";
-import { applyTenantScope, isGlobalModel } from "../src/core/tenant-isolation";
+import { mandantenTrennung } from "../src/core/mandanten-erweiterung";
 
 /**
  * Erste Einrichtung für den Betrieb: legt nur den Plattform-Mandanten samt
@@ -19,7 +19,7 @@ async function main() {
     throw new Error("PLATTFORM_PASSWORT fehlt oder ist kürzer als 12 Zeichen.");
   }
 
-  const root = new PrismaClient();
+  const root = neuerClient();
   if (await root.tenant.findFirst({ where: { slug: SLUG } })) {
     console.log("Plattformverwaltung besteht bereits - nichts zu tun.");
     await root.$disconnect();
@@ -30,13 +30,7 @@ async function main() {
   await root.$disconnect();
 
   // Derselbe Mandantenfilter wie zur Laufzeit, damit die Daten dort auffindbar sind.
-  const prisma = new PrismaClient();
-  prisma.$use(async (params, next) => {
-    if (!isGlobalModel(params.model)) {
-      params.args = applyTenantScope(params, tenant.id);
-    }
-    return next(params);
-  });
+  const prisma = neuerClient().$extends(mandantenTrennung(() => ({ mandant: tenant.id })));
 
   await prisma.permission.createMany({
     data: PERMISSION_DEFINITIONS.map((p) => ({ key: p.key, name: p.name, description: p.description })),

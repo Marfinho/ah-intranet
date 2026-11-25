@@ -74,6 +74,15 @@ export interface SessionUser {
   tenant: TenantRef;
   /** Darf Mandanten anlegen und abschalten - nicht identisch mit der Adminrolle im Haus. */
   isPlatformAdmin: boolean;
+  /** Stand des zweiten Faktors dieses Kontos. */
+  mfa: {
+    /** Authenticator-App eingerichtet und bestätigt. */
+    aktiv: boolean;
+    /** Haus oder Plattformrolle schreiben den Faktor vor. */
+    pflicht: boolean;
+    /** Vorgeschrieben, aber noch nicht eingerichtet - bis dahin ist nur die Einrichtung erreichbar. */
+    einrichtungOffen: boolean;
+  };
 }
 
 /** Kurzform eines Mandanten, wie sie in Sitzung und Kopfzeile erscheint. */
